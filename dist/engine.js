@@ -73,6 +73,18 @@ export class Game {
  income(p,n,label){const amount=round(n*(p.spirit==='fortune'?1.25:1));p.money+=amount;this.log(`${this.char(p).name} ${label} +${amount}`);return amount;}
  canBank(){return this.manageable()&&this.s.round%7!==3&&(this.player.bankAccess||this.tiles[this.player.pos].kind==='bank');}
  canUseCard(key){return this.player.alive&&(this.s.phase==='roll'||this.s.phase==='end'&&!['dice','turn','slow','block'].includes(key)||this.s.phase==='estate'&&key==='steal');}
+ blockTargets(){const p=this.player;let at=p.pos;return Array.from({length:6},(_,i)=>{at=this.tiles[at].next[0];return {id:at,steps:i+1,reason:this.s.blocks[at]!==undefined?'这里已有路障':this.s.players.some(q=>q.alive&&q.pos===at)?'这里有角色停靠':''};});}
+ cardHint(key){
+  const p=this.player;if(!CARDS[key]||!p.cards.includes(key))return '卡片不在当前卡包中';
+  if(!this.canUseCard(key))return this.s.phase==='end'&&['dice','turn','slow','block'].includes(key)?'移动卡须在掷骰前使用':'等待自己的行动时机';
+  if(key==='dice'&&p.forced)return `本次已指定 ${p.forced} 步`;
+  if(key==='turn'&&p.reverse)return '本次已选择倒退';
+  if(key==='shield'&&p.shield)return '免租保护已生效，触发后再补充';
+  if(key==='slow'&&(p.slowTurns||p.forced))return p.slowTurns?`慢行剩余 ${p.slowTurns} 次出发`:'本次已控骰，暂不能开启慢行';
+  if(key==='block'&&this.blockTargets().every(t=>t.reason))return '前方六格暂无可放置位置';
+  if(['build','demolish','steal'].includes(key)){const targets=this.cardTargets(key);if(!targets.length)return key==='steal'?'停在对手地产后可收购':key==='build'?'附近八格暂无可加盖的自家地产':'附近八格暂无房屋或路障';if(key==='steal'&&p.money<this.takeoverPrice(p.pos))return `现金不足，还需 ${this.takeoverPrice(p.pos)-p.money} 奶币`;}
+  return '';
+ }
  canShop(){return this.manageable()&&this.s.phase!=='debt'&&this.tiles[this.player.pos].kind==='shop';}
  manageable(){return ['roll','end','debt'].includes(this.s.phase)&&this.player.alive;}
  charge(amount,to=null,label='支付费用'){
@@ -125,7 +137,7 @@ export class Game {
  giveCard(p,key){key||=Object.keys(CARDS)[this.int(Object.keys(CARDS).length)];if(p.cards.length>=15){this.income(p,60,'卡包已满，补偿');return;}p.cards.push(key);this.log(`${this.char(p).name}获得「${CARDS[key].name}」。`);}
  shop(key){if(!this.canShop())return false;const c=CARDS[key],p=this.player;if(!c||p.cards.length>=15||p.tickets<this.cardPrice(key)||p.shopUsed>=2)return false;p.tickets-=this.cardPrice(key);p.shopUsed++;p.cards.push(key);this.log(`${this.char().name}购买「${c.name}」−${this.cardPrice(key)} 点券`);return true;}
  vehicle(id){if(!this.canShop())return false;const p=this.player,v=VEHICLES[id];if(!v||id<=p.vehicle||p.money<v.price)return false;p.money-=v.price;p.vehicle=id;p.diceCount=v.dice;this.log(`${this.char().name}购入${v.name}，现在可选择 1—${v.dice} 颗骰子。`);return true;}
- card(index,target){const p=this.player,key=p.cards[index];if(!this.canUseCard(key))return false;if(!key)return false;let detail='';
+ card(index,target){const p=this.player,key=p.cards[index];if(this.cardHint(key))return false;let detail='';
   if(key==='dice'){if(!Number.isInteger(target)||target<1||target>6||p.forced)return false;p.forced=target;detail=`指定本次 ${target} 步`;}
   if(key==='block'){if(!Number.isInteger(target)||target<1||target>6)return false;let pos=p.pos;for(let i=0;i<target;i++)pos=this.tiles[pos].next[0];if(this.s.blocks[pos]!==undefined||this.s.players.some(q=>q.alive&&q.pos===pos))return false;this.s.blocks[pos]=p.id;detail=`在「${this.tiles[pos].name}」放置路障`;}
   if(key==='turn'){if(p.reverse)return false;p.reverse=true;}
