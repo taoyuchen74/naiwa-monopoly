@@ -2,7 +2,7 @@ import {rosterFor} from './setup.js';
 import {BUSINESSES,businessType,buildingLimit,businessDeparture,researchChoices,repairBuilding} from './businesses.js';
 import {mapTiles} from './maps.js';
 import {emptyBook,migratePortfolio,recordTrade,stockPosition,portfolio} from './portfolio.js';
-import {hasTalent,departureTalent} from './talents.js';
+import {hasTalent,departureTalent} from './talents.js?v=16';
 import {takeAiTurn} from './strategy.js';
 import {CHARACTERS,TILES,STOCKS,CARDS,EVENTS,SPIRITS,VEHICLES,POINT_STOPS} from './content.js';
 export const MAX_BUILDING_LEVEL=5;

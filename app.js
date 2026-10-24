@@ -6,12 +6,12 @@ import {businessPanel} from './business-panel.js';
 import {stockPanel,updateStockPreview} from './stocks-panel.js';
 import {DIFFICULTIES} from './difficulty.js';
 import {MAPS} from './maps.js';
-import {TALENTS} from './talents.js';
+import {TALENTS} from './talents.js?v=16';
 import {GameOrientation} from './orientation.js';
 import {art,guideArt,buildingImage} from './illustrations.js';
 import {ActionPacer} from './pacing.js';
 import {diceWeights} from './strategy.js';
-import {Game,SAVE_KEY} from './engine.js';
+import {Game,SAVE_KEY} from './engine.js?v=16';
 import {CHARACTERS,GROUPS,CARDS,SPIRITS,STOCKS,VEHICLES} from './content.js';
 import {IslandScene} from './scene.js';
 import {portrait} from './portraits.js';
@@ -222,4 +222,4 @@ function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||docum
 document.addEventListener('visibilitychange',()=>{newsFeed.setPaused(document.hidden||gamePaused);soundtrack.visibility(document.hidden||gamePaused);if(document.hidden)save();else render();});window.addEventListener('pagehide',save);
 picker();render();tick();
 // Same-origin offline cache; portable single-file distribution skips registration.
-if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js?v=16').catch(()=>{});
