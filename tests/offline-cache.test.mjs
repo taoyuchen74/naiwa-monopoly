@@ -1,0 +1,5 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+test('offline cache includes the exact versioned entry and every imported runtime module',()=>{const root=new URL('../dist/',import.meta.url),html=readFileSync(new URL('index.html',root),'utf8'),sw=readFileSync(new URL('sw.js',root),'utf8');const entry=html.match(/<script type="module" src="([^"]+)"/)[1],files=runInNewContext(sw.match(/const FILES=(\[[\s\S]*?\]);/)[1]);const seen=new Set(),walk=ref=>{const url=new URL(ref,root),relative='./'+url.pathname.slice(root.pathname.length)+url.search;if(seen.has(relative))return;seen.add(relative);assert.ok(files.includes(relative),`not cached: ${relative}`);const path=new URL(url);path.search='';const code=readFileSync(path,'utf8');for(const match of code.matchAll(/(?:from\s*|import\s*)['"](\.[^'"]+)['"]/g))walk(new URL(match[1],url));};walk(entry);assert.ok(seen.size>30);assert.match(entry,/\?v=/);});
