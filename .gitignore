@@ -3,3 +3,4 @@ artifacts/
 .sites-local/
 node_modules/
 .cache/
+out/

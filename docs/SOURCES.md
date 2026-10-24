@@ -104,3 +104,8 @@ https://cdn.akamai.steamstatic.com/steam/apps/2059810/manuals/%E5%A4%A7%E5%AF%8C
 ## 2026-10-24 奶茶替换
 
 用户将豆奶席位改为奶茶。本次重新查看此前保存的农庄群像参考（artifacts/advanced-reference-group.png），确认杯形角色；据此重建金色杯体、杯把、茶面、手套及短腿，未沿用人形短发造型。角色名、头像、阵容与技能说明同步；旧豆奶标识仅用于存档迁移。视频对应 https://www.bilibili.com/video/BV1bGnb6JEES/ ，原始短链接 https://b23.tv/jm7OvnF 。本文件上文豆奶人形描述是历史记录，已由本次杯形奶茶替换。
+
+
+## 2026-10-24 加载优化
+
+网页字体由仓库内原始站酷快乐体TTF，使用fontTools生成WOFF2界面子集并更名Naiwa Game UI，保留源文件和OFL许可。操作依据 https://fonttools.readthedocs.io/en/latest/subset/index.html 。构建使用已安装的esbuild，依据 https://esbuild.github.io/api/#bundle ，保留Three.js许可。没有引入远程运行时字体、模型或CDN依赖。

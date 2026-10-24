@@ -6,7 +6,9 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "dev": "python -m http.server 4173 --directory dist",
-    "build": "node tools/build.mjs"
+    "build": "node tools/build.mjs",
+    "build:site": "node tools/build-web.mjs",
+    "preview": "python -m http.server 4173 --directory out"
   },
   "devDependencies": {
     "esbuild": "0.25.0"

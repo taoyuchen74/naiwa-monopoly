@@ -222,4 +222,4 @@ function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||docum
 document.addEventListener('visibilitychange',()=>{newsFeed.setPaused(document.hidden||gamePaused);soundtrack.visibility(document.hidden||gamePaused);if(document.hidden)save();else render();});window.addEventListener('pagehide',save);
 picker();render();tick();
 // Same-origin offline cache; portable single-file distribution skips registration.
-if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js?v=16').catch(()=>{});
+if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register(globalThis.__NAIWA_SERVICE_WORKER_URL__||'./sw.js?v=16').catch(()=>{});
