@@ -53,7 +53,8 @@ export class Game {
  owned(p){return Object.entries(this.s.ownership).filter(([,o])=>o.player===p.id).map(([id,o])=>({tile:this.tiles[+id],...o}));}
  cost(t,level,type='residence'){return t.price+level*Math.ceil(this.upgradeCost(t)*(BUSINESSES[type]?.cost||1));}
  upgradeCost(t){return Math.ceil(t.price*.6/10)*10;}
- worth(p){return round(p.money+p.deposit-p.loan+this.owned(p).reduce((a,t)=>a+this.cost(t.tile,t.level,businessType(t)),0)+p.stocks.reduce((a,n,i)=>a+n*this.s.market[i].price,0)+VEHICLES[p.vehicle].price);}
+ assets(p=this.player){const cash=p.money,deposit=p.deposit,loan=p.loan,property=this.owned(p).reduce((a,t)=>a+this.cost(t.tile,t.level,businessType(t)),0),stocks=p.stocks.reduce((a,n,i)=>a+n*this.s.market[i].price,0),vehicle=VEHICLES[p.vehicle].price;return {cash,deposit,property,stocks,vehicle,loan,total:round(cash+deposit+property+stocks+vehicle-loan)};}
+ worth(p){return this.assets(p).total;}
  baseRent(id,level=0){return round(this.tiles[id].price*[.16,.42,.85,1.4,2.05,2.8][level]);}
  district(id,player=this.s.ownership[id]?.player){const t=this.tiles[id],group=this.tiles.filter(x=>x.kind==='property'&&x.group===t.group),lots=group.filter(x=>this.s.ownership[x.id]?.player===player&&businessType(this.s.ownership[x.id])==='residence');const base=this.baseRent(id,this.s.ownership[id]?.level??0),support=lots.filter(x=>x.id!==id).reduce((sum,x)=>sum+this.baseRent(x.id,this.s.ownership[x.id].level),0);return {count:lots.length,total:group.length,bonus:Math.min(1,support*.35/base),support};}
  rent(id,level=this.s.ownership[id]?.level??0,visitor=this.player,steps=this.s.moveSteps||this.s.moveTotal||1){const o=this.s.ownership[id],base=this.baseRent(id,level);if(o&&this.s.players[o.player].skip)return 0;if(o&&level){const type=businessType(o);if(type==='park'||type==='research')return 0;if(type==='chain')return Math.min(400,100+50*(this.owned(this.s.players[o.player]).filter(x=>x.level&&businessType(x)==='chain').length-1));if(type==='gas')return 30+15*steps+60*visitor.vehicle;if(type==='hotel')return Math.round(base*.65)*2;if(type==='mall')return Math.round(base*1.0833333333);}return o?base+Math.min(base,round(this.district(id).support*.35)):base;}
@@ -177,7 +178,8 @@ export class Game {
   for(const p of this.s.players){if(!p.alive)continue;const interest=Math.floor(p.deposit*.005),fee=round(p.loan*.04);p.deposit+=interest;p.loan+=fee;if(interest||fee)this.log(`${this.char(p).name}：存款利息 +${interest}，贷款利息 +${fee}（计入本金）。`);}
   this.log(`第 ${this.s.round} 轮开始，奶家股市行情已更新。`);
  }
- finish(){this.s.phase='finished';const ranked=this.ranking();this.s.winner=ranked[0]?.id??0;this.log(`本局结束！${this.char(ranked[0]).name}成为奶家大富翁。`);}
+ finish(){this.s.phase='finished';const leaders=this.leaders();this.s.winner=leaders[0]?.id??0;this.log(`本局结束！${leaders.map(p=>this.char(p).name).join('、')}${leaders.length>1?'并列':''}成为奶家大富翁。`);}
+ leaders(){const ranked=this.ranking(),first=ranked[0];return ranked.filter(p=>p.alive===first.alive&&this.worth(p)===this.worth(first));}
  ranking(){return [...this.s.players].sort((a,b)=>Number(b.alive)-Number(a.alive)||this.worth(b)-this.worth(a)||a.id-b.id);}
  ai(){return takeAiTurn(this);}
 }

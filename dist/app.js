@@ -1,3 +1,4 @@
+import {resultsPanel} from './results-panel.js';
 import {cardsPanel} from './cards-panel.js';
 import {gameShareUrl} from './share.js';
 import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
@@ -118,7 +119,7 @@ function openPanel(type,id){
  }else if(type==='debt'){
   const d=s.debt;showSheet('小金库需要周转','先筹款，再继续旅行',`<p>${esc(d.label)}需要支付 <b>${fmt(d.amount)}</b> 奶币，当前现金 <b>${fmt(p.money)}</b>。</p><div class="button-grid">${btn('去银行筹款','panel','data-panel="bank"')}${btn('卖出股票','panel','data-panel="stocks"')}${btn('变卖地产','panel','data-panel="deeds"')}${btn('支付并继续','settle','',p.money<d.amount,'primary')}</div><h3>申请破产</h3><p>会清算存款、股票、地产与交通工具，尽可能偿还本次欠款，并退出这局旅行。</p>${btn('查看破产确认','confirmBankrupt','','', 'secondary danger')}`,true);
  }else if(type==='finished'){
-  showSheet('今天的奶家大富翁','本次旅行结算',`<p>净资产 = 现金 + 存款 + 地产成本 + 股票市值 + 工具购入价 − 贷款。存活角色优先排名。</p>${game.ranking().map((q,i)=>`<div class="result-row"><span class="result-rank">${i+1}</span><span>${game.char(q).name}${q.human?'（你）':''}${q.alive?'':' · 已破产'}</span><strong>${fmt(game.worth(q))}</strong></div>`).join('')}<div class="row-actions">${btn('再去旅行一次','newGame','',false,'primary')}${btn('看看小岛','viewBoard')}</div>`,true);
+  showSheet('奶家发财纪念册','本次旅行结算',resultsPanel(game),true);
  }else if(type==='settings'){
   showSheet('旅行设置','按自己的节奏，慢慢玩',`<div class="setting-row"><label for="speedSelect">动画速度</label><select id="speedSelect">${[1,2].map(n=>`<option value="${n}" ${Math.min(2,s.options.speed)===n?'selected':''}>${n===1?'正常 · 完整展示':'轻快 · 保留消息阅读时间'}</option>`).join('')}</select></div><div class="setting-row"><label for="qualitySelect">画面质量</label><select id="qualitySelect"><option value="auto" ${s.options.quality==='auto'?'selected':''}>标准画质</option><option value="low" ${s.options.quality==='low'?'selected':''}>省电画质</option></select></div><div class="setting-row"><span>声音</span>${btn(s.options.sound?'已开启 · 点击关闭':'已关闭 · 点击开启','sound')}</div>${audioSettings()}<h3>旅行存档</h3><p>${saveOk?'进度自动保存在当前浏览器。':'自动存档失败，请导出备份。'}导出后，可以在另一台设备导入继续。</p><div class="row-actions">${btn('导出存档','export','',!started)}${btn('素材与制作说明','panel','data-panel="sources"')}</div><label style="font-size:11px">导入存档<input class="file-input" id="importSave" type="file" accept="application/json,.json"></label><h3>重新出发</h3><p>重新开始会替换本版存档；旧版游戏的存档不会受影响。</p>${btn('选择奶伴重新开始','confirmRestart','','','secondary danger')}<p>设置打开期间，对局暂停。</p>`);
  }else if(type==='help'){
