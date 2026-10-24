@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+ <meta name="theme-color" content="#174d59"><meta name="description" content="欢迎来到奶家发财岛。选一位奶伴，掷骰、买地、收租，一起笑着发财。手机 3D 单机大富翁。">
+ <title>奶蛙大富翁 · 奶家发财岛</title><link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+ <div id="app">
+  <header class="topbar">
+   <a class="brand" href="./" aria-label="奶蛙大富翁首页"><img src="./icon.svg" alt=""><div><strong>奶蛙大富翁</strong><span>奶家发财岛</span></div></a>
+   <div class="round-info"><span class="live-dot"></span><span id="round">准备出发</span><span id="weather" class="weather">晴 · 宜大笑</span></div>
+   <nav class="top-actions" aria-label="游戏设置"><button id="pauseBtn" class="icon-btn" aria-label="暂停游戏" title="暂停游戏" aria-pressed="false" hidden>Ⅱ</button><button id="orientationBtn" class="icon-btn orientation-btn" aria-label="切换横屏" title="切换横屏">横屏</button><button id="shareBtn" class="icon-btn" aria-label="分享试玩链接" title="分享试玩链接">↗</button><button id="soundBtn" class="icon-btn" aria-label="切换声音" title="声音">♫</button><button id="helpBtn" class="icon-btn" aria-label="玩法指南" title="玩法指南">?</button><button id="settingsBtn" class="icon-btn" aria-label="设置" title="设置">⚙</button></nav>
+  </header>
+  <main class="game-layout">
+   <section class="world" aria-label="3D 游戏地图">
+    <div id="scene"></div><div id="fallback" hidden></div>
+    <div class="map-title"><span class="map-tag">第一站 · 奶家群岛</span><h1 id="mapHeading">奶家滨河镇</h1><p>48 个目的地，和奶伴一起慢慢探索。</p></div>
+    <div class="map-tools"><button id="difficultyBtn" class="map-btn" aria-label="地图与电脑难度" title="地图与电脑难度">标准</button><button id="talentBtn" class="map-btn" aria-label="角色天赋" title="角色天赋">天赋</button><button id="planBtn" class="map-btn" data-panel="plan" aria-label="查看落点概率与风险">落点</button><button id="homeBtn" class="map-btn" title="回到全岛" aria-label="回到全岛">⌖</button><button id="followBtn" aria-pressed="false" class="map-btn" title="跟随当前角色" aria-label="跟随当前角色">◎</button><button id="qualityBtn" class="map-btn" title="切换画质" aria-label="切换画质">HD</button><button id="castBtn" class="map-btn" title="角色近看" aria-label="角色近看">人</button></div>
+    <section id="miniMap" class="mini-map" aria-label="全岛导航" hidden></section>
+    <div id="studioPanel" class="studio-panel" hidden><strong>奶伴角色室</strong><span>拖动转身，看看每个角度</span><div class="studio-options"><button data-studio-char="naiwa">奶蛙</button><button data-studio-char="naichong">奶虫</button><button data-studio-char="naishu">奶鼠</button><button data-studio-char="naigou">奶狗</button><button data-studio-char="naidan">奶蛋</button><button data-studio-char="naicha">奶茶</button></div><div class="studio-options"><button data-studio-mode="idle">待机</button><button data-studio-mode="walk">走路</button><button data-studio-mode="laugh">大笑</button></div><div class="studio-options"><button data-studio-view="front">正面</button><button data-studio-view="side">侧面</button><button data-studio-view="back">背面</button></div><button id="closeStudio" class="secondary">返回小镇</button></div>
+    <div class="island-note">拖动探索 · 双指缩放 <span>原创 3D 奶家小镇</span></div>
+    <div id="newsFlash" class="news-flash" role="status" aria-live="polite" hidden></div><div id="moveIndicator" class="move-indicator" hidden></div>
+    <div id="startScreen" class="start-screen">
+     <section class="welcome-panel"><h2>奶家人集合！</h2><p class="welcome-desc">随机先手，买地盖房，比策略也比手气。</p><button id="continueBtn" class="secondary" hidden>继续上次的旅行</button><div class="choose-label">选一位奶伴出发</div><div id="characterPicker" class="character-picker"></div><div class="start-options"><label>地图 <select id="mapSelect"><option value="2">奶家滨河镇 · 短支路</option><option value="1">经典发财岛 · 跨岛捷径</option></select></label><label>旅行时长 <select id="roundSelect"><option value="20">20 轮 · 试玩局</option><option value="30">30 轮 · 轻快局</option><option value="50" selected>50 轮 · 标准经营</option><option value="80">80 轮 · 长线经营</option></select></label><label>总人数 <select id="playerCountSelect"><option value="2">2 人 · 你 + 1 位电脑</option><option value="3" selected>3 人 · 你 + 2 位电脑</option><option value="4">4 人 · 你 + 3 位电脑</option><option value="5">5 人 · 你 + 4 位电脑</option><option value="6">6 人 · 你 + 5 位电脑</option></select></label><label>电脑强度 <select id="difficultySelect"><option value="easy">轻松 · 初次试玩</option><option value="normal" selected>标准 · 策略经营</option><option value="hard">高手 · 精打细算</option></select></label></div><p id="difficultyHint" class="difficulty-hint">比较落点风险、经营街区、使用道具和买卖股票。</p><div class="map-preview-note">奶家滨河镇 · 48格 · 两条短支路</div><div id="talentPreview" class="talent-preview"></div><label class="talent-option"><input type="checkbox" id="talentsEnabled" checked> 开启角色天赋</label><button id="advancedBtn" class="secondary advanced-btn">高级设置 · 指定电脑角色</button><p id="advancedSummary" class="setup-summary"></p><button id="startBtn" class="primary start-btn">开始发财之旅 <span>↗</span></button><p class="local-note"><span id="durationHint"></span><br>单机畅玩 · 自动存档 · 无需登录</p></section>
+    </div>
+   </section>
+   <aside class="sidebar" aria-label="玩家和动态">
+    <div class="aside-heading"><h2>奶伴们的小金库</h2><span>本机单机</span></div><div id="players" class="players"></div>
+    <button id="newsHistoryBtn" class="news-history">◷ 消息记录</button><section class="journal" hidden><div class="journal-heading"><h2>岛上新鲜事</h2><span id="logRound">旅行手账</span></div><div id="logs" class="logs" role="log" aria-label="岛上新鲜事" tabindex="0"></div></section>
+    <button id="saveBtn" class="save-status"><span class="live-dot"></span><span id="saveStatus">进度保存在本机</span><span>导出 ↗</span></button>
+   </aside>
+  </main>
+  <footer class="control-dock">
+   <div class="turn-summary"><span id="turnAvatar" class="turn-avatar">✦</span><div><strong id="turnName">准备好了吗？</strong><span id="turnHint">选一位奶伴，开启旅行</span></div></div>
+   <nav class="dock-tabs" aria-label="经营功能"><button data-panel="deeds"><span>⌂</span>地产</button><button data-panel="cards"><span>▱</span>卡包 <b id="cardCount">3</b></button><button data-panel="bank"><span>▥</span>银行</button><button data-panel="stocks"><span>⌁</span>股票</button><button data-panel="shop"><span>♧</span>商店</button></nav>
+   <div class="roll-zone"><div id="dice" class="dice-display"><span>⚀</span></div><select id="diceCount" aria-label="使用骰子数量" hidden></select><button id="actionBtn" class="primary roll-btn" disabled>选择奶伴出发 <span>↗</span></button></div>
+  </footer>
+ </div>
+ <div id="sheetBackdrop" class="sheet-backdrop" hidden></div><section id="sheet" class="sheet" role="dialog" aria-modal="true" aria-label="游戏面板" hidden><div class="sheet-header"><div><span id="sheetSubtitle"></span><h2 id="sheetTitle"></h2></div><button id="closeSheet" class="close-btn" aria-label="关闭面板">×</button></div><div id="sheetBody" class="sheet-body"></div></section>
+ <div id="toast" class="toast" role="status"></div><div id="bootError" class="boot-error" hidden>游戏加载失败，请刷新重试，或通过本地服务器打开网页。</div>
+ <script type="module" src="./app.js"></script>
+</body></html>

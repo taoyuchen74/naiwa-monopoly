@@ -1,0 +1,5 @@
+import {audioOptions} from './audio.js';
+export const PREFERENCES_KEY='naiwa-monopoly-preferences-v1';
+export function normalizePreferences(raw={}){const s=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{},a=audioOptions(s);return{sound:typeof s.sound==='boolean'?s.sound:true,speed:[1,2,4].includes(s.speed)?s.speed:1,quality:['auto','low'].includes(s.quality)?s.quality:'auto',music:typeof a.music==='boolean'?a.music:true,musicVolume:a.musicVolume,effectsVolume:a.effectsVolume,voice:typeof a.voice==='boolean'?a.voice:true,voiceVolume:a.voiceVolume,track:a.track};}
+export function readPreferences(storage,fallback={}){try{const raw=storage.getItem(PREFERENCES_KEY);if(raw){const parsed=JSON.parse(raw);if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))return normalizePreferences({...fallback,...parsed});}}catch{}return normalizePreferences(fallback);}
+export function writePreferences(storage,options){try{storage.setItem(PREFERENCES_KEY,JSON.stringify(normalizePreferences(options)));return true;}catch{return false;}}

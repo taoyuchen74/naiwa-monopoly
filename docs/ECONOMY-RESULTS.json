@@ -1,0 +1,250 @@
+{
+  "games": 540,
+  "mapVersion": 2,
+  "notes": "Deterministic AI completion/save validation, not proof of human difficulty. Trade counts are retained history entries (maximum 40 per player), not lifetime transaction totals.",
+  "results": [
+    {
+      "difficulty": "easy",
+      "players": 2,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 213,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "easy",
+      "players": 2,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 274,
+      "bankrupt": 1
+    },
+    {
+      "difficulty": "easy",
+      "players": 2,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 317,
+      "bankrupt": 10
+    },
+    {
+      "difficulty": "easy",
+      "players": 4,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 410,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "easy",
+      "players": 4,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 486,
+      "bankrupt": 12
+    },
+    {
+      "difficulty": "easy",
+      "players": 4,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 531,
+      "bankrupt": 28
+    },
+    {
+      "difficulty": "easy",
+      "players": 6,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 527,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "easy",
+      "players": 6,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 542,
+      "bankrupt": 41
+    },
+    {
+      "difficulty": "easy",
+      "players": 6,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 0,
+      "developed": 566,
+      "bankrupt": 65
+    },
+    {
+      "difficulty": "normal",
+      "players": 2,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 182,
+      "developed": 242,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "normal",
+      "players": 2,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 197,
+      "developed": 332,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "normal",
+      "players": 2,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 201,
+      "developed": 385,
+      "bankrupt": 2
+    },
+    {
+      "difficulty": "normal",
+      "players": 4,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 354,
+      "developed": 420,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "normal",
+      "players": 4,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 665,
+      "developed": 518,
+      "bankrupt": 6
+    },
+    {
+      "difficulty": "normal",
+      "players": 4,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 1152,
+      "developed": 581,
+      "bankrupt": 28
+    },
+    {
+      "difficulty": "normal",
+      "players": 6,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 728,
+      "developed": 544,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "normal",
+      "players": 6,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 1571,
+      "developed": 589,
+      "bankrupt": 29
+    },
+    {
+      "difficulty": "normal",
+      "players": 6,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 2206,
+      "developed": 599,
+      "bankrupt": 56
+    },
+    {
+      "difficulty": "hard",
+      "players": 2,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 81,
+      "developed": 212,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "hard",
+      "players": 2,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 88,
+      "developed": 304,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "hard",
+      "players": 2,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 93,
+      "developed": 354,
+      "bankrupt": 6
+    },
+    {
+      "difficulty": "hard",
+      "players": 4,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 143,
+      "developed": 383,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "hard",
+      "players": 4,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 243,
+      "developed": 519,
+      "bankrupt": 3
+    },
+    {
+      "difficulty": "hard",
+      "players": 4,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 527,
+      "developed": 572,
+      "bankrupt": 25
+    },
+    {
+      "difficulty": "hard",
+      "players": 6,
+      "rounds": 20,
+      "games": 20,
+      "stockTrades": 300,
+      "developed": 505,
+      "bankrupt": 0
+    },
+    {
+      "difficulty": "hard",
+      "players": 6,
+      "rounds": 50,
+      "games": 20,
+      "stockTrades": 699,
+      "developed": 596,
+      "bankrupt": 22
+    },
+    {
+      "difficulty": "hard",
+      "players": 6,
+      "rounds": 80,
+      "games": 20,
+      "stockTrades": 1398,
+      "developed": 611,
+      "bankrupt": 54
+    }
+  ]
+}

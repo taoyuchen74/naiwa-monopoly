@@ -1,0 +1,22 @@
+import * as THREE from './vendor/three.module.js';
+import {mesh,box,tube} from './render-kit.js';
+const fragmentGeo=new THREE.BoxGeometry(.13,.13,.13),dustGeo=new THREE.SphereGeometry(1,10,8);
+function release(group){const materials=new Set();group.traverse(o=>{if(o.geometry?.type==='TubeGeometry')o.geometry.dispose();if(o.material)materials.add(o.material);});for(const m of materials){m.map?.dispose();m.dispose();}}
+export class EffectSystem{
+ constructor(parent,{reduced=false}={}){this.parent=parent;this.reduced=reduced;this.items=[];this.clock=0;}
+ spawn(kind,position,color='#e7c76d'){if(this.reduced)return;const group=new THREE.Group();group.position.copy(position);this.parent.add(group);const count=kind==='demolish'?18:kind==='build'?12:10;const particles=[];for(let i=0;i<count;i++){const angle=i/count*Math.PI*2;const dust=kind==='dust';const mat=new THREE.MeshStandardMaterial({color:dust?'#dfd5bb':i%3===0?'#fff1c5':color,transparent:true,opacity:dust?.4:1,roughness:1,depthWrite:false});const m=mesh(group,dust?dustGeo:fragmentGeo,mat,[Math.cos(angle)*.35,.2,Math.sin(angle)*.35]);m.castShadow=false;m.receiveShadow=false;if(dust)m.scale.setScalar(.22);particles.push({m,v:new THREE.Vector3(Math.cos(angle)*(dust?.3:1.4),dust?.65:kind==='demolish'?1.8:2.4,Math.sin(angle)*(dust?.3:1.4))});}
+  this.items.push({kind,group,particles,age:0,duration:kind==='dust'?1.5:1.2});
+ }
+ transition(object,kind,done){if(this.reduced){if(kind==='remove')done?.();return;}this.items.push({kind,object,age:0,duration:kind==='remove'?.65:.85,done,baseY:object.position.y,baseScale:object.scale.clone()});if(kind==='grow')object.scale.set(.01,.01,.01);}
+ construction(position,height=2){if(this.reduced)return;const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:'#c9a459',transparent:true,opacity:.85,roughness:1}),w=.98,d=.8;for(const x of [-w,w])for(const z of [-d,d])box(group,mat,[x,height/2,z],[.035,height,.035]);for(let y=.4;y<=height;y+=.45){for(const z of [-d,d])box(group,mat,[0,y,z],[w*2,.03,.03]);for(const x of [-w,w])box(group,mat,[x,y,0],[.03,.03,d*2]);}box(group,mat,[1.17,height*.6,-.6],[.08,height*1.2,.08]);box(group,mat,[.65,height*1.2,-.6],[1.55,.06,.06]);const hook=tube(group,mat,[[.1,height*1.2,-.6],[.1,height*.7,-.6],[.16,height*.67,-.6]],.014);group.position.copy(position);this.parent.add(group);this.items.push({kind:'scaffold',group,particles:[],mat,hook,age:0,duration:1.35});}
+ money(position,amount){if(this.reduced||!amount)return;const c=document.createElement('canvas');c.width=256;c.height=80;const x=c.getContext('2d');x.font='bold 40px "Microsoft YaHei",sans-serif';x.textAlign='center';x.fillStyle=amount>0?'#fce49c':'#ffcab5';x.strokeStyle='#385664';x.lineWidth=5;x.strokeText(`${amount>0?'+':''}${amount}`,128,53);x.fillText(`${amount>0?'+':''}${amount}`,128,53);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}),group=new THREE.Group(),sprite=new THREE.Sprite(m);sprite.scale.set(2.2,.7,1);group.add(sprite);group.position.copy(position);group.position.y+=2;this.parent.add(group);this.items.push({kind:'float',group,mat:m,age:0,duration:1.3,particles:[]});}
+ update(dt){this.clock+=dt;for(let i=this.items.length-1;i>=0;i--){const e=this.items[i];e.age+=dt;const p=Math.min(1,e.age/e.duration);
+   if(e.kind==='float'){e.group.position.y+=dt*.85;e.mat.opacity=1-p*p;}
+   else if(e.kind==='scaffold'){e.mat.opacity=.85*(p<.75?1:(1-p)/.25);e.hook.rotation.z=Math.sin(p*Math.PI*3)*.05;}
+   else if(e.group){for(const {m,v}of e.particles){m.position.addScaledVector(v,dt);if(e.kind!=='dust')v.y-=dt*4.5;m.rotation.x+=dt*2;m.rotation.z+=dt*1.5;m.material.opacity=(1-p)*(e.kind==='dust'?.4:1);if(e.kind==='dust')m.scale.addScalar(dt*.2);}}
+   else if(e.kind==='grow'){const ease=p<.8?1-Math.pow(1-p/.8,2):1+Math.sin((p-.8)/.2*Math.PI)*.035;e.object.scale.copy(e.baseScale);e.object.scale.y*=Math.max(.005,ease);e.object.position.y=e.baseY+Math.sin(p*Math.PI)*.035;}
+   else if(e.kind==='remove'){const k=Math.max(.001,1-p*p);e.object.scale.copy(e.baseScale).multiplyScalar(k);e.object.rotation.z=Math.sin(p*Math.PI)*.06;e.object.position.y=e.baseY-p*.3;}
+   if(p===1){if(e.group){this.parent.remove(e.group);release(e.group);}else if(e.kind==='grow'){e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;}e.done?.();this.items.splice(i,1);}
+  }}
+ clear(){for(const e of this.items){if(e.group){this.parent.remove(e.group);release(e.group);}e.done?.();}this.items=[];}
+}
