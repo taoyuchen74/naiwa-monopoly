@@ -1,3 +1,4 @@
+import {gameShareUrl} from './share.js';
 import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
@@ -126,7 +127,7 @@ function openPanel(type,id){
  }else if(type==='pause'){
   setPaused(true);save();showSheet('休息一下，奶伴等你','对局、镜头与声音已暂停',`<p>当前进度已保存在本机。准备好了，再继续这一趟发财之旅。</p><div class="button-grid">${btn('继续游戏','resumeGame','',false,'primary')}${btn('导出存档','export','',!started)}</div><p class="pause-tip">关闭面板或按 Esc 也可以继续。</p>`);
  }else if(type==='share'){
-  showSheet('叫上朋友，来岛上玩','手机点开链接即可开始',`<p>把这个试玩链接发给朋友，无需安装或登录游戏账号。建议横屏体验。</p><label for="shareUrl">试玩链接</label><input id="shareUrl" class="share-url" type="text" readonly value="${esc(location.protocol==='file:'||['localhost','127.0.0.1'].includes(location.hostname)?'https://taoyuchen74.github.io/naiwa-monopoly/':new URL('./',location.href).href)}"><div class="row-actions">${btn('复制链接','copyLink','',false,'primary')}</div><p>当前是单机试玩：每位朋友在自己的手机上，与电脑奶伴独立对局；进度保存在各自浏览器。</p>`);
+  showSheet('叫上朋友，来岛上玩','手机点开链接即可开始',`<p>把这个试玩链接发给朋友，无需安装或登录游戏账号。建议横屏体验。</p><label for="shareUrl">试玩链接</label><input id="shareUrl" class="share-url" type="text" readonly value="${esc(gameShareUrl())}"><div class="row-actions">${btn('复制链接','copyLink','',false,'primary')}</div><p>当前是单机试玩：每位朋友在自己的手机上，与电脑奶伴独立对局；进度保存在各自浏览器。</p>`);
  }else if(type==='sources'){
   showSheet('奶家创作手账','素材来源与后续计划',`<div class="panel-note">非官方粉丝游戏。角色模型、地图、建筑和界面由本项目制作。配乐为重新编排的器乐与原创曲；笑声使用社区小游戏的短片段，具体来源见声音设置。</div><div class="credit-list"><p>文化与表现参考：</p><ul class="rules"><li><a href="https://milkyfrog.com/games" target="_blank" rel="noopener">奶蛙小游戏合集</a></li><li><a href="https://naiwaxiaowu.pages.dev/" target="_blank" rel="noopener">奶蛙的小窝</a>：互动与陪伴表现</li><li><a href="https://milkfrog-bath.pages.dev/" target="_blank" rel="noopener">奶蛙爱洗澡</a>：情绪表情</li><li><a href="https://nailong-dance.pages.dev/" target="_blank" rel="noopener">奶娃街舞</a>：动态表现</li><li><a href="https://naiwanaichadian.pages.dev/" target="_blank" rel="noopener">奶蛙奶茶铺</a>：经营场景</li><li><a href="https://www.douyin.com/video/7673579319512764654" target="_blank" rel="noopener">抖音奶币与野生狗奶二创</a></li></ul></div><p>本版为原创风格化轻量模型。奶蛙、奶鼠、奶狗参考用户三视图及公开视频，奶蛋和奶茶参考农庄视频，奶虫参考此前视频图像。模型采用连续曲面、绘制腹色与关节动画，为原创重建，未提取视频源模型。</p><p>本版已支持六名角色、2—6 人、指定电脑与随机阵容。后续方向：账号与云存档。本版仅包含本机单机。</p><p>3D 引擎 Three.js，MIT 许可随部署包附带。</p>`);
  }else if(type==='confirmRestart'){
