@@ -8,6 +8,7 @@ import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
+import {bankPanel,bankLimit,updateBankPreview} from './bank-panel.js';
 import {stockPanel,updateStockPreview} from './stocks-panel.js';
 import {DIFFICULTIES} from './difficulty.js';
 import {MAPS} from './maps.js';
@@ -36,6 +37,7 @@ const fmt=n=>Math.round(n).toLocaleString('zh-CN');
 let advanced=normalizeSetup(),advancedDraft=null;try{advanced=normalizeSetup(JSON.parse(localStorage.getItem('naiwa-setup-v1')||'{}'));}catch{}
 let stockWindow=20,stockHeld=false;
 const faces={naiwa:'◉',naichong:'≋',naishu:'♧'};
+let bankDraft={kind:'deposit',amount:'300'};
 let game=Game.create({seed:7481}),started=false,selected='naiwa',saved=null,scene,activePanel=null,pinned=false,blockKey='',toastTimer,previousFocus,timer,saveOk=true,gamePaused=false;
 let TILES=game.tiles;const selectMenus=new GameSelects($('app'));
 try{saved=Game.restore(localStorage.getItem(SAVE_KEY));Object.assign(game.s.options,readPreferences(localStorage,saved?.s.options||game.s.options));}catch{}
@@ -112,7 +114,7 @@ function openPanel(type,id){
   else {const targets=game.cardTargets(key);body=`${art(key)}<p>${c.description}</p>${targets.map(o=>o.obstacle?`<div class="row">${art('block')}<strong>${TILES[o.id].name} · 路障</strong><p>清理道路，房屋保持不变。</p>${btn('清理路障','useCard',`data-index="${id}" data-target="${o.id}"`)}</div>`:`<div class="row estate-row">${buildingArt(TILES[o.id],o.level,game.char(s.players[o.player]).estateColor)}<strong>${TILES[o.id].name}</strong><p>${game.char(s.players[o.player]).name} · ${o.level} 级 · 租金 ${game.rent(o.id)}${key==='steal'?' · 收购价 '+game.takeoverPrice(o.id):key==='demolish'?' → '+game.rent(o.id,o.level-1):' → '+game.rent(o.id,o.level+1)}</p>${btn(key==='steal'?'确认收购':key==='build'?'免费加盖一层':'拆去一层','useCard',`data-index="${id}" data-target="${o.id}"`,key==='steal'&&p.money<game.takeoverPrice(o.id))}</div>`).join('')||`<div class="empty">${key==='steal'?'请停在对手地产后使用。':'8 格范围内暂无符合条件的目标。'}</div>`}`;}
   showSheet(c.name,'选择目标',body);
  }else if(type==='bank'){
-  showSheet('奶币银行','让小金库，也慢慢长大',`${guideArt('bank',s.round%7===3?'周三银行休息，今天只能查看账户。':game.canBank()?'银行已到访，本回合可以办理业务。':'经过银行时可办理业务；当前仅查看账户。支付不足时可自动用存款补足现金。','naichong')}${stats([[fmt(p.money),'现金'],[fmt(p.deposit),'存款'],[fmt(p.loan),'贷款']])}<div class="panel-note">每轮存款利息 0.5%（向下取整），贷款利息 4%，分别计入本金。新增借款后贷款余额不得超过 1,800 奶币；利息可能使余额超限。经过银行的本回合可办理业务；每第七轮周期的第三轮休息。</div><label for="bankAmount" style="font-size:12px">操作金额</label><div class="input-row"><input id="bankAmount" type="number" min="1" step="1" value="300" inputmode="numeric" aria-label="银行操作金额"></div><div class="button-grid">${btn('存入奶币','bank','data-kind="deposit"',!normal||!game.canBank())}${btn('取出奶币','bank','data-kind="withdraw"',!can||!game.canBank())}${btn('申请借款','bank','data-kind="borrow"',!can||!game.canBank())}${btn('偿还贷款','bank','data-kind="repay"',!normal||!game.canBank())}</div><p>本游戏中的奶币仅用于单机经营。</p>`);
+  showSheet('奶币银行','让小金库，也慢慢长大',bankPanel(game,bankDraft));
  }else if(type==='stocks'){
   showSheet('奶家证券所','持仓成本 · 浮动盈亏 · 成交记录',stockPanel(game,{window:stockWindow,held:stockHeld}));queueMicrotask(()=>game.s.market.forEach((_,i)=>updateStockPreview(game,i)));
  }else if(type==='shop'){
@@ -158,7 +160,7 @@ function openPanel(type,id){
 }
 function audioSettings(){const o=audioOptions(game.s.options);return `<h3>小岛音乐台</h3><p id="audioStatus" role="status">${soundtrack.status()}</p><div class="setting-row"><span>背景音乐</span>${btn(o.music?'播放中 · 关闭':'已关闭 · 开启','music')}</div><label class="setting-row">曲目<select id="musicTrack">${Object.entries(MUSIC_TRACKS).map(([id,t])=>`<option value="${id}" ${o.track===id?'selected':''}>${t.name}</option>`).join('')}</select></label>${[['musicVolume','音乐音量'],['effectsVolume','动作音效'],['voiceVolume','奶蛙笑声']].map(([key,label])=>`<label class="volume-row"><span>${label}</span><input type="range" min="0" max="100" value="${Math.round(o[key]*100)}" data-volume="${key}" aria-label="${label}"><output>${Math.round(o[key]*100)}%</output></label>`).join('')}<div class="setting-row"><span>奶蛙笑声</span><div class="row-actions">${btn(o.voice?'已开启':'已关闭','voice')}${btn('试听笑声','testVoice')}</div></div><details class="audio-credit"><summary>音乐与声音来源</summary><p>《奶家欢乐颂》：参考 <a href="https://www.bilibili.com/video/BV1Sv7p6bEJT/" target="_blank" rel="noopener">奶蛙相关《欢乐颂》二创</a>选曲，使用贝多芬公版旋律重新编排器乐，非视频原录音。《奶家漫游》及掷骰、金币、脚步、施工音效为本作原创。</p><p>笑声：<a href="https://naiwaxiaowu.pages.dev/" target="_blank" rel="noopener">奶蛙的小窝</a> laugh.wav 的 1.05 秒片段，已裁切与淡入淡出；未声称该录音为开放许可素材。展示字体：站酷快乐体（OFL）。</p></details>`;}
 $('sheetBody').addEventListener('change',e=>{if(activePanel?.type==='advanced'){readAdvancedFields();return;}if(e.target.id==='stockWindow'){stockWindow=+e.target.value;openPanel('stocks');}});
-$('sheetBody').addEventListener('input',e=>{if(activePanel?.type==='advanced'){readAdvancedFields();return;}if(e.target.dataset.stockQty!==undefined){updateStockPreview(game,+e.target.dataset.stockQty);return;}const key=e.target.dataset.volume;if(!key)return;game.s.options[key]=+e.target.value/100;e.target.nextElementSibling.textContent=e.target.value+'%';audioState();save();});
+$('sheetBody').addEventListener('input',e=>{if(activePanel?.type==='advanced'){readAdvancedFields();return;}if(e.target.id==='bankAmount'){bankDraft.amount=e.target.value;updateBankPreview(game,bankDraft.kind);return;}if(e.target.dataset.stockQty!==undefined){updateStockPreview(game,+e.target.dataset.stockQty);return;}const key=e.target.dataset.volume;if(!key)return;game.s.options[key]=+e.target.value/100;e.target.nextElementSibling.textContent=e.target.value+'%';audioState();save();});
 function setPaused(value){gamePaused=value;syncNewsPause();if(scene){scene.paused=value||!!scene.contextLost;if(value)scene.renderStill();}soundtrack.visibility(value||document.hidden);audioState();$('app').classList.toggle('is-paused',value);$('pauseBtn').setAttribute('aria-pressed',String(value));}
 function refreshPanel(){if(activePanel){const {type,id}=activePanel,scroll=$('sheetBody').scrollTop;openPanel(type,id);queueMicrotask(()=>{$('sheetBody').scrollTop=scroll;});}}
 function exportSave(){if(!started)return;const blob=new Blob([JSON.stringify(game.s,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`奶蛙大富翁-第${game.s.round}轮.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('已导出旅行存档。');}
@@ -199,6 +201,8 @@ $('sheetBody').addEventListener('change',async e=>{
 let pendingImport=null;
 $('sheetBody').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const {act}=b.dataset,id=+b.dataset.id,index=+b.dataset.index,target=+b.dataset.target;let ok=true;
+ if(act==='bankKind'){bankDraft.kind=b.dataset.kind;refreshPanel();return;}
+ if(act==='bankQty'){bankDraft.amount=String(b.dataset.amount==='max'?bankLimit(game,bankDraft.kind):b.dataset.amount);$('bankAmount').value=bankDraft.amount;updateBankPreview(game,bankDraft.kind);return;}
  if(act==='applyAdvanced'){readAdvancedFields();if(setupError(advancedDraft,selected,+$('playerCountSelect').value))return;advanced=normalizeSetup(advancedDraft);advancedDraft=null;try{localStorage.setItem('naiwa-setup-v1',JSON.stringify(advanced));}catch{}dismiss(true);picker();render();toast('高级设置已保存，新局按所选阵容开始。');return;}
  if(act==='resetAdvanced'){advancedDraft=normalizeSetup();openPanel('advanced');return;}
  if(act==='allRandom'){readAdvancedFields();advancedDraft.opponents=[];openPanel('advanced');return;}
