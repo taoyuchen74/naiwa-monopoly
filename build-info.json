@@ -1,15 +1,15 @@
 {
-  "buildId": "db10e63f8005",
-  "sourceJsFiles": 63,
-  "originalJsBytes": 2411872,
-  "scriptBytes": 859931,
-  "scriptGzipBytes": 243929,
+  "buildId": "dba15eb687f6",
+  "sourceJsFiles": 65,
+  "originalJsBytes": 2416695,
+  "scriptBytes": 863171,
+  "scriptGzipBytes": 245071,
   "fontBytes": 94892,
   "assets": [
     {
-      "file": "assets/game.62c31a475bb7.js",
-      "bytes": 859931,
-      "gzipBytes": 243929
+      "file": "assets/game.1d25bba3f23b.js",
+      "bytes": 863171,
+      "gzipBytes": 245071
     },
     {
       "file": "assets/font.e5233f8ee6bb.woff2",
@@ -27,18 +27,18 @@
       "gzipBytes": 486
     },
     {
-      "file": "assets/style.8b854632655b.css",
-      "bytes": 52639,
-      "gzipBytes": 11928
+      "file": "assets/style.a24492c20569.css",
+      "bytes": 53249,
+      "gzipBytes": 12108
     }
   ],
   "offlineFiles": [
     "./index.html",
-    "./assets/game.62c31a475bb7.js",
+    "./assets/game.1d25bba3f23b.js",
     "./assets/font.e5233f8ee6bb.woff2",
     "./assets/laugh.92a25df4321c.mp3",
     "./assets/icon.9fa8699356e6.svg",
-    "./assets/style.8b854632655b.css",
+    "./assets/style.a24492c20569.css",
     "./licenses/OFL.txt",
     "./licenses/THREE-LICENSE.txt"
   ]
