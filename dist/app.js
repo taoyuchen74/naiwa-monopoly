@@ -8,6 +8,7 @@ import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
+import {cardTargetPanel} from './card-target-panel.js';
 import {deedsPanel} from './deeds-panel.js';
 import {bankPanel,bankLimit,updateBankPreview} from './bank-panel.js';
 import {stockPanel,updateStockPreview} from './stocks-panel.js';
@@ -109,10 +110,7 @@ function openPanel(type,id){
  }else if(type==='cards'){
   showSheet('奶伴的卡包','收好道具，选准下一步',cardsPanel(game));
  }else if(type==='cardTarget'){
-  const key=p.cards[id],c=CARDS[key];if(!c){dismiss(true);return;}let body;
-  if(c.target==='steps'||c.target==='ahead')body=`${art(key)}<p>${c.description}</p>${key==='block'?'<p class="panel-note">路障沿前方主路放置，岔路默认走第一条；不能放在角色脚下或已有路障上。</p>':''}${Array.from({length:6},(_,i)=>{const n=i+1;let at=p.pos;for(let k=0;k<n;k++)at=TILES[at].next[0];const results=key==='block'?[{id:at,rent:s.ownership[at]&&s.ownership[at].player!==p.id?game.rent(at):0,owner:s.ownership[at]?.player??null,price:!s.ownership[at]&&TILES[at].kind==='property'?TILES[at].price:0}]:game.preview(n);return `<div class="row"><div class="row-head"><strong>${n} ${key==='dice'?'步':'格'}</strong>${btn('选择','useCard',`data-index="${id}" data-target="${n}"`,key==='block'&&!!game.blockTargets()[i].reason)}</div><p>${results.map(r=>landingText(r)).join(' / ')}</p>${key==='block'&&game.blockTargets()[i].reason?`<small>${game.blockTargets()[i].reason}</small>`:''}</div>`;}).join('')}`;
-  else {const targets=game.cardTargets(key);body=`${art(key)}<p>${c.description}</p>${targets.map(o=>o.obstacle?`<div class="row">${art('block')}<strong>${TILES[o.id].name} · 路障</strong><p>清理道路，房屋保持不变。</p>${btn('清理路障','useCard',`data-index="${id}" data-target="${o.id}"`)}</div>`:`<div class="row estate-row">${buildingArt(TILES[o.id],o.level,game.char(s.players[o.player]).estateColor)}<strong>${TILES[o.id].name}</strong><p>${game.char(s.players[o.player]).name} · ${o.level} 级 · 租金 ${game.rent(o.id)}${key==='steal'?' · 收购价 '+game.takeoverPrice(o.id):key==='demolish'?' → '+game.rent(o.id,o.level-1):' → '+game.rent(o.id,o.level+1)}</p>${btn(key==='steal'?'确认收购':key==='build'?'免费加盖一层':'拆去一层','useCard',`data-index="${id}" data-target="${o.id}"`,key==='steal'&&p.money<game.takeoverPrice(o.id))}</div>`).join('')||`<div class="empty">${key==='steal'?'请停在对手地产后使用。':'8 格范围内暂无符合条件的目标。'}</div>`}`;}
-  showSheet(c.name,'选择目标',body);
+  const c=CARDS[p.cards[id]];if(!c){dismiss(true);return;}showSheet(c.name,'选择目标与效果',cardTargetPanel(game,id,landingText));
  }else if(type==='bank'){
   showSheet('奶币银行','让小金库，也慢慢长大',bankPanel(game,bankDraft));
  }else if(type==='stocks'){

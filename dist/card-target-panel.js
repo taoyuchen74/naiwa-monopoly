@@ -1,0 +1,30 @@
+import {CARDS} from './content.js';
+import {BUSINESSES,businessType} from './businesses.js';
+import {art,buildingImage,landmarkImage} from './illustrations.js';
+import {mapPoint,mapEdges} from './navigation.js';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Math.round(n).toLocaleString('zh-CN');
+export function cardTargetOptions(g,index){
+ const key=g.player.cards[index],c=CARDS[key];if(!c)return [];
+ if(c.target==='steps')return Array.from({length:6},(_,i)=>({target:i+1,results:g.preview(i+1),reason:''}));
+ if(c.target==='ahead')return g.blockTargets().map(t=>({target:t.steps,id:t.id,reason:t.reason}));
+ return g.cardTargets(key).map(o=>({...o,target:o.id,reason:key==='steal'&&g.player.money<g.takeoverPrice(o.id)?'现金不足，暂时无法收购':'',afterLevel:o.obstacle?0:key==='build'?o.level+1:key==='demolish'?o.level-1:o.level,afterType:key==='build'&&!o.level||key==='demolish'&&o.level===1?'residence':businessType(o),afterOwner:key==='steal'?g.player.id:o.player,price:key==='steal'?g.takeoverPrice(o.id):0}));
+}
+export function cardRouteDrawing(g,results){
+ const origin=g.player.pos,ids=[origin,...results.flatMap(r=>r.path)],raw=ids.map(id=>mapPoint(g.tiles[id],g.tiles)),xs=raw.map(p=>p.x),ys=raw.map(p=>p.y),cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2,rotate=Math.max(...ys)-Math.min(...ys)>Math.max(...xs)-Math.min(...xs),point=id=>{const p=mapPoint(g.tiles[id],g.tiles);return rotate?{x:cx+p.y-cy,y:cy-p.x+cx}:p;},pts=ids.map(point),x=Math.min(...pts.map(p=>p.x))-12,y=Math.min(...pts.map(p=>p.y))-12,w=Math.max(...pts.map(p=>p.x))-x+12,h=Math.max(...pts.map(p=>p.y))-y+12,start=point(origin);
+ return `<svg class="target-route" viewBox="${x} ${y} ${w} ${h}" role="img" aria-label="从当前位置到可能落点的路线"><g stroke="#c2b695" stroke-width="2">${mapEdges(g.tiles).map(e=>{const a=point(e.from),b=point(e.to);return `<path d="M${a.x},${a.y}L${b.x},${b.y}"/>`;}).join('')}</g>${results.map(r=>{const points=[origin,...r.path].map(point),end=points.at(-1),color=r.rent?'#b26345':'#547f67';return `<polyline points="${points.map(p=>p.x+','+p.y).join(' ')}" fill="none" stroke="${color}" stroke-width="3.5" stroke-linejoin="round"/><circle cx="${end.x}" cy="${end.y}" r="4" fill="${color}" stroke="#fff1c9" stroke-width="1.5"/>`;}).join('')}<circle cx="${start.x}" cy="${start.y}" r="3.5" fill="#ac5137" stroke="#fff1c9" stroke-width="1.5"/></svg>`;
+}
+function tilePicture(g,id){const t=g.tiles[id],o=g.s.ownership[id];return t.kind==='property'?buildingImage({...t,buildingType:o?.buildingType},o?.level||0,o?g.char(g.s.players[o.player]).estateColor:'#9cae82'):landmarkImage(t);}
+export function cardTargetPanel(g,index,landingText){
+ const key=g.player.cards[index],c=CARDS[key];if(!c)return '<p>这张卡已不在卡包中。</p>';const blocked=!g.player.human?'等待自己的回合':g.cardHint(key),options=cardTargetOptions(g,index),steps=c.target==='steps',ahead=c.target==='ahead';
+ const header=`<div class="target-intro">${art(key)}<p>${esc(c.description)}</p></div>${ahead?'<p class="target-note">路障按前方主路放置，不随倒退方向改变；已有路障或角色停靠处不可放置。</p>':steps?'<p class="target-note">小图红点是当前位置；显示岔路的所有可能落点，途中路障会提前截停。选定步数后仍需掷骰出发。</p>':'<p class="target-note">左侧为当前建筑，右侧为使用后的样子。选择目标后消耗一张卡。</p>'}`;
+ return header+`<div class="target-grid">${options.map(o=>{let picture,heading,details,action;
+  if(steps){heading=`${o.target} 步`;picture=`<div class="target-destination">${tilePicture(g,o.results[0].id)}</div>${cardRouteDrawing(g,o.results)}`;details=o.results.map(r=>`<p>${landingText(r)}</p>`).join('');action=`指定 ${o.target} 步`;}
+  else if(ahead){heading=`前方 ${o.target} 格`;picture=`<div class="target-destination">${tilePicture(g,o.id)}<span class="target-block-prop">${art('block')}</span></div>`;details=`<p>${esc(g.tiles[o.id].name)}</p><small>${esc(o.reason||'可放置 · 首名经过者会被截停')}</small>`;action='放置路障';}
+  else{const t=g.tiles[o.id];heading=t.name;
+   if(o.obstacle){picture=`<div class="target-obstacle">${art('block')}<span>清除路障</span></div>`;details='<p>清理道路，房屋和土地归属保持原样。</p>';action='清理路障';}
+   else{picture=`<div class="target-before-after"><div>${tilePicture(g,o.id)}<small>当前 ${o.level} 级</small></div><b>→</b><div>${buildingImage({...t,buildingType:o.afterType},o.afterLevel,g.char(g.s.players[o.afterOwner]).estateColor)}<small>${key==='steal'?'归你所有':'使用后 '+o.afterLevel+' 级'}</small></div></div>`;details=`<p>${esc(g.char(g.s.players[o.player]).name)} · ${o.level?BUSINESSES[businessType(o)].name:'待建空地'}</p><small>${key==='steal'?`收购 ${fmt(o.price)} · 剩余现金 ${fmt(g.player.money-o.price)}`:key==='build'?'免费加盖，不占普通建设次数':'只拆一层，土地归属保持不变'}</small>`;action=key==='build'?'免费加盖一层':key==='demolish'?'拆去一层':'确认收购';}
+  }
+  return `<article class="target-choice"><h3>${esc(heading)}${steps&&o.results.length>1?'<span class="badge">'+o.results.length+' 条路线</span>':''}</h3>${picture}<div class="target-outcomes">${details}</div>${blocked||o.reason?`<p class="target-disabled">${esc(blocked||o.reason)}</p>`:''}<button class="primary" data-act="useCard" data-index="${index}" data-target="${o.target}" ${blocked||o.reason?'disabled':''}>${action}</button></article>`;
+ }).join('')||'<div class="empty">附近暂无符合条件的目标，卡片会保留。</div>'}</div>`;
+}
