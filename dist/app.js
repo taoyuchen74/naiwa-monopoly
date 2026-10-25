@@ -1,3 +1,4 @@
+import {estatePanel,branchPanel,quotedLandingFee} from './arrival-panels.js';
 import {TransferFeed,pulseTransferCards} from './transfers.js';
 import {LIGHTING,lightingMode} from './lighting.js';
 import {resultsPanel} from './results-panel.js';
@@ -84,7 +85,7 @@ const stats=items=>`<div class="stat-grid">${items.map(([v,l])=>`<div class="sta
 const btn=(label,act,data='',disabled=false,cls='secondary')=>`<button class="${cls}" data-act="${act}" ${data} ${disabled?'disabled':''}>${label}</button>`;
 function buildingArt(t,level,color){return buildingImage({...t,buildingType:t.buildingType||game.s.ownership[t.id]?.buildingType},level,color);}
 function humanManage(){return started&&game.player.human&&game.manageable();}
-function landingText(r){const t=TILES[r.id];return esc(t.name)+' · '+(r.rent?'付租 '+r.rent:r.price?'空地 '+r.price+' 奶币':r.owner===game.player.id?'自己的地产':({shop:'点券 +30 与随机卡',hospital:`费用 ${game.payment(100)}，休养一次`,tax:`费用 ${game.payment(180)}`,rest:`补贴 +${Math.round(120*(game.player.spirit==='fortune'?1.25:1))}`,event:'随机事件',spirit:'随机神灵',bank:'银行',stock:'证券所',start:'起点'}[t.kind]||'已备免租'))+(r.passesStart?` · 经过起点 +${Math.round((400+(game.s.talents&&game.player.character==='naiwa'?80:0))*(game.player.spirit==='fortune'?1.25:1))} / 25点券`:'')+(r.points?' · 途中点券 +'+r.points:'')+(r.blocked?' · 路障截停':'');}
+function landingText(r){const t=TILES[r.id];return esc(t.name)+' · '+(r.rent?quotedLandingFee(game,r):r.price?'空地 '+r.price+' 奶币':r.owner===game.player.id?'自己的地产':({shop:'点券 +30 与随机卡',hospital:`费用 ${game.payment(100)}，休养一次`,tax:`费用 ${game.payment(180)}`,rest:`补贴 +${Math.round(120*(game.player.spirit==='fortune'?1.25:1))}`,event:'随机事件',spirit:'随机神灵',bank:'银行',stock:'证券所',start:'起点'}[t.kind]||'已备免租'))+(r.passesStart?` · 经过起点 +${Math.round((400+(game.s.talents&&game.player.character==='naiwa'?80:0))*(game.player.spirit==='fortune'?1.25:1))} / 25点券`:'')+(r.points?' · 途中点券 +'+r.points:'')+(r.blocked?' · 路障截停':'');}
 function openPanel(type,id){
  const s=game.s,p=game.player;activePanel={type,id};const can=humanManage(),normal=can&&s.phase!=='debt';
  if(type==='advanced'){advancedDraft??=normalizeSetup(advanced);showSheet('高级对局设置','自定义电脑席位与公平起始条件',advancedPanel(advancedDraft,selected,+$('playerCountSelect').value,$('difficultySelect').value));
@@ -116,9 +117,9 @@ function openPanel(type,id){
  }else if(type==='buildHere'){
   showSheet('地产建设与经营',TILES[p.pos].name,businessPanel(game,p.pos));
  }else if(type==='estate'){
- const t=TILES[p.pos],o=s.ownership[p.pos];showSheet('来到对手的地产',`${game.char(s.players[o.player]).name} · ${t.name}`,`${buildingArt(t,o.level,game.char(s.players[o.player]).estateColor)}${stats([[game.rent(p.pos),'本次租金'],[game.takeoverPrice(p.pos),'购地卡收购价']])}<p>支付租金继续；也可消耗购地卡收购脚下地产，免付本次租金。</p><div class="button-grid">${btn(p.shield?'使用已备免租':'支付租金','estatePay')}${btn('购地卡收购','estateBuy','',p.money<game.takeoverPrice(p.pos),'primary')}</div>`,true);
+  const t=TILES[p.pos],o=s.ownership[p.pos];showSheet('来到对手的地产',`${game.char(s.players[o.player]).name} · ${t.name}`,estatePanel(game),true);
  }else if(type==='branch'){
-  showSheet('下一站，去哪边？','岔路选择',`<p>还有 ${s.remaining} 步。选好路线后，继续使用本次剩余步数。${s.mapVersion===2?(p.pos===35?'晨光支路绕开清洁站，但也跳过起点奖金。':'花园支路绕开医院，但也错过事件与神殿。'):''}</p>${TILES[p.pos].next.map((n,i)=>`<div class="row"><div class="row-head"><strong>${i===0?'沿城镇主路':s.mapVersion===2?(p.pos===35?'走晨光支路':'走花园支路'):'走内岛捷径'}</strong><span class="badge">${i===0?'主路':s.mapVersion===2?'省 3 格':'内岛'}</span></div><p>下一格：${TILES[n].name}</p>${game.preview(s.remaining,{first:n}).map(r=>`<p>最终：${landingText(r)}</p>`).join('')}${btn('就走这边','branch',`data-id="${n}"`,false,'primary')}</div>`).join('')}`,true);
+  showSheet('下一站，去哪边？','岔路选择',branchPanel(game,landingText),true);
  }else if(type==='event'){
   const n=s.notice;showSheet(n?.title||'岛上新鲜事',`${game.char().name}的旅行手账`,`<div class="event-emblem">${n?.mood==='happy'?'✦':n?.mood==='sad'?'☁':'♧'}</div><p>${esc(n?.text||'继续旅程吧。')}</p>${btn('知道啦，继续旅行','ack','',false,'primary')}`,true);sound(n?.mood);
  }else if(type==='debt'){

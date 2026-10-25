@@ -5,6 +5,6 @@
  if(sheet.hidden)throw Error('Open a panel before running this check');
  const contains=(outer,inner)=>inner.left>=outer.left-1&&inner.top>=outer.top-1&&inner.right<=outer.right+1&&inner.bottom<=outer.bottom+1;
  if(!contains(a,r)||!contains({left:0,top:0,right:innerWidth,bottom:innerHeight},r))throw Error('Panel exceeds the visible game bounds');
- if(sheet.dataset.panel==='buy'&&app.clientWidth>=app.clientHeight)for(const button of sheet.querySelectorAll('#sheetBody button'))if(!contains(r,button.getBoundingClientRect()))throw Error('Purchase action clipped');
- return{panel:sheet.dataset.panel,rotated:app.dataset.rotated,logicalSize:[app.clientWidth,app.clientHeight],panelSize:[sheet.offsetWidth,sheet.offsetHeight],purchaseActionsVisible:sheet.dataset.panel==='buy'&&app.clientWidth>=app.clientHeight};
+ if(['buy','estate','branch'].includes(sheet.dataset.panel)&&app.clientWidth>=app.clientHeight)for(const button of sheet.querySelectorAll('#sheetBody button'))if(!contains(r,button.getBoundingClientRect()))throw Error('Decision action clipped');
+ return{panel:sheet.dataset.panel,rotated:app.dataset.rotated,logicalSize:[app.clientWidth,app.clientHeight],panelSize:[sheet.offsetWidth,sheet.offsetHeight],decisionActionsVisible:['buy','estate','branch'].includes(sheet.dataset.panel)&&app.clientWidth>=app.clientHeight};
 })()

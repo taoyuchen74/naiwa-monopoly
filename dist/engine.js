@@ -1,6 +1,6 @@
 import {TransferLog} from './transfers.js';
 import {rosterFor} from './setup.js';
-import {BUSINESSES,businessType,buildingLimit,businessDeparture,researchChoices,repairBuilding} from './businesses.js';
+import {BUSINESSES,businessType,buildingLimit,propertyChargeOptions,businessDeparture,researchChoices,repairBuilding} from './businesses.js';
 import {mapTiles} from './maps.js';
 import {emptyBook,migratePortfolio,recordTrade,stockPosition,portfolio} from './portfolio.js';
 import {hasTalent,departureTalent} from './talents.js?v=16';
@@ -122,7 +122,7 @@ export class Game {
   else if(t.kind==='stock')this.notice(this.s.round%7===0?'证券所今日休市':'奶家证券所','打开股票面板查看四家奶家企业。价格每轮变化；每第七轮休市，其余时间可交易。');
   else if(t.kind==='shop'){this.coupons(p,30);this.giveCard(p);this.notice('奶家补给','获得 30 点券与一张随机卡！点券用于买卡，奶币用于地产和交通工具。','happy');}
  }
- collectProperty(id){const p=this.player,o=this.s.ownership[id],t=this.tiles[id],type=businessType(o);if(!o)return;if(o.level&&(type==='park'||type==='research')){if(type==='park'){this.coupons(p,10);this.log(`${this.char().name}免费游览公园，获得10点券。`);}return;}if(this.s.players[o.player].skip)return;if(p.shield){p.shield=false;this.log(`${this.char().name}用快乐免租卡抵消本次费用。`);return;}let amount=this.rent(id),suffix='租金';if(o.level&&type==='hotel'){const days=this.int(3)+1;amount=Math.round(this.baseRent(id,o.level)*.65)*days;p.skip=days;suffix=`住宿${days}回合费用`;}else if(o.level&&type==='mall'){const rate=[.75,1,1.5][this.int(3)];amount=Math.round(this.baseRent(id,o.level)*rate);suffix=`购物消费（${rate*100}%）`;}else if(o.level&&type==='gas')suffix='加油费';if(this.charge(amount,o.player,`向${this.char(this.s.players[o.player]).name}支付「${t.name}」${suffix}`)){this.s.players[o.player].mood='happy';if(o.level&&['hotel','mall','gas'].includes(type))this.notice(BUSINESSES[type].name,`${suffix}：${this.payment(amount,o.player)} 奶币${type==='hotel'?'，休息 '+p.skip+' 回合。':'。'}`,'sad');}}
+ collectProperty(id){const p=this.player,o=this.s.ownership[id],t=this.tiles[id],type=businessType(o);if(!o)return;if(o.level&&(type==='park'||type==='research')){if(type==='park'){this.coupons(p,10);this.log(`${this.char().name}免费游览公园，获得10点券。`);}return;}if(this.s.players[o.player].skip)return;if(p.shield){p.shield=false;this.log(`${this.char().name}用快乐免租卡抵消本次费用。`);return;}const options=propertyChargeOptions(this,id),choice=options[options.length>1?this.int(options.length):0],amount=choice.amount,suffix=choice.suffix;if(choice.skip)p.skip=choice.skip;if(this.charge(amount,o.player,`向${this.char(this.s.players[o.player]).name}支付「${t.name}」${suffix}`)){this.s.players[o.player].mood='happy';if(o.level&&['hotel','mall','gas'].includes(type))this.notice(BUSINESSES[type].name,`${suffix}：${this.payment(amount,o.player)} 奶币${type==='hotel'?'，休息 '+p.skip+' 回合。':'。'}`,'sad');}}
  resolveEstate(buy=false){if(this.s.phase!=='estate')return false;const p=this.player;if(buy){const index=p.cards.indexOf('steal');if(index<0||!this.card(index,p.pos))return false;p.buildSite=p.pos;this.s.phase='end';return true;}this.s.phase='end';this.collectProperty(p.pos);return true;}
  notice(title,text,mood='idle'){this.s.notice={title,text,mood};this.s.phase='event';}
  acknowledge(){if(this.s.phase!=='event')return false;this.s.notice=null;this.s.phase='end';return true;}
