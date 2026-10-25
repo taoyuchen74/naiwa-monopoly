@@ -33,7 +33,10 @@ export function eventPresentation(g){
  }
  return {character:p.character,name:g.char(p).name,mood:n.mood==='happy'?'happy':n.mood==='sad'?'sad':'idle',icon,label,text,outcomes};
 }
+export function eventActor(d){
+ const pose=eventPoseBitmap(d.character,d.mood);return pose?`<img src="${pose}" alt="${d.name}${d.mood==='happy'?'大笑':d.mood==='sad'?'低头':'待机'}形象">`:portrait(d.character);
+}
 export function eventPanel(g){
- const d=eventPresentation(g),pose=eventPoseBitmap(d.character,d.mood),actor=pose?`<img src="${pose}" alt="${d.name}${d.mood==='happy'?'大笑':d.mood==='sad'?'低头':'待机'}形象">`:portrait(d.character);
+ const d=eventPresentation(g),actor=eventActor(d);
  return `<div class="event-story ${d.mood}"><div class="event-picture"><div class="event-actor">${actor}</div><span class="event-motif">${art(d.icon)}</span><strong class="event-name">${d.name}</strong></div><div class="event-copy"><span class="event-kind">${d.label}</span><p>${esc(d.text)}</p>${d.outcomes.length?`<div class="event-outcomes" aria-label="本次结果">${d.outcomes.map(text=>`<span>${esc(text)}</span>`).join('')}</div>`:''}</div></div><button class="primary event-continue" data-act="ack">知道啦，继续旅行</button>`;
 }

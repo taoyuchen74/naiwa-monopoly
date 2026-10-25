@@ -7,6 +7,20 @@ import {IslandScene} from '../dist/scene.js';
 import {HighQuality} from '../dist/high-quality.js';
 
 const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8'),tick=source.slice(source.indexOf('function tick()'),source.indexOf("document.addEventListener('visibilitychange'"));
+test('every open information panel holds automatic movement until the player closes it',()=>{
+ for(const type of ['tile','deeds','cards','stocks','news','settings','talents']){
+  const game=Game.create({seed:46});game.s.phase='moving';game.s.remaining=2;const before=JSON.stringify(game.s);
+  const context={game,started:true,gamePaused:false,activePanel:{type},document:{hidden:false},scene:{contextLost:true},timer:null,setTimeout(){return 1;},clearTimeout(){},actionPacer:{ready(){throw Error('A panel must hold the turn before pacing');}}};
+  runInNewContext(tick+';tick()',context);assert.equal(JSON.stringify(game.s),before);
+ }
+});
+
+test('sheet visibility, app pause and document visibility all hold the message timer',()=>{
+ const fn=source.slice(source.indexOf('function syncNewsPause()'),source.indexOf('function showSheet('));
+ for(const hidden of [false,true])for(const gamePaused of [false,true])for(const sheetHidden of [false,true]){
+  let paused;runInNewContext(fn+';syncNewsPause()', {document:{hidden},gamePaused,$:()=>({hidden:sheetHidden}),newsFeed:{setPaused(value){paused=value;}}});assert.equal(paused,hidden||gamePaused||!sheetHidden);
+ }
+});
 test('fallback turns advance without waiting for stopped 3D movement or effects, while user pause remains respected',()=>{
  for(const [lost,paused,expected]of [[true,false,1],[false,false,0],[true,true,0]]){
   const game=Game.create({mapVersion:1,talents:false,randomStart:false});game.s.current=0;game.s.phase='moving';game.s.remaining=2;
