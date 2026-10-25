@@ -1,5 +1,5 @@
 {
-  "buildId": "9f492b3a9fdd",
+  "buildId": "2244cbdb83f4",
   "sourceJsFiles": 39,
   "originalJsBytes": 2253642,
   "scriptBytes": 771664,
@@ -27,9 +27,9 @@
       "gzipBytes": 486
     },
     {
-      "file": "assets/style.19f7b4cb5012.css",
-      "bytes": 49052,
-      "gzipBytes": 11350
+      "file": "assets/style.aa6459bc2d93.css",
+      "bytes": 51794,
+      "gzipBytes": 11820
     }
   ],
   "offlineFiles": [
@@ -38,7 +38,7 @@
     "./assets/font.ee061696ecb9.woff2",
     "./assets/laugh.92a25df4321c.mp3",
     "./assets/icon.9fa8699356e6.svg",
-    "./assets/style.19f7b4cb5012.css",
+    "./assets/style.aa6459bc2d93.css",
     "./licenses/OFL.txt",
     "./licenses/THREE-LICENSE.txt"
   ]
