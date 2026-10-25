@@ -1,4 +1,4 @@
-const BUILD="a6217f8fc2c6",FILES=["./index.html","./assets/game.7964d30b34b7.js","./assets/font.2197544c797d.woff2","./assets/laugh.92a25df4321c.mp3","./assets/icon.9fa8699356e6.svg","./assets/style.541c8fe0ef49.css","./licenses/OFL.txt","./licenses/THREE-LICENSE.txt"],PREFIX='naiwa-island-web:'+new URL(self.registration.scope).pathname+':',CACHE=PREFIX+BUILD;
+const BUILD="7d75bfeb5961",FILES=["./index.html","./assets/game.0e012d64e009.js","./assets/font.064143773160.woff2","./assets/laugh.92a25df4321c.mp3","./assets/icon.9fa8699356e6.svg","./assets/style.624bf3ec9d09.css","./licenses/OFL.txt","./licenses/THREE-LICENSE.txt"],PREFIX='naiwa-island-web:'+new URL(self.registration.scope).pathname+':',CACHE=PREFIX+BUILD;
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(PREFIX)&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;
