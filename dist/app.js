@@ -15,6 +15,7 @@ import {TALENTS} from './talents.js?v=16';
 import {GameOrientation} from './orientation.js';
 import {art,guideArt,buildingImage} from './illustrations.js';
 import {landmarkPanel} from './landmark-panel.js';
+import {eventPanel} from './event-panel.js';
 import {ActionPacer} from './pacing.js';
 import {diceWeights} from './strategy.js';
 import {Game,SAVE_KEY} from './engine.js?v=16';
@@ -26,15 +27,20 @@ import {GameAudio,audioOptions,MUSIC_TRACKS} from './audio.js';
 import {readPreferences,writePreferences} from './preferences.js';
 import {MiniMap} from './minimap.js';
 import {NewsFeed} from './news.js';
+import {nextPaint,prepareStartupAssets,waitForStyles} from './startup.js';
+import {GameSelects} from './game-selects.js';
+async function startGame(){
+globalThis.__NAIWA_BOOT__?.set(25,'正在准备精细场景…');await nextPaint();await waitForStyles();
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Math.round(n).toLocaleString('zh-CN');
 let advanced=normalizeSetup(),advancedDraft=null;try{advanced=normalizeSetup(JSON.parse(localStorage.getItem('naiwa-setup-v1')||'{}'));}catch{}
 let stockWindow=20,stockHeld=false;
 const faces={naiwa:'◉',naichong:'≋',naishu:'♧'};
 let game=Game.create({seed:7481}),started=false,selected='naiwa',saved=null,scene,activePanel=null,pinned=false,blockKey='',toastTimer,previousFocus,timer,saveOk=true,gamePaused=false;
-let TILES=game.tiles;
+let TILES=game.tiles;const selectMenus=new GameSelects($('app'));
 try{saved=Game.restore(localStorage.getItem(SAVE_KEY));Object.assign(game.s.options,readPreferences(localStorage,saved?.s.options||game.s.options));}catch{}
 try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch(e){console.warn('3D unavailable; using playable map',e);$('fallback').hidden=false;}
+if(scene)scene.paused=true;globalThis.__NAIWA_BOOT__?.set(55,'正在准备奶伴与操作界面…');await nextPaint();
 $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-pressed',String(e.detail.follow)));
 $('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
 $('scene').addEventListener('renderlost',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;$('fallback').hidden=false;save();toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
@@ -56,9 +62,9 @@ function startFresh(){const count=+$('playerCountSelect').value,error=setupError
 function readAdvancedFields(){if(!advancedDraft)return;advancedDraft.opponents=Array.from(document.querySelectorAll('[data-setup-seat]'),e=>e.value);advancedDraft.seatLevels=Array.from(document.querySelectorAll('[data-setup-level]'),e=>e.value);advancedDraft.startingCash=+$('setupCash').value;advancedDraft.startingTickets=+$('setupTickets').value;advancedDraft.mapVersion=+$('setupMap').value;advancedDraft.randomStart=$('setupInitiative').value==='random';advancedDraft.seed=$('setupSeed').value.trim();const error=setupError(advancedDraft,selected,+$('playerCountSelect').value);$('setupError').textContent=error;$('sheetBody').querySelector('[data-act=applyAdvanced]').disabled=!!error;for(const row of document.querySelectorAll('.opponent-seat')){const id=row.querySelector('[data-setup-seat]').value;row.querySelector('.seat-portrait').innerHTML=id==='random'?'<span class="random-face">⚄</span>':portrait(id);}}
 
 function resume(){if(!saved)return;const preferences={...game.s.options};game=saved;game.s.options=preferences;started=true;blockKey='';$('startScreen').hidden=true;scene?.endPreview();scene?.followPlayer();dismiss(true);commit();}
-function picker(){ $('mapSelect').value=String(advanced.mapVersion); if(!started&&game.s.mapVersion!==advanced.mapVersion){const options={...game.s.options};game=Game.create({mapVersion:advanced.mapVersion,seed:7481});game.s.options=options;TILES=game.tiles;scene?.sync(game);scene?.home();}document.querySelector('.map-preview-note').textContent=MAPS[advanced.mapVersion].name+' · '+(advanced.mapVersion===2?'48格 · 两条短支路':'48格 · 跨岛长捷径'); $('advancedSummary').textContent=`${MAPS[advanced.mapVersion].name} · 初始 ${fmt(advanced.startingCash)} 奶币 · ${advanced.opponents.some(id=>id&&id!=='random')?'指定阵容':'随机阵容'}`; $('characterPicker').innerHTML=CHARACTERS.map(c=>`<button class="character-choice ${selected===c.id?'selected':''}" data-character="${c.id}" aria-pressed="${selected===c.id}"><span class="face">${portrait(c.id)}</span><strong>${c.name}</strong></button>`).join('');$('continueBtn').hidden=!saved;$('continueBtn').textContent=saved?'继续 · '+MAPS[saved.s.mapVersion].name+' · 第 '+saved.s.round+' 轮':'继续上次的旅行';document.querySelector('.welcome-panel').classList.toggle('has-save',!!saved);const t=TALENTS[selected];$('talentPreview').innerHTML=`<strong>${t.icon} ${t.name}${t.strong?' · 强势角色':''}</strong><p>${t.text}</p>`;if(!started)scene?.previewCharacter(selected);}
+function picker(){ $('mapSelect').value=String(advanced.mapVersion); if(!started&&game.s.mapVersion!==advanced.mapVersion){const options={...game.s.options};game=Game.create({mapVersion:advanced.mapVersion,seed:7481});game.s.options=options;TILES=game.tiles;scene?.sync(game);scene?.home();}document.querySelector('.map-preview-note').textContent=MAPS[advanced.mapVersion].name+' · '+(advanced.mapVersion===2?'48格 · 两条短支路':'48格 · 跨岛长捷径'); $('advancedSummary').textContent=`${MAPS[advanced.mapVersion].name} · 初始 ${fmt(advanced.startingCash)} 奶币 · ${advanced.opponents.some(id=>id&&id!=='random')?'指定阵容':'随机阵容'}`; $('characterPicker').innerHTML=CHARACTERS.map(c=>`<button class="character-choice ${selected===c.id?'selected':''}" data-character="${c.id}" aria-pressed="${selected===c.id}"><span class="face">${portrait(c.id)}</span><strong>${c.name}</strong></button>`).join('');$('continueBtn').hidden=!saved;$('continueBtn').textContent=saved?'继续 · '+MAPS[saved.s.mapVersion].name+' · 第 '+saved.s.round+' 轮':'继续上次的旅行';document.querySelector('.welcome-panel').classList.toggle('has-save',!!saved);const t=TALENTS[selected];$('talentPreview').innerHTML=`<strong>${CHARACTERS.find(c=>c.id===selected).name} · ${t.name}${t.strong?' · 强势角色':''}</strong><p>${t.text}</p>`;selectMenus.sync();if(!started)scene?.previewCharacter(selected);}
 function statusTags(p){return [p.skip?`休养 ${p.skip} 回合`:'',p.shield?'免租已就绪':'',p.spirit?SPIRITS[p.spirit].name+' '+Math.min(3,p.spiritTurns)+' 回合':'',p.vehicle?VEHICLES[p.vehicle].name:'',p.reverse?'本回合倒退':'',p.forced?`指定 ${p.forced} 步`:'',p.slowTurns?`慢行 ${p.slowTurns} 次`:''].filter(Boolean).map(t=>`<span class="status-pill">${esc(t)}</span>`).join('');}
-function render(){const transfers=transferFeed.read(game,started);TILES=game.tiles;const s=game.s,p=game.player;audioState();sceneSounds();newsFeed.setSpeed(s.options.speed);newsFeed.sync(game,started);scene?.sync(game);miniMap.sync(game,{visible:started&&!scene?.studio});$('app').classList.toggle('is-menu',!started);$('app').dataset.phase=s.phase;$('app').dataset.mapVersion=String(s.mapVersion);$('app').style.setProperty('--player-count',s.players.length);
+function render(){selectMenus.sync();const transfers=transferFeed.read(game,started);TILES=game.tiles;const s=game.s,p=game.player;audioState();sceneSounds();newsFeed.setSpeed(s.options.speed);newsFeed.sync(game,started);scene?.sync(game);miniMap.sync(game,{visible:started&&!scene?.studio});$('app').classList.toggle('is-menu',!started);$('app').dataset.phase=s.phase;$('app').dataset.mapVersion=String(s.mapVersion);$('app').style.setProperty('--player-count',s.players.length);
  $('pauseBtn').hidden=!started;$('pauseBtn').setAttribute('aria-pressed',String(gamePaused));
  $('difficultyBtn').textContent=DIFFICULTIES[s.difficulty].name;$('difficultyBtn').title=DIFFICULTIES[s.difficulty].description;$('mapHeading').textContent=MAPS[s.mapVersion].name;
  $('round').textContent=started?`第 ${s.round} / ${s.maxRounds} 轮`:'准备出发';$('logRound').textContent=`第 ${s.round} 轮`;$('weather').textContent=started?['周日','周一','周二','周三','周四','周五','周六'][s.round%7]+' · '+LIGHTING[lightingMode(s.options.lighting)].label:LIGHTING[lightingMode(s.options.lighting)].label+' · 宜大笑';
@@ -123,7 +129,7 @@ function openPanel(type,id){
  }else if(type==='branch'){
   showSheet('下一站，去哪边？','岔路选择',branchPanel(game,landingText),true);
  }else if(type==='event'){
-  const n=s.notice;showSheet(n?.title||'岛上新鲜事',`${game.char().name}的旅行手账`,`<div class="event-emblem">${n?.mood==='happy'?'✦':n?.mood==='sad'?'☁':'♧'}</div><p>${esc(n?.text||'继续旅程吧。')}</p>${btn('知道啦，继续旅行','ack','',false,'primary')}`,true);sound(n?.mood);
+  const n=s.notice;showSheet(n?.title||'岛上新鲜事',`${game.char().name}的旅行手账`,eventPanel(game),true);sound(n?.mood);
  }else if(type==='debt'){
   const d=s.debt;showSheet('小金库需要周转','先筹款，再继续旅行',`<p>${esc(d.label)}需要支付 <b>${fmt(d.amount)}</b> 奶币，当前现金 <b>${fmt(p.money)}</b>。</p><div class="button-grid">${btn('去银行筹款','panel','data-panel="bank"')}${btn('卖出股票','panel','data-panel="stocks"')}${btn('变卖地产','panel','data-panel="deeds"')}${btn('支付并继续','settle','',p.money<d.amount,'primary')}</div><h3>申请破产</h3><p>会清算存款、股票、地产与交通工具，尽可能偿还本次欠款，并退出这局旅行。</p>${btn('查看破产确认','confirmBankrupt','','', 'secondary danger')}`,true);
  }else if(type==='finished'){
@@ -156,7 +162,7 @@ function refreshPanel(){if(activePanel){const {type,id}=activePanel,scroll=$('sh
 function exportSave(){if(!started)return;const blob=new Blob([JSON.stringify(game.s,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`奶蛙大富翁-第${game.s.round}轮.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('已导出旅行存档。');}
 function onAction(){if(!started)return;if(game.s.phase==='finished'){openPanel('finished');return;}if(!game.player.human)return;if(game.s.phase==='departure')return;if(game.s.phase==='roll'){scene?.followPlayer();commit(game.roll());}else if(game.s.phase==='end')commit(game.end());else openPanel(game.s.phase);}
 function durationHint(){const rounds=+$('roundSelect').value,count=+$('playerCountSelect').value,minutes=rounds*(count*.19+.1);$('durationHint').textContent=rounds===20?'试玩局：适合熟悉操作；完整经营建议 50 轮。':`约 ${Math.round(minutes*.8)}—${Math.round(minutes*1.25)} 分钟，依操作和动画速度变化。`;}
-$('roundSelect').addEventListener('change',durationHint);$('playerCountSelect').addEventListener('change',durationHint);durationHint();
+$('talentsEnabled').addEventListener('change',picker);$('roundSelect').addEventListener('change',durationHint);$('playerCountSelect').addEventListener('change',durationHint);durationHint();
 $('startBtn').addEventListener('click',startFresh);$('continueBtn').addEventListener('click',resume);$('characterPicker').addEventListener('click',e=>{const b=e.target.closest('[data-character]');if(b){selected=b.dataset.character;picker();sound();}});
 $('actionBtn').addEventListener('click',onAction);$('soundBtn').addEventListener('click',()=>{unlockSound();game.s.options.sound=!game.s.options.sound;commit();toast(game.s.options.sound?'声音已开启':'声音已关闭');});
 $('mapSelect').addEventListener('change',e=>{if(started)return;advanced.mapVersion=+e.target.value===1?1:2;try{localStorage.setItem('naiwa-setup-v1',JSON.stringify(advanced));}catch{}picker();render();sound();});
@@ -234,3 +240,7 @@ document.addEventListener('visibilitychange',()=>{newsFeed.setPaused(document.hi
 picker();render();tick();const brandBitmap=portraitBitmap('naiwa');if(brandBitmap)document.querySelector('.brand img').src=brandBitmap;
 // Same-origin offline cache; portable single-file distribution skips registration.
 if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register(globalThis.__NAIWA_SERVICE_WORKER_URL__||'./sw.js?v=16').catch(()=>{});
+
+globalThis.__NAIWA_BOOT__?.set(75,'正在载入字体、图标与声音…');await prepareStartupAssets();scene?.renderStill();await nextPaint();globalThis.__NAIWA_BOOT__?.set(100,'准备完成，欢迎来到奶家！');await nextPaint();globalThis.__NAIWA_BOOT__?.ready();if(scene&&!scene.contextLost&&$('loadingScreen').hidden)scene.paused=gamePaused;
+}
+startGame().catch(error=>{console.error('Game startup failed',error);globalThis.__NAIWA_BOOT__?.fail();});

@@ -34,16 +34,16 @@ export const CARDS={
 export const SPIRITS={fortune:{name:'大笑财神',icon:'✦',description:'非交易收入增加 25%'},misfortune:{name:'奶泡霉神',icon:'☁',description:'租金和费用增加 25%'},guardian:{name:'奶蛋守护',icon:'◉',description:'抵挡一次负面事件'}};
 export const VEHICLES=[{id:0,name:'步行',dice:1,price:0},{id:1,name:'奶蛙自行车',dice:2,price:600},{id:2,name:'奶罐小车',dice:3,price:1200}];
 export const EVENTS=[
- {name:'全网一起捧腹大笑',text:'你的大笑表情包走红，收获 280 奶币。',kind:'gain',amount:280,stock:1,change:.12},
- {name:'野生狗奶补给',text:'收到奶家人的补给，恢复休养并获一瓶野生狗奶。',kind:'recover'},
- {name:'奶茶洒了一地',text:'支付清洁费用 180 奶币。',kind:'loss',amount:180},
- {name:'选择你的奶伴',text:'奶伴送来一张随机道具卡。',kind:'card'},
- {name:'奶蛙街舞开场',text:'演出收获 200 奶币，大笑传媒行情上涨。',kind:'gain',amount:200,stock:1,change:.1},
- {name:'奶块工厂停电',text:'修理设备支付 150 奶币，奶块工坊行情回落。',kind:'loss',amount:150,stock:2,change:-.12},
- {name:'奶茶新品大卖',text:'品鉴活动获得 160 奶币，奶茶实业行情上涨。',kind:'gain',amount:160,stock:0,change:.12},
- {name:'奶蛙爱洗澡',text:'洗香香，休息一回合，获补贴 100 奶币。',kind:'rest',amount:100},
- {name:'奶币港口顺风',text:'运输收入 220 奶币，奶币物流行情上涨。',kind:'gain',amount:220,stock:3,change:.1},
- {name:'神秘奶罐',text:'打开奶罐，请一位奶家神灵来做客。',kind:'spirit'}
+ {name:'全网一起捧腹大笑',art:'theater',text:'你的大笑表情包走红，收获 280 奶币。',kind:'gain',amount:280,stock:1,change:.12},
+ {name:'野生狗奶补给',art:'recover',text:'收到奶家人的补给，恢复休养并获一瓶野生狗奶。',kind:'recover'},
+ {name:'奶茶洒了一地',art:'tea',text:'支付清洁费用 180 奶币。',kind:'loss',amount:180},
+ {name:'选择你的奶伴',art:'dice',text:'奶伴送来一张随机道具卡。',kind:'card'},
+ {name:'奶蛙街舞开场',art:'theater',text:'演出收获 200 奶币，大笑传媒行情上涨。',kind:'gain',amount:200,stock:1,change:.1},
+ {name:'奶块工厂停电',art:'factory',text:'修理设备支付 150 奶币，奶块工坊行情回落。',kind:'loss',amount:150,stock:2,change:-.12},
+ {name:'奶茶新品大卖',art:'tea',text:'品鉴活动获得 160 奶币，奶茶实业行情上涨。',kind:'gain',amount:160,stock:0,change:.12},
+ {name:'奶蛙爱洗澡',art:'recover',text:'洗香香，休息一回合，获补贴 100 奶币。',kind:'rest',amount:100},
+ {name:'奶币港口顺风',art:'vehicle',text:'运输收入 220 奶币，奶币物流行情上涨。',kind:'gain',amount:220,stock:3,change:.1},
+ {name:'神秘奶罐',art:'shield',text:'打开奶罐，请一位奶家神灵来做客。',kind:'spirit'}
 ];
 
 export const POINT_STOPS=[2,8,14,20,26,32,38,42,46];
