@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import {ball,box,cylinder,tube,mesh,material,batchStatic} from './render-kit.js';
-import {grainTexture,windMaterial} from './surfaces.js';
+import {grainTexture,windMaterial,windowMaterial} from './surfaces.js';
 const leafColors=['#347447','#458b4e','#63a357','#7eb56a'],flowerColors=['#edb4ba','#f2d578','#c9b8e7','#fff1d0'];
 export function fineTree(parent,x,z,size=1,variant=0){const tree=new THREE.Group(),canopy=new THREE.Group();cylinder(tree,'#855c3b',[0,.52,0],.075,.15,1.04,20);for(const side of [-1,1])tube(tree,'#855c3b',[[0,.52,0],[side*.18,.89,.025],[side*.31,1.18,.05]],.04);for(let i=0;i<13;i++){const angle=i*2.39996,r=i<3?.1:.38,y=1.24+(i%4)*.14;const crown=ball(canopy,variant%7===3?['#dba0b3','#e7b3c3','#f4cbd5','#f7dae0'][i%4]:leafColors[(i+variant)%4],[Math.cos(angle)*r,y,Math.sin(angle)*r],[.33+(i%3)*.025,.39,.34]);crown.rotation.z=angle*.13;}tree.add(canopy);tree.position.set(x,.08,z);tree.scale.setScalar(size);parent.add(tree);return tree;}
 export function scenicDetails(scene){const root=new THREE.Group();root.name='riverside-details';scene.world.add(root);let seed=91871;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};const safe=(x,z,gap=2)=>scene.tiles.every(t=>Math.hypot(t.x-x,t.z-z)>gap&&Math.hypot(t.lotX-x,t.lotZ-z)>gap);
@@ -16,7 +16,7 @@ export function architecturalDetails(g,type,level,color){
  if(['residence','tea','hotel','tower','mall'].includes(type)){
   for(const side of [-1,1]){tube(ornament,'#b5a184',[[side*.76,.2,-.5],[side*.76,Math.max(.5,height-.35),-.5]],.018);box(ornament,'#a7b5b2',[side*.77,.18,-.5],[.08,.1,.08]);}
   box(ornament,'#d4c4a2',[0,.14,.72],[.66,.1,.23]);box(ornament,'#ede2c2',[0,.09,.82],[.8,.08,.22]);
-  const glass=new THREE.MeshPhysicalMaterial({color:'#397b8c',metalness:.15,roughness:.12,clearcoat:1,envMapIntensity:1.2});
+  const glass=windowMaterial(new THREE.MeshPhysicalMaterial({color:'#397b8c',metalness:.15,roughness:.12,clearcoat:1,envMapIntensity:1.2}));
   for(let f=0;f<Math.min(level,5);f++)for(const side of [-1,1]){const y=.58+f*.43;box(ornament,'#f7edcf',[side*.38,y,.575],[.31,.29,.045]);box(ornament,glass,[side*.38,y,.603],[.24,.22,.015]);box(ornament,'#b4a47d',[side*.38,y,.625],[.018,.23,.018]);box(ornament,'#fff0cc',[side*.38,y-.16,.62],[.37,.055,.1]);if(f===0||f===2){box(ornament,'#a78b68',[side*.38,y-.22,.66],[.3,.09,.16]);for(let j=0;j<3;j++)ball(ornament,j%2?'#d79e97':'#76a65d',[side*.38+(j-1)*.08,y-.16,.67],[.06,.055,.05]);}}
   const w=type==='mall'?1.62:type==='tower'?1.35:1.46,d=type==='mall'?1.2:1.02,h=type==='tea'?.65+level*.65:type==='hotel'?.55+level*.58:type==='mall'?.75+level*.5:type==='tower'?.8+level*.62:.64+level*.46;
   if(type==='tower'){box(ornament,glass,[0,h/2+.12,-.515],[1.22,h-.12,.025]);box(ornament,glass,[-.69,h/2+.12,0],[.025,h-.12,.88]);for(let y=.3;y<h;y+=.33){box(ornament,'#cbd7cf',[0,y,-.54],[1.4,.035,.04]);box(ornament,'#cbd7cf',[-.71,y,0],[.04,.035,1]);}for(const x of [-.45,0,.45])box(ornament,'#cbd7cf',[x,h/2+.12,-.54],[.035,h,.035]);}
