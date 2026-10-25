@@ -16,7 +16,7 @@ import {diceWeights} from './strategy.js';
 import {Game,SAVE_KEY} from './engine.js?v=16';
 import {CHARACTERS,GROUPS,CARDS,SPIRITS,STOCKS,VEHICLES} from './content.js';
 import {IslandScene} from './scene.js';
-import {portrait} from './portraits.js';
+import {portrait,portraitBitmap} from './portraits.js';
 import {architectureFor} from './buildings.js';
 import {GameAudio,audioOptions,MUSIC_TRACKS} from './audio.js';
 import {readPreferences,writePreferences} from './preferences.js';
@@ -66,7 +66,7 @@ function render(){TILES=game.tiles;const s=game.s,p=game.player;audioState();sce
  $('actionBtn').disabled=!started||(!p.human&&s.phase!=='finished')||['moving','departure'].includes(s.phase);
  document.querySelectorAll('[data-panel]').forEach(b=>b.disabled=!started||!p.human||!['roll','end','debt'].includes(s.phase));document.querySelector('[data-panel=stocks]').disabled=!started||pinned||!['roll','end','moving','departure'].includes(s.phase);$('cardCount').textContent=s.players[0].cards.length;$('planBtn').disabled=!started||!p.human||s.phase!=='roll';
  $('diceCount').hidden=!started||!p.human||p.vehicle===0||s.phase!=='roll';$('diceCount').innerHTML=Array.from({length:VEHICLES[p.vehicle].dice},(_,i)=>`<option value="${i+1}" ${p.diceCount===i+1?'selected':''}>${i+1} 颗骰子</option>`).join('');
- $('soundBtn').textContent=s.options.sound?'♫':'♪';$('soundBtn').setAttribute('aria-label',s.options.sound?'关闭声音':'开启声音');$('qualityBtn').textContent=s.options.quality==='low'?'省电':'HD';
+ $('soundBtn').textContent=s.options.sound?'♫':'♪';$('soundBtn').setAttribute('aria-label',s.options.sound?'关闭声音':'开启声音');$('qualityBtn').textContent=s.options.quality==='low'?'省电':'电影';$('qualityBtn').title=s.options.quality==='low'?'省电画质 · 点击切换电影画质':'电影画质 · 点击切换省电画质';
  $('followBtn').setAttribute('aria-pressed',String(!!scene?.follow));$('moveIndicator').hidden=!started;$('moveIndicator').textContent=`${game.char().name} · ${TILES[p.pos].name}${s.phase==='moving'?' · 剩 '+s.remaining+' 格':''}`;
  if(!$('fallback').hidden)$('fallback').innerHTML=`<div class="fallback-grid">${TILES.map(t=>`<button class="fallback-tile ${p.pos===t.id?'current':''}" data-tile="${t.id}" style="background:${GROUPS[t.group].color}50">${t.id+1}. ${esc(t.name)}<br>${s.players.filter(q=>q.alive&&q.pos===t.id).map(q=>game.char(q).name).join(' ')}${s.ownership[t.id]?'<br>⌂ '+game.char(s.players[s.ownership[t.id].player]).name:''}</button>`).join('')}</div>`;
  const currentKey=`${s.phase}:${s.current}:${s.round}:${p.pos}`;
@@ -121,7 +121,7 @@ function openPanel(type,id){
  }else if(type==='finished'){
   showSheet('奶家发财纪念册','本次旅行结算',resultsPanel(game),true);
  }else if(type==='settings'){
-  showSheet('旅行设置','按自己的节奏，慢慢玩',`<div class="setting-row"><label for="speedSelect">动画速度</label><select id="speedSelect">${[1,2].map(n=>`<option value="${n}" ${Math.min(2,s.options.speed)===n?'selected':''}>${n===1?'正常 · 完整展示':'轻快 · 保留消息阅读时间'}</option>`).join('')}</select></div><div class="setting-row"><label for="qualitySelect">画面质量</label><select id="qualitySelect"><option value="auto" ${s.options.quality==='auto'?'selected':''}>标准画质</option><option value="low" ${s.options.quality==='low'?'selected':''}>省电画质</option></select></div><div class="setting-row"><span>声音</span>${btn(s.options.sound?'已开启 · 点击关闭':'已关闭 · 点击开启','sound')}</div>${audioSettings()}<h3>旅行存档</h3><p>${saveOk?'进度自动保存在当前浏览器。':'自动存档失败，请导出备份。'}导出后，可以在另一台设备导入继续。</p><div class="row-actions">${btn('导出存档','export','',!started)}${btn('素材与制作说明','panel','data-panel="sources"')}</div><label style="font-size:11px">导入存档<input class="file-input" id="importSave" type="file" accept="application/json,.json"></label><h3>重新出发</h3><p>重新开始会替换本版存档；旧版游戏的存档不会受影响。</p>${btn('选择奶伴重新开始','confirmRestart','','','secondary danger')}<p>设置打开期间，对局暂停。</p>`);
+  showSheet('旅行设置','按自己的节奏，慢慢玩',`<div class="setting-row"><label for="speedSelect">动画速度</label><select id="speedSelect">${[1,2].map(n=>`<option value="${n}" ${Math.min(2,s.options.speed)===n?'selected':''}>${n===1?'正常 · 完整展示':'轻快 · 保留消息阅读时间'}</option>`).join('')}</select></div><div class="setting-row"><label for="qualitySelect">画面质量</label><select id="qualitySelect"><option value="auto" ${s.options.quality==='auto'?'selected':''}>电影画质 · 精细光影</option><option value="low" ${s.options.quality==='low'?'selected':''}>省电画质</option></select></div><div class="setting-row"><span>声音</span>${btn(s.options.sound?'已开启 · 点击关闭':'已关闭 · 点击开启','sound')}</div>${audioSettings()}<h3>旅行存档</h3><p>${saveOk?'进度自动保存在当前浏览器。':'自动存档失败，请导出备份。'}导出后，可以在另一台设备导入继续。</p><div class="row-actions">${btn('导出存档','export','',!started)}${btn('素材与制作说明','panel','data-panel="sources"')}</div><label style="font-size:11px">导入存档<input class="file-input" id="importSave" type="file" accept="application/json,.json"></label><h3>重新出发</h3><p>重新开始会替换本版存档；旧版游戏的存档不会受影响。</p>${btn('选择奶伴重新开始','confirmRestart','','','secondary danger')}<p>设置打开期间，对局暂停。</p>`);
  }else if(type==='help'){
   showSheet('奶家发财指南','先掷一颗骰子，再慢慢学会经营',`<ol class="rules"><li><b>出发：</b>选择奶伴后随机决定先手，所有人完整行动一次算一轮。掷骰移动。经过起点领 400 奶币。每位存活奶伴行动一次算一轮。</li><li><b>置业：</b>踩到空地可买入，并选择七种建筑。住宅、旅馆、商场、研究所最高五级；连锁店、加油站、公园只有一级。普通建设须停到自家地块，每次加一层；工程队可远程加盖。只有住宅参与街区联营。旅馆强制入住、商场抽签消费、加油站按行程和交通工具收费、研究所三次出发产卡、公园免费送点券。</li><li><b>用卡：</b>掷骰前打开卡包。手牌可连用，移动卡须在掷骰前使用；点券来自地图拾取和到站奖励。用点券买卡，可控骰、路障、拆层、免费加盖或慢行。抢地卡仅对脚下的对手地产生效，付 125% 成本；拆除和工程队限附近 8 格。</li><li><b>出行：</b>商店购买自行车或小车后，可在掷骰按钮旁选择骰子数量。岔路自行选方向。</li><li><b>经营：</b>经过银行的本回合可办理存取款和贷款；银行周三休息；股票在自己行动前后可交易，周日休市。商店需到店购买。存款每轮赚 0.5%，贷款每轮计息 4%。股票也会因随机事件涨跌。</li><li><b>神灵：</b>财运增加非交易收入，霉运增加支出，守护抵挡一次负面事件。效果互相替换，持续 3 个后续回合。</li><li><b>周转：</b>付款不足可取款、借款、卖股票或变卖地产；也可申请破产退出。</li><li><b>胜利：</b>坚持到最后，或在轮数结束时拥有最多净资产。手机横屏体验更完整。</li></ol><p>各位角色采用同一规则，电脑也遵守点券、用卡和建设限制，并根据公开地块评估路线。浏览器不支持 3D 时可使用简洁地图继续玩。</p>`);
  }else if(type==='news'){
@@ -222,6 +222,6 @@ function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||docum
 }
 
 document.addEventListener('visibilitychange',()=>{newsFeed.setPaused(document.hidden||gamePaused);soundtrack.visibility(document.hidden||gamePaused);if(document.hidden)save();else render();});window.addEventListener('pagehide',save);
-picker();render();tick();
+picker();render();tick();const brandBitmap=portraitBitmap('naiwa');if(brandBitmap)document.querySelector('.brand img').src=brandBitmap;
 // Same-origin offline cache; portable single-file distribution skips registration.
 if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register(globalThis.__NAIWA_SERVICE_WORKER_URL__||'./sw.js?v=16').catch(()=>{});
