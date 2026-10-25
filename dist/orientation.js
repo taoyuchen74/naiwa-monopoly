@@ -1,13 +1,26 @@
 export function logicalSize(w,h,mode='auto'){const rotated=mode!=='auto'&&((mode==='landscape')!==(w>=h));return {width:rotated?h:w,height:rotated?w:h,rotated};}
 export function localCanvasPoint(x,y,r,rotated=false){return rotated?{x:y-r.top,y:r.right-x}:{x:x-r.left,y:y-r.top};}
 export function canvasPoint(x,y,el){return localCanvasPoint(x,y,el.getBoundingClientRect(),document.getElementById('app')?.dataset.rotated==='true');}
+export function mountGameOverlays(root){
+ // Keep legacy or re-created dialogs in the same transformed coordinate space.
+ for(const id of ['sheetBackdrop','sheet','toast','bootError']){
+  const overlay=root.ownerDocument?.getElementById(id);
+  if(overlay&&!root.contains(overlay))root.appendChild(overlay);
+ }
+}
 export class GameOrientation{
  constructor(root,button,{notify=()=>{},resize=()=>{}}={}){Object.assign(this,{root,button,notify,resize,mode:'auto',rules:[]});
   const collect=list=>{for(const rule of list){if(rule.type===4&&/(width|height|orientation)/.test(rule.conditionText))this.rules.push({rule,condition:rule.conditionText});else if(rule.cssRules)collect(rule.cssRules);}};
   for(const sheet of document.styleSheets)try{collect(sheet.cssRules);}catch{}
-  button.addEventListener('click',()=>this.toggle());window.addEventListener('resize',()=>this.apply());document.addEventListener('fullscreenchange',()=>this.apply());this.apply();
+  button.addEventListener('click',()=>this.toggle());window.addEventListener('resize',()=>this.apply());document.addEventListener('fullscreenchange',()=>this.apply());
+  // Some phone browsers report the new dimensions after the direction event.
+  const directionChanged=()=>{this.apply();requestAnimationFrame(()=>this.apply());};
+  window.addEventListener('orientationchange',directionChanged);
+  window.screen?.orientation?.addEventListener?.('change',directionChanged);
+  window.visualViewport?.addEventListener('resize',()=>this.apply());
+  this.apply();
  }
- apply(){const w=window.innerWidth,h=window.innerHeight,s=logicalSize(w,h,this.mode);this.root.dataset.rotated=String(s.rotated);this.root.style.setProperty('--game-vh',s.height/100+'px');this.root.style.setProperty('--game-vw',s.width/100+'px');
+ apply(){mountGameOverlays(this.root);const w=window.innerWidth,h=window.innerHeight,s=logicalSize(w,h,this.mode);this.root.dataset.rotated=String(s.rotated);this.root.style.setProperty('--game-vh',s.height/100+'px');this.root.style.setProperty('--game-vw',s.width/100+'px');
   Object.assign(this.root.style,{position:s.rotated?'fixed':'',left:s.rotated?w+'px':'',top:s.rotated?'0':'',width:s.rotated?s.width+'px':'',height:s.rotated?s.height+'px':'',minHeight:s.rotated?'0':'',transform:s.rotated?'rotate(90deg)':'',transformOrigin:'0 0'});
   for(const {rule,condition} of this.rules){if(!s.rotated){rule.media.mediaText=condition;continue;}const virtual=condition.replace(/\(orientation:\s*(portrait|landscape)\)/g,(_,o)=>((s.width>=s.height)===(o==='landscape'))?'(min-width: 0px)':'(max-width: 0px)').replace(/\((max|min)-(width|height):\s*([\d.]+)px\)/g,(_,bound,axis,n)=>((bound==='max'?s[axis]<=+n:s[axis]>=+n)?'(min-width: 0px)':'(max-width: 0px)'));rule.media.mediaText=window.matchMedia(virtual).matches?'all':'not all';}
   const landscape=s.width>=s.height;this.button.textContent=landscape?'竖屏':'横屏';this.button.setAttribute('aria-label',landscape?'切换竖屏':'切换横屏');this.button.title=this.button.getAttribute('aria-label');this.button.setAttribute('aria-pressed',String(this.mode!=='auto'));requestAnimationFrame(()=>{this.resize();window.dispatchEvent(new Event('gamelayoutchange'));});

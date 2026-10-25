@@ -1,7 +1,18 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {GameOrientation} from '../dist/orientation.js';
+import {GameOrientation,mountGameOverlays} from '../dist/orientation.js';
+
+test('legacy dialog portals join the game rotation layer without replacing their live state',()=>{
+ const nodes=new Map(['sheetBackdrop','sheet','toast','bootError','unrelated'].map(id=>[id,{id,parentElement:null,scrollTop:87}]));
+ const moved=[],root={ownerDocument:{getElementById:id=>nodes.get(id)},contains:node=>node.parentElement===root,appendChild(node){node.parentElement=root;moved.push(node.id);}};
+ const dialog=nodes.get('sheet');dialog.hidden=false;dialog.decision={tile:7};
+ mountGameOverlays(root);
+ assert.deepEqual(moved,['sheetBackdrop','sheet','toast','bootError']);
+ assert.equal(dialog.parentElement,root);assert.equal(dialog.hidden,false);assert.equal(dialog.scrollTop,87);assert.deepEqual(dialog.decision,{tile:7});
+ mountGameOverlays(root);assert.equal(moved.length,4,'already mounted overlays should stay in place');
+ assert.equal(nodes.get('unrelated').parentElement,null);
+});
 
 test('dialogs, backdrops and notifications share the game rotation ancestor',async()=>{
  const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8'),stack=[],parents=new Map(),voidTags=new Set(['meta','link','img','input','br','hr']);
