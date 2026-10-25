@@ -25,7 +25,7 @@ import {portrait,portraitBitmap} from './portraits.js';
 import {architectureFor} from './buildings.js';
 import {GameAudio,audioOptions,MUSIC_TRACKS} from './audio.js';
 import {readPreferences,writePreferences} from './preferences.js';
-import {MiniMap} from './minimap.js';
+import {MiniMap,MapOverview} from './minimap.js';
 import {NewsFeed} from './news.js';
 import {nextPaint,prepareStartupAssets,waitForStyles} from './startup.js';
 import {GameSelects} from './game-selects.js';
@@ -45,7 +45,7 @@ $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-
 $('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
 $('scene').addEventListener('renderlost',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;$('fallback').hidden=false;save();toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
 $('scene').addEventListener('renderrestored',()=>{$('fallback').hidden=true;if(scene)scene.paused=gamePaused;render();scene?.renderStill();toast('3D 画面已恢复，继续当前旅程。');});
-const miniMap=new MiniMap($('miniMap'),{jump:id=>{if(started&&!pinned&&!scene?.studio){scene?.focusTile(id);sound();}},inspect:id=>{if(started&&!pinned)openPanel('tile',id);}});
+const miniMap=new MiniMap($('miniMap'),{jump:id=>{if(started&&!pinned&&!scene?.studio){scene?.focusTile(id);sound();}},inspect:id=>{if(started&&!pinned)openPanel('tile',id);},overview:id=>{if(started&&!pinned&&!scene?.studio)openPanel('overview',id);}});
 const transferFeed=new TransferFeed();
 const newsFeed=new NewsFeed($('newsFlash'),{onEvent:({mood})=>{if(mood!=='idle')sound(mood);}});const actionPacer=new ActionPacer();
 const soundtrack=new GameAudio(game.s.options);let soundSnapshot=null;
@@ -98,6 +98,7 @@ function landingText(r){const t=TILES[r.id];return esc(t.name)+' · '+(r.rent?qu
 function openPanel(type,id){
  const s=game.s,p=game.player;activePanel={type,id};const can=humanManage(),normal=can&&s.phase!=='debt';
  if(type==='advanced'){advancedDraft??=normalizeSetup(advanced);showSheet('高级对局设置','自定义电脑席位与公平起始条件',advancedPanel(advancedDraft,selected,+$('playerCountSelect').value,$('difficultySelect').value));
+ }else if(type==='overview'){showSheet('全岛大地图','看清归属、建筑与奶伴位置','<div class="map-overview"></div>');new MapOverview($('sheetBody').firstElementChild,game,{selected:id??game.player.pos,inspect:tile=>{scene?.focusTile(tile);openPanel('tile',tile);}});
  }else if(type==='mapGuide'){showSheet(MAPS[s.mapVersion].name,'路线与电脑设置',`<p>${MAPS[s.mapVersion].description}</p><h3>本局电脑：${DIFFICULTIES[s.difficulty].name}</h3><p>${DIFFICULTIES[s.difficulty].description}</p><p>本局电脑：${s.players.filter(q=>!q.human).map(q=>game.char(q).name+' · '+DIFFICULTIES[game.aiDifficulty(q)].name).join('、')}。种子 ${s.setupSeed??'旧存档未记录'}。</p><p>所有难度的初始资金、租金、掷骰和天赋规则相同，差别只在电脑如何做决策。新局可重新选择强度。</p><p>功能建筑均对应道路格；选择捷径前可打开落点预览，比较租金、补给和起点奖励。</p>`);
  }else if(type==='talents'){showSheet('奶伴专属天赋',s.talents?'本局已开启 · 自动触发，无需额外按键':'本局未开启；新局可勾选开启',CHARACTERS.map(c=>`<div class="talent-row"><span class="talent-face">${portrait(c.id)}</span><div><h3>${c.name} · ${TALENTS[c.id].name}</h3><p>${TALENTS[c.id].text}</p>${s.players.some(q=>q.character===c.id)?'<span class="badge">本局参赛</span>':''}</div></div>`).join(''));
  }else if(type==='deeds'){
