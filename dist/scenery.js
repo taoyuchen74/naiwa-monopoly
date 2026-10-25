@@ -25,6 +25,12 @@ export function architecturalDetails(g,type,level,color){
 
  if(type==='research'){const h=.55+level*.25,glass=material('#4f91a5',.18,.2);for(let f=0;f<Math.max(1,Math.floor(h/.4));f++)for(let i=0;i<10;i++){const a=i/10*Math.PI*2,y=.4+f*.35,r=.79-.06*(y-.12)/h;const frame=box(ornament,'#e9e4d2',[Math.sin(a)*(r+.015),y,Math.cos(a)*(r+.015)],[.29,.25,.035]);frame.rotation.y=a;const pane=box(ornament,glass,[Math.sin(a)*(r+.039),y,Math.cos(a)*(r+.039)],[.23,.19,.016]);pane.rotation.y=a;}}
 
- if(['tower','hotel','mall','research'].includes(type)){box(ornament,'#b8bab0',[-.4,height-.1,-.35],[.36,.19,.26]);for(let i=0;i<5;i++)box(ornament,'#667c7b',[-.53+i*.065,height+.002,-.35],[.022,.012,.22]);tube(ornament,'#9faaa3',[[.45,height-.1,-.4],[.45,height+.42,-.4]],.014);}
+ if(['tower','hotel','mall','research'].includes(type)){
+  const roofY={hotel:.55+level*.58+.15,research:.55+level*.25+.17,mall:.75+level*.5+.18,tower:.8+level*.62+.15}[type];
+  const service=new THREE.Group();service.name='rooftop-service-unit';service.position.set(-.4,roofY+.13,-.35);ornament.add(service);
+  box(service,'#b8bab0',[0,0,0],[.36,.19,.26]);for(let i=0;i<5;i++)box(service,'#667c7b',[-.13+i*.065,.102,0],[.022,.012,.22]);
+  tube(ornament,'#9faaa3',[[.45,roofY+.03,-.4],[.45,roofY+.55,-.4]],.014);
+ }
+
  return g;
 }
