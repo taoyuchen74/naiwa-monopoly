@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {propertyBuilding} from './buildings.js';
+import {propertyBuilding,landmark} from './buildings.js';
 import {disposeUnique} from './render-kit.js';
 import {portrait} from './portraits.js';
 const cache=new Map();let renderer;
@@ -25,9 +25,16 @@ export function art(key){
  return `<svg viewBox="0 0 160 110" xmlns="http://www.w3.org/2000/svg" class="item-art" aria-hidden="true"><ellipse cx="80" cy="98" rx="55" ry="7" fill="#8c794d" opacity=".12"/>${shapes[key]||shapes.house}</svg>`;
 }
 export function guideArt(kind,text,character='naiwa'){return `<div class="illustrated-guide"><div class="guide-drawing">${art(kind)}</div><div><span class="guide-face">${portrait(character)}</span><p>${text}</p></div></div>`;}
+function modelImage(key,tile,makeModel,description,fallback,width=200){
+ if(cache.has(key))return cache.get(key);let model;
+ try{if(!renderer){renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;}renderer.setSize(width,width*.8);
+ const scene=new THREE.Scene();model=makeModel();scene.add(model);scene.add(new THREE.HemisphereLight('#fff6df','#8a9e9a',2.4));const light=new THREE.DirectionalLight('#ffebc1',2.5);light.position.set(-3,6,5);scene.add(light);const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),span=Math.max(1.6,size.y*.72);const camera=new THREE.OrthographicCamera(-span*1.25,span*1.25,span,-span,.1,50);camera.position.set(center.x+4,center.y+3.3,center.z+5);camera.lookAt(center);renderer.render(scene,camera);const result=`<img class="building-thumb" src="${renderer.domElement.toDataURL('image/png')}" alt="${tile.name} · ${description}">`;cache.set(key,result);return result;
+ }catch{return art(fallback);}finally{if(model)disposeUnique(model);}
+}
 export function buildingImage(tile,level,color='#70a58b'){
- const key=`${tile.name}:${tile.group}:${tile.buildingType||'legacy'}:${tile.id}:${level}:${color}`;if(cache.has(key))return cache.get(key);
- try{if(!renderer){renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(200,160);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;}
- const scene=new THREE.Scene(),model=propertyBuilding(tile,level,color,true);scene.add(model);scene.add(new THREE.HemisphereLight('#fff6df','#8a9e9a',2.4));const light=new THREE.DirectionalLight('#ffebc1',2.5);light.position.set(-3,6,5);scene.add(light);const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),span=Math.max(1.6,size.y*.72);const camera=new THREE.OrthographicCamera(-span*1.25,span*1.25,span,-span,.1,50);camera.position.set(center.x+4,center.y+3.3,center.z+5);camera.lookAt(center);renderer.render(scene,camera);const result=`<img class="building-thumb" src="${renderer.domElement.toDataURL('image/png')}" alt="${tile.name} · ${level?level+'级建筑':'空地'}">`;disposeUnique(model);cache.set(key,result);return result;
- }catch{return art('house');}
+ return modelImage(`property:${tile.name}:${tile.group}:${tile.buildingType||'legacy'}:${tile.id}:${level}:${color}`,tile,()=>propertyBuilding(tile,level,color,true),level?level+'级建筑':'空地','house');
+}
+export function landmarkImage(tile){
+ const fallback={bank:'bank',hospital:'recover',stock:'stocks',shop:'vehicle',spirit:'shield',event:'theater',rest:'house',tax:'recover',start:'dice'};
+ return modelImage(`landmark:${tile.id}:${tile.kind}:${tile.name}`,tile,()=>landmark(tile),'公共建筑模型',fallback[tile.kind]||'house',320);
 }
