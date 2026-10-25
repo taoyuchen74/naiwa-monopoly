@@ -199,6 +199,7 @@ $('sheetBody').addEventListener('change',async e=>{
 let pendingImport=null;
 $('sheetBody').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const {act}=b.dataset,id=+b.dataset.id,index=+b.dataset.index,target=+b.dataset.target;let ok=true;
+ if(act==='cardStep'){const choice=$('sheetBody').querySelector('[data-card-step=\"'+b.dataset.steps+'\"]');choice?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});choice?.querySelector('h3')?.focus({preventScroll:true});return;}
  if(act==='locateDeed'){scene?.focusLot(id);openPanel('tile',id);return;}
  if(act==='bankKind'){bankDraft.kind=b.dataset.kind;refreshPanel();return;}
  if(act==='bankQty'){bankDraft.amount=String(b.dataset.amount==='max'?bankLimit(game,bankDraft.kind):b.dataset.amount);$('bankAmount').value=bankDraft.amount;updateBankPreview(game,bankDraft.kind);return;}

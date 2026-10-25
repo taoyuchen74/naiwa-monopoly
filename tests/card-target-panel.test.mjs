@@ -2,6 +2,17 @@ import {test} from 'node:test';import assert from 'node:assert/strict';
 import {Game} from '../dist/engine.js';import {BUSINESSES,businessType} from '../dist/businesses.js';
 import {cardTargetOptions,cardTargetPanel,cardRouteDrawing} from '../dist/card-target-panel.js';
 const clone=g=>new Game(JSON.parse(JSON.stringify(g.s)));
+test('every possible branch landing has its own illustration, caption and matching route marker',()=>{
+ for(const mapVersion of [1,2])for(const pos of [15,35]){
+  const g=Game.create({seed:52,mapVersion,talents:false});g.player.pos=pos;g.player.cards=['dice'];const state=JSON.stringify(g.s),options=cardTargetOptions(g,0),html=cardTargetPanel(g,0,r=>g.tiles[r.id].name+' · destination '+r.id),pictures=[...html.matchAll(/<figure data-route-destination="(\d+)" data-route-index="(\d+)"/g)].map(m=>[+m[1],+m[2]]),expected=options.flatMap(o=>o.results.map((r,i)=>[r.id,i]));assert.deepEqual(pictures,expected);assert.ok(pictures.length>6);assert.match(html,/has-branch-routes/);
+  for(const o of options){const drawing=cardRouteDrawing(g,o.results);for(let i=0;i<o.results.length;i++){const letter=String.fromCharCode(65+i);assert.ok(drawing.includes(`>${letter}</text>`));assert.ok(drawing.includes(`data-route-index="${i}"`));}}
+  assert.equal(JSON.stringify(g.s),state);
+ }
+});
+
+test('a blocked single route shows its actual stopped destination without inventing another branch',()=>{
+ const g=Game.create({seed:52,talents:false});g.player.cards=['dice'];g.s.blocks[1]=1;const html=cardTargetPanel(g,0,r=>String(r.id)),pictures=[...html.matchAll(/data-route-destination="(\d+)"/g)].map(m=>+m[1]);assert.deepEqual(pictures,[1,1,1,1,1,1]);assert.ok(!html.includes('has-branch-routes'));assert.ok(!html.includes('target-route-letter'));
+});
 test('each illustrated dice destination agrees with real forced movement through forks, reverse paths and obstacles',()=>{
  for(const mapVersion of [1,2])for(const pos of [0,15,35])for(const reverse of [false,true])for(const obstacle of [false,true]){
   const g=Game.create({seed:51,mapVersion,talents:false});g.player.pos=pos;g.player.reverse=reverse;g.player.cards=['dice'];if(obstacle)g.s.blocks[g.tiles[pos].next[0]]=1;const state=JSON.stringify(g.s),options=cardTargetOptions(g,0);assert.equal(options.length,6);
