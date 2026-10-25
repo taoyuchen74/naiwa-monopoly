@@ -20,5 +20,5 @@ export function buildIsland(scene){const TILES=scene.tiles;const w=scene.world;c
  for(const [x,z]of [[-3,6.2],[2,6.6],[-5,-6],[5,-6]]){box(w,'#a18a62',[x,.35,z],[.9,.09,.28]);box(w,'#b79c6d',[x,.57,z-.1],[.9,.3,.05]);for(const dx of [-.34,.34])box(w,'#57694f',[x+dx,.2,z],[.055,.3,.23]);}
  for(const t of TILES.filter(t=>t.id%6===2)){const nx=(t.lotX-t.x)/2.3,nz=(t.lotZ-t.z)/2.3;scene.lamp(t.x-nx*1.25,t.z-nz*1.25);}
  for(const [x,z]of [[-19,8],[16,-13]]){const boat=new THREE.Group();ball(boat,'#eee4c8',[0,0,0],[1.2,.22,.45]);box(boat,'#5c8891',[0,.2,0],[1.25,.3,.55]);box(boat,'#fff0cf',[0,.4,0],[1.3,.06,.65]);boat.position.set(x,-.47,z);w.add(boat);scene.floats.push(boat);}
- scene.ripples=[];for(let i=0;i<24;i++){const a=i/24*Math.PI*2,r=mesh(w,new THREE.TorusGeometry(.5,.014,4,24),'#b3dddd',[Math.cos(a)*22,-.63,Math.sin(a)*18]);r.rotation.x=-Math.PI/2;r.scale.y=.35;scene.ripples.push(r);}for(const o of [scene.fountain,...scene.floats,...scene.ripples])o.userData.dynamic=true;scenicDetails(scene);batchStatic(w);
+ scene.ripples=[];for(const o of [scene.fountain,...scene.floats,...scene.ripples])o.userData.dynamic=true;scenicDetails(scene);batchStatic(w);
 }

@@ -1,8 +1,10 @@
+import {waterVertex,waterFragment} from './water-shaders.js';
 import * as THREE from './vendor/three.module.js';
 import {LIGHTING,lightingMode} from './lighting.js';
 const maps=new Map(),water=new Map(),windTime={value:0},windowLightGain={value:0};
+const waterViewDirection={value:new THREE.Vector3(28,30,36).normalize()};
 let surfaceLighting='day';
-export function setSurfaceLighting(mode){surfaceLighting=lightingMode(mode);const p=LIGHTING[surfaceLighting];windowLightGain.value=p.windows;for(const mat of water.values()){mat.uniforms.deepColor.value.set(p.waterDeep);mat.uniforms.shallowColor.value.set(p.waterShallow);}}
+export function setSurfaceLighting(mode){surfaceLighting=lightingMode(mode);const p=LIGHTING[surfaceLighting];windowLightGain.value=p.windows;for(const mat of water.values()){mat.uniforms.deepColor.value.set(p.waterDeep);mat.uniforms.shallowColor.value.set(p.waterShallow);mat.uniforms.skyColor.value.set(p.sky);mat.uniforms.sunColor.value.set(p.sun);mat.uniforms.sunDirection.value.set(...p.position).normalize();mat.uniforms.lightPower.value=p.power;}}
 export function windowMaterial(mat){mat.emissive.set('#ffd391');mat.emissiveIntensity=1;mat.onBeforeCompile=shader=>{shader.uniforms.windowLightGain=windowLightGain;shader.fragmentShader='uniform float windowLightGain;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance *= windowLightGain;');};mat.customProgramCacheKey=()=>'warm-window-v1';return mat;}
 export function grainTexture(kind='stone'){
  if(maps.has(kind))return maps.get(kind);const size=512,data=new Uint8Array(size*size*4);let seed=49191;
@@ -25,11 +27,7 @@ export function detailMaterial(color,roughness=.72,metalness=0){
  if(green||road||paving){const texture=grainTexture(green?'grass':road?'road':'paving');mat.map=texture;mat.bumpMap=texture;mat.bumpScale=road?.009:green?.014:.012;mat.roughness=.88;}return mat;
 }
 export function roofMaterial(color){const mat=detailMaterial(color,.68,0);mat.map=grainTexture('roof');mat.bumpMap=mat.map;mat.bumpScale=.027;return mat;}
-export function waterMaterial(river=false){if(water.has(river))return water.get(river);const mat=new THREE.ShaderMaterial({name:river?'river-silk':'coastal-water',uniforms:{time:{value:0},river:{value:river?1:0},deepColor:{value:new THREE.Color(LIGHTING[surfaceLighting].waterDeep)},shallowColor:{value:new THREE.Color(LIGHTING[surfaceLighting].waterShallow)}},vertexShader:`varying vec3 world;uniform float time;uniform float river;void main(){vec3 p=position;vec4 w=modelMatrix*vec4(p,1.);world=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,fragmentShader:`precision highp float;varying vec3 world;uniform float time;uniform float river;uniform vec3 deepColor;uniform vec3 shallowColor;
- void main(){vec2 p=world.xz;float a=atan(p.y/16.8,p.x/21.);float edge=length(vec2(p.x/21.,p.y/16.8))-(1.+.06*sin(5.*a)+.035*cos(3.*a));float shallow=1.-smoothstep(.015,.25,edge);float w=sin(p.x*2.9+p.y*2.1+time*.7)+sin(p.y*4.3-p.x*.7-time*.9)*.55;vec3 normal=normalize(vec3(-cos(p.x*2.9+p.y*2.1+time*.7)*.12,1.,-cos(p.y*4.3-p.x*.7-time*.9)*.12));vec3 light=normalize(vec3(-.4,.8,.5));float glint=pow(max(0.,dot(reflect(-light,normal),normalize(vec3(.3,.9,.4)))),200.);vec3 color=mix(deepColor,shallowColor,max(shallow,river*.62));color+=vec3(.006,.012,.014)*w;float caustic=pow(max(0.,sin(p.x*5.+sin(p.y*3.+time*.4))+sin(p.y*4.-time*.5)-.9),3.);color+=caustic*.018*max(shallow,river*.35);float foam=(1.-smoothstep(.007,.026,abs(edge-.025-.006*sin(a*28.+time*.8))))*(1.-river);color=mix(color,vec3(.78,.91,.85),foam*.65);color+=glint*vec3(.2,.18,.13);gl_FragColor=vec4(color,1.);
- #include <tonemapping_fragment>
- #include <colorspace_fragment>
- }`});mat.toneMapped=true;water.set(river,mat);return mat;}
-export function animateSurfaces(time){windTime.value=time;for(const mat of water.values())mat.uniforms.time.value=time;}
+export function waterMaterial(river=false){if(water.has(river))return water.get(river);const p=LIGHTING[surfaceLighting],mat=new THREE.ShaderMaterial({name:river?'river-silk':'coastal-water',uniforms:{time:windTime,river:{value:river?1:0},deepColor:{value:new THREE.Color(p.waterDeep)},shallowColor:{value:new THREE.Color(p.waterShallow)},skyColor:{value:new THREE.Color(p.sky)},sunColor:{value:new THREE.Color(p.sun)},sunDirection:{value:new THREE.Vector3(...p.position).normalize()},viewDirection:waterViewDirection,lightPower:{value:p.power}},vertexShader:waterVertex,fragmentShader:waterFragment});mat.toneMapped=true;water.set(river,mat);return mat;}
+export function animateSurfaces(time,camera){windTime.value=time;if(camera)camera.getWorldDirection(waterViewDirection.value).negate();}
 
 export const isSharedSurfaceTexture=texture=>[...maps.values()].includes(texture);
