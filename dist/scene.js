@@ -1,3 +1,4 @@
+import {structuralChange} from './building-reveal.js';
 import {LIGHTING,lightingMode} from './lighting.js';
 import {HighQuality} from './high-quality.js';
 import {animateSurfaces,setSurfaceLighting} from './surfaces.js';
@@ -18,7 +19,7 @@ export class IslandScene{
  constructor(container,onTile,tiles=CITY_TILES){this.tiles=tiles;this.el=container;this.onTile=onTile;this.follow=false;this.zoom=1;this.offset=new THREE.Vector3();this.quality='';this.paused=false;this.last=0;this.time=0;this.game=null;this.showcase=null;this.reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#b7d3dc');this.scene.fog=new THREE.Fog('#b7d3dc',70,130);
   this.camera=new THREE.OrthographicCamera(-19,19,13,-13,.1,180);this.camera.position.set(28,30,36);this.camera.lookAt(0,0,0);
-  this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio,1.5),2.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.94;container.append(this.renderer.domElement);
+  this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio,1.5),2.5));this.renderer.shadowMap.enabled=true;this.renderer.localClippingEnabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.94;container.append(this.renderer.domElement);
   this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();this.contextLost=true;this.paused=true;container.dispatchEvent(new CustomEvent('renderlost'));});
   this.hemi=new THREE.HemisphereLight('#fff3dc','#6f8e9e',.95);this.scene.add(this.hemi);const sun=new THREE.DirectionalLight('#fff2dc',3.2);sun.position.set(-10,30,18);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:.5,far:70});sun.shadow.normalBias=.025;sun.shadow.bias=-.0001;this.scene.add(sun);this.sun=sun;
   const fill=new THREE.DirectionalLight('#b4d9ef',1);fill.position.set(15,8,-10);this.scene.add(fill);this.fill=fill;
@@ -40,8 +41,12 @@ export class IslandScene{
   for(const t of this.tiles.filter(t=>t.kind==='property')){const o=s.ownership[t.id],signature=o?`${o.player}:${o.level}:${o.buildingType||'legacy'}`:'empty';const previous=this.plotMeshes.get(t.id);if(previous?.signature===signature)continue;
    const color=o?CHARACTERS.find(c=>c.id===s.players[o.player].character).estateColor:'#acb18d';const model=propertyBuilding({...t,buildingType:o?.buildingType},o?.level||0,color,!!o);model.position.copy(lotPosition(t));model.rotation.y=t.facing;this.tag(model,t.id);this.world.add(model);
    if(o){cylinder(model,'#587070',[.85,.5,-.6],.018,.018,.85,8);box(model,color,[.98,.81,-.6],[.28,.17,.025]);}
-   if(previous){const old=previous.model;if(!fresh){const demolish=!o||(o.level<previous.level);this.fx.spawn(demolish?'demolish':'build',old.position,color);this.fx.spawn('dust',old.position);this.fx.transition(old,'remove',()=>{this.world.remove(old);disposeUnique(old);});this.fx.transition(model,'grow');if(!demolish&&o?.level>0)this.fx.construction(model.position,.95+o.level*.6);}else{this.world.remove(old);disposeUnique(old);}}
-   this.plotMeshes.set(t.id,{model,signature,level:o?.level||0});
+   if(previous){const old=previous.model;this.fx.finish(old);const removeOld=()=>{this.world.remove(old);disposeUnique(old);};if(!fresh&&structuralChange(previous,o)){const demolish=!o||o.level<previous.level;this.fx.spawn(demolish?'demolish':'build',old.position,color);this.fx.spawn('dust',old.position);
+    if(demolish){model.visible=this.reduced||!o?.level;const endHeight=o?.level?new THREE.Box3().setFromObject(model).max.y:undefined;this.fx.transition(old,'remove',()=>{removeOld();model.visible=true;},{endHeight});}
+    else{const startHeight=previous.level>0&&previous.buildingType===(o?.buildingType||'legacy')?new THREE.Box3().setFromObject(old).max.y:undefined;removeOld();this.fx.transition(model,'grow',undefined,{startHeight});if(o?.level>0)this.fx.construction(model);}
+   }else removeOld();}
+
+   this.plotMeshes.set(t.id,{model,signature,level:o?.level||0,buildingType:o?.buildingType||'legacy'});
   }
   for(const [id]of Object.entries(s.blocks))if(!this.blockMeshes.has(id)){const t=this.tiles[id],g=new THREE.Group();for(const x of [-.4,.4])box(g,'#f4dcac',[x,.45,0],[.07,.55,.07]);box(g,'#c76f51',[0,.6,0],[1.15,.19,.13]);for(const x of [-.4,0,.4]){const bar=box(g,'#f1dfb1',[x,.61,.07],[.15,.2,.02]);bar.rotation.z=-.35;}g.position.set(t.x,.2,t.z);this.world.add(g);this.blockMeshes.set(id,g);this.fx.spawn('build',g.position,'#d7b871');}
   for(const [id,g]of this.blockMeshes)if(s.blocks[id]===undefined){this.world.remove(g);this.blockMeshes.delete(id);this.fx.spawn('demolish',g.position,'#c77956');disposeUnique(g);}

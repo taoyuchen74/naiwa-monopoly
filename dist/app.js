@@ -218,7 +218,7 @@ $('sheetBody').addEventListener('click',e=>{
 function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||document.hidden||gamePaused||scene?.studio||game.s.phase==='finished')return;
  if(activePanel&&['settings','help','sources','share','news','confirmRestart','talents','mapGuide','stocks','advanced'].includes(activePanel.type))return;
  const s=game.s,phase=s.phase,beforeHead=s.logs[0],beforePlayer=s.current;
- if(!actionPacer.ready({news:newsFeed.busy,moving:!!scene?.isMoving(),effects:scene?.fx.items.some(e=>['grow','remove','scaffold','float'].includes(e.kind))}))return;
+ if(!actionPacer.ready({news:newsFeed.busy,moving:!!scene?.isMoving(),effects:!!scene?.fx.items.length}))return;
  let changed=false;if(!game.player.alive&&phase==='end')changed=game.end();else if(!game.player.human)changed=game.ai();else if(phase==='departure')changed=game.roll();else if(phase==='moving')changed=game.step();
  changed=changed||s.phase!==phase||s.logs[0]!==beforeHead||s.current!==beforePlayer;if(changed){actionPacer.after(phase,s.options.speed);save();render();}
 }
