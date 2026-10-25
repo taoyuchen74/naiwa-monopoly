@@ -1,3 +1,4 @@
+import {TransferLog} from './transfers.js';
 import {rosterFor} from './setup.js';
 import {BUSINESSES,businessType,buildingLimit,businessDeparture,researchChoices,repairBuilding} from './businesses.js';
 import {mapTiles} from './maps.js';
@@ -12,7 +13,7 @@ const copy=x=>JSON.parse(JSON.stringify(x));
 const round=n=>Math.round(n);
 function mixedSeed(seed){let x=(seed>>>0)^0x9e3779b9;x=Math.imul(x^(x>>>16),0x85ebca6b);x=Math.imul(x^(x>>>13),0xc2b2ae35);return ((x^(x>>>16))>>>0)||1;}
 export class Game {
- constructor(state){this.s=state;}
+ constructor(state){this.s=state;this.transfers=new TransferLog();}
  static create({character='naiwa',rounds=50,playerCount=3,randomStart=false,talents=true,mapVersion=2,difficulty='normal',opponents,seatLevels=[],startingCash=3200,startingTickets=60,seed=Date.now()}={}){
   if(character==='dounai')character='naicha';opponents=opponents?.map(id=>id==='dounai'?'naicha':id);if(!CHARACTERS.some(c=>c.id===character))character='naiwa';
   const count=[2,3,4,5,6].includes(+playerCount)?+playerCount:3;const chars=rosterFor(character,count,opponents,seed);
@@ -51,6 +52,7 @@ export class Game {
  rng(){let x=this.s.seed;x^=x<<13;x^=x>>>17;x^=x<<5;this.s.seed=x>>>0;return this.s.seed/4294967296;}
  int(n){return Math.floor(this.rng()*n);}
  log(text){this.s.logs.unshift({round:this.s.round,text});this.s.logs=this.s.logs.slice(0,80);}
+ recordTransfer(to,amount,kind='fee'){if(to===null||to===this.s.current||!this.s.players[to]||!Number.isSafeInteger(amount)||amount<=0)return;this.transfers.record({from:this.s.current,to,amount,kind,tile:this.player.pos,round:this.s.round});}
  owned(p){return Object.entries(this.s.ownership).filter(([,o])=>o.player===p.id).map(([id,o])=>({tile:this.tiles[+id],...o}));}
  cost(t,level,type='residence'){return t.price+level*Math.ceil(this.upgradeCost(t)*(BUSINESSES[type]?.cost||1));}
  upgradeCost(t){return Math.ceil(t.price*.6/10)*10;}
@@ -93,7 +95,7 @@ export class Game {
   const p=this.player;amount=this.payment(amount,to,p);
   if(p.money<amount&&p.deposit){const transfer=Math.min(p.deposit,amount-p.money);p.deposit-=transfer;p.money+=transfer;this.log(`${this.char().name}存款自动补足现金 +${transfer}`);}
   if(p.money<amount){this.s.debt={amount,to,label};this.s.phase='debt';this.log(`${this.char().name}需支付 ${amount} 奶币，请筹集资金或申请破产。`);return false;}
-  p.money-=amount;if(to!==null)this.s.players[to].money+=amount;this.log(`${this.char().name} ${label} −${amount}`);return true;
+  p.money-=amount;if(to!==null)this.s.players[to].money+=amount;this.recordTransfer(to,amount);this.log(`${this.char().name} ${label} −${amount}`);return true;
  }
  roll(){if(!['roll','departure'].includes(this.s.phase))return false;const p=this.player;
   if(p.skip>0){p.skip--;this.log(`${this.char().name}正在休养，本回合暂停行动。`);this.s.phase='end';return true;}
@@ -145,7 +147,7 @@ export class Game {
   if(key==='turn'){if(p.reverse)return false;p.reverse=true;}
   if(key==='shield'){if(p.shield)return false;p.shield=true;}
   if(key==='recover'){p.skip=0;if(p.spirit==='misfortune'){p.spirit=null;p.spiritTurns=0;}this.income(p,80,'喝下野生狗奶');}
-  if(key==='steal'){const t=this.tiles[target],o=this.s.ownership[target];if(!this.cardTargets(key).some(x=>x.id===target))return false;const price=this.takeoverPrice(target);if(p.money<price)return false;p.money-=price;this.s.players[o.player].money+=price;o.player=p.id;detail=`收购「${t.name}」−${price}`;}
+  if(key==='steal'){const t=this.tiles[target],o=this.s.ownership[target];if(!this.cardTargets(key).some(x=>x.id===target))return false;const price=this.takeoverPrice(target);if(p.money<price)return false;p.money-=price;this.s.players[o.player].money+=price;this.recordTransfer(o.player,price,'takeover');o.player=p.id;detail=`收购「${t.name}」−${price}`;}
   if(key==='demolish'||key==='build'){if(!this.cardTargets(key).some(x=>x.id===target))return false;if(key==='demolish'&&this.s.blocks[target]!==undefined){delete this.s.blocks[target];detail=`清理「${this.tiles[target].name}」路障`;}else{const o=this.s.ownership[target];if(key==='build'&&o.level===0)o.buildingType='residence';o.level+=key==='build'?1:-1;repairBuilding(o);detail=`${key==='build'?'加盖':'拆除'}「${this.tiles[target].name}」一层`;}}
   if(key==='slow'){if(p.slowTurns||p.forced)return false;p.slowTurns=3;}
   p.cards.splice(index,1);p.cardsUsed++;this.log(`${this.char().name}使用「${CARDS[key].name}」${detail}`);return true;
@@ -163,12 +165,12 @@ export class Game {
   if(e.kind==='spirit'){this.attach();return;}
   this.notice(e.name,e.text,e.kind==='loss'?'sad':'happy');
  }
- settle(){if(this.s.phase!=='debt')return false;const d=this.s.debt,p=this.player;if(p.money<d.amount)return false;p.money-=d.amount;if(d.to!==null)this.s.players[d.to].money+=d.amount;this.log(`${this.char().name}支付${d.label} −${d.amount}`);this.s.debt=null;this.s.phase='end';return true;}
+ settle(){if(this.s.phase!=='debt')return false;const d=this.s.debt,p=this.player;if(p.money<d.amount)return false;p.money-=d.amount;if(d.to!==null)this.s.players[d.to].money+=d.amount;this.recordTransfer(d.to,d.amount);this.log(`${this.char().name}支付${d.label} −${d.amount}`);this.s.debt=null;this.s.phase='end';return true;}
  bankrupt(){if(this.s.phase!=='debt')return false;const p=this.player,d=this.s.debt;
   p.money+=p.deposit;p.deposit=0;for(let i=0;i<4;i++)if(p.stocks[i])recordTrade(p,i,-p.stocks[i],this.s.market[i].price,this.s.round);
   for(const o of this.owned(p)){p.money+=round(this.cost(o.tile,o.level,businessType(o))*.65);delete this.s.ownership[o.tile.id];}
   p.money+=round(VEHICLES[p.vehicle].price*.5);p.vehicle=0;p.diceCount=1;p.forced=0;p.slowTurns=0;p.skip=0;
-  const paid=Math.min(p.money,d.amount);p.money-=paid;if(d.to!==null)this.s.players[d.to].money+=paid;p.alive=false;p.spirit=null;this.s.debt=null;this.log(`${this.char().name}申请破产，清算支付 ${paid} 奶币，退出本局。`);this.s.phase='end';if(this.s.players.filter(p=>p.alive).length===1)this.finish();return true;
+  const paid=Math.min(p.money,d.amount);p.money-=paid;if(d.to!==null)this.s.players[d.to].money+=paid;this.recordTransfer(d.to,paid,'liquidation');p.alive=false;p.spirit=null;this.s.debt=null;this.log(`${this.char().name}申请破产，清算支付 ${paid} 奶币，退出本局。`);this.s.phase='end';if(this.s.players.filter(p=>p.alive).length===1)this.finish();return true;
  }
  end(){if(this.s.phase!=='end')return false;const p=this.player;if(p.spirit&&--p.spiritTurns<=0)p.spirit=null;p.reverse=false;
   if(this.s.players.filter(p=>p.alive).length<=1){this.finish();return true;}

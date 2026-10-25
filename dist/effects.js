@@ -1,3 +1,4 @@
+import {MoneyTransfer,TRANSFER_DURATION} from './money-transfer.js';
 import {DiceRoll,DICE_SETTLE,DICE_DURATION} from './dice.js';
 import {buildingReveal} from './building-reveal.js';
 import * as THREE from './vendor/three.module.js';
@@ -8,6 +9,7 @@ function cylinderPole(g,mat,pos,height){return cylinder(g,mat,pos,.018,.018,heig
 function release(group){const materials=new Set();group.traverse(o=>{if(o.geometry?.type==='TubeGeometry')o.geometry.dispose();if(o.material)materials.add(o.material);});for(const m of materials){m.map?.dispose();m.dispose();}}
 export class EffectSystem{
  constructor(parent,{reduced=false,onDiceState=()=>{}}={}){this.parent=parent;this.reduced=reduced;this.onDiceState=onDiceState;this.items=[];this.clock=0;}
+ transfer(from,to,amount,done){if(this.reduced||!amount||from.distanceTo(to)<.01)return false;const transfer=new MoneyTransfer(from,to,amount);this.parent.add(transfer.group);this.items.push({kind:'transfer',group:transfer.group,transfer,particles:[],age:0,duration:TRANSFER_DURATION,done});return true;}
  anchorDice(camera,portrait){for(const e of this.items)if(e.dice)e.dice.anchor(camera,portrait);}
  get diceRolling(){return this.items.some(e=>e.kind==='dice'&&e.age<DICE_SETTLE);}
  rollDice(values,position,color){this.clearDice();if(this.reduced)return;const dice=new DiceRoll(values,position,color);this.parent.add(dice.group);this.items.push({kind:'dice',group:dice.group,dice,particles:[],age:0,duration:DICE_DURATION,impacted:false});this.onDiceState(true,false,true);}
@@ -24,15 +26,16 @@ export class EffectSystem{
 
  money(position,amount){if(this.reduced||!amount)return;const c=document.createElement('canvas');c.width=256;c.height=80;const x=c.getContext('2d');x.font='bold 40px "Microsoft YaHei",sans-serif';x.textAlign='center';x.fillStyle=amount>0?'#fce49c':'#ffcab5';x.strokeStyle='#385664';x.lineWidth=5;x.strokeText(`${amount>0?'+':''}${amount}`,128,53);x.fillText(`${amount>0?'+':''}${amount}`,128,53);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}),group=new THREE.Group(),sprite=new THREE.Sprite(m);sprite.scale.set(2.2,.7,1);group.add(sprite);group.position.copy(position);group.position.y+=2;this.parent.add(group);this.items.push({kind:'float',group,mat:m,age:0,duration:1.3,particles:[]});}
  update(dt){this.clock+=dt;for(let i=this.items.length-1;i>=0;i--){const e=this.items[i];e.age+=dt;const p=Math.min(1,e.age/e.duration);
-   if(e.kind==='dice'){e.dice.update(e.age);if(!e.impacted&&e.age>=DICE_SETTLE){e.impacted=true;this.onDiceState(false,true,true);}}
+   if(e.kind==='transfer'){e.transfer.update(e.age);}
+   else if(e.kind==='dice'){e.dice.update(e.age);if(!e.impacted&&e.age>=DICE_SETTLE){e.impacted=true;this.onDiceState(false,true,true);}}
    else if(e.kind==='float'){e.group.position.y+=dt*.85;e.mat.opacity=1-p*p;}
    else if(e.kind==='scaffold'){const fade=p<.8?1:(1-p)/.2;e.materials.forEach((m,i)=>m.opacity=fade*[.88,1,.38][i]);e.boom.rotation.y=Math.sin(p*Math.PI)*.16;e.hook.position.y=Math.sin(p*Math.PI)*e.height*.12;e.hook.rotation.z=Math.sin(p*Math.PI*4)*.04;}
    else if(e.group){for(const {m,v}of e.particles){m.position.addScaledVector(v,dt);if(e.kind!=='dust'){v.y-=dt*4.5;if(m.position.y<e.ground){m.position.y=e.ground;v.y=Math.abs(v.y)*.22;v.x*=.72;v.z*=.72;}}m.rotation.x+=dt*2;m.rotation.z+=dt*1.5;m.material.opacity=(1-p)*(e.kind==='dust'?.4:1);if(e.kind==='dust')m.scale.addScalar(dt*.2);}}
    else if(e.kind==='grow'){const ease=1-Math.pow(1-p,1.3);e.reveal.set(THREE.MathUtils.lerp(e.from,e.to,ease));}
    else if(e.kind==='remove'){e.reveal.set(THREE.MathUtils.lerp(e.from,e.to,p*p));e.object.rotation.z=e.baseRotation.z+Math.sin(p*Math.PI*8)*(1-p)*.012;if(p-e.lastBurst>.23&&p<.85){e.lastBurst=p;const b=e.reveal.bounds,at=b.getCenter(new THREE.Vector3());at.y=e.reveal.plane.constant;this.spawn('demolish',at,'#cbb38c',.6);}}
 
-   if(p===1){if(e.group){this.parent.remove(e.group);if(e.dice){this.onDiceState(false,false,false);e.dice.dispose();}else release(e.group);}else{e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);}this.items.splice(i,1);e.done?.();}
+   if(p===1){if(e.group){this.parent.remove(e.group);if(e.dice){this.onDiceState(false,false,false);e.dice.dispose();}else if(e.transfer)e.transfer.dispose();else release(e.group);}else{e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);}this.items.splice(i,1);e.done?.();}
   }}
  finish(object){for(const e of [...this.items])if(e.object===object){this.items.splice(this.items.indexOf(e),1);e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);e.done?.();}}
- clear(){this.onDiceState(false,false,false);for(const e of this.items){if(e.group){this.parent.remove(e.group);if(e.dice){this.onDiceState(false,false,false);e.dice.dispose();}else release(e.group);}else{e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);}e.done?.();}this.items=[];}
+ clear(){this.onDiceState(false,false,false);for(const e of this.items){if(e.group){this.parent.remove(e.group);if(e.dice){this.onDiceState(false,false,false);e.dice.dispose();}else if(e.transfer)e.transfer.dispose();else release(e.group);}else{e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);}e.done?.();}this.items=[];}
 }
