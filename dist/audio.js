@@ -40,6 +40,7 @@ export class GameAudio{
  sfx(type='tap'){if(!this.ctx||!this.unlocked||this.hidden||this.options.sound===false)return;const now=this.ctx.currentTime;
   if(type==='laugh'||type==='happy'){this.laugh();return;}
   if(type==='roll'){for(let i=0;i<7;i++){this.hiss(now+i*.035,.035,.09,this.fxGain,600);this.note(45+i%3*3,now+i*.035,.045,.045);}return;}
+  if(type==='diceLand'){this.hiss(now,.045,.07,this.fxGain,700);this.note(48,now,.08,.055);return;}
   if(type==='step'){this.hiss(now,.033,.035,this.fxGain,800);this.note(43,now,.045,.02,'bass');return;}
   if(type==='build'){for(let i=0;i<4;i++){this.note(48+i*5,now+i*.1,.1,.06);this.hiss(now+i*.1,.035,.07,this.fxGain,1200);}return;}
   if(type==='demolish'){this.hiss(now,.2,.17,this.fxGain,200);this.note(35,now,.28,.1,'bass');return;}

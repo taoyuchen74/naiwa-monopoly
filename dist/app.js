@@ -33,6 +33,7 @@ let TILES=game.tiles;
 try{saved=Game.restore(localStorage.getItem(SAVE_KEY));Object.assign(game.s.options,readPreferences(localStorage,saved?.s.options||game.s.options));}catch{}
 try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch(e){console.warn('3D unavailable; using playable map',e);$('fallback').hidden=false;}
 $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-pressed',String(e.detail.follow)));
+$('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
 $('scene').addEventListener('renderlost',()=>{$('fallback').hidden=false;toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
 const miniMap=new MiniMap($('miniMap'),{jump:id=>{if(started&&!pinned&&!scene?.studio){scene?.focusTile(id);sound();}},inspect:id=>{if(started&&!pinned)openPanel('tile',id);}});
 const newsFeed=new NewsFeed($('newsFlash'));const actionPacer=new ActionPacer();
@@ -61,7 +62,7 @@ function render(){TILES=game.tiles;const s=game.s,p=game.player;audioState();sce
  $('turnName').textContent=started?s.phase==='finished'?'本次旅行圆满结束':`${game.char().name}${p.human?'，轮到你啦':'正在旅行'}`:'准备好了吗？';$('talentBtn').title=game.s.talents?TALENTS[game.player.character].text:'本局天赋未开启';$('turnAvatar').innerHTML=portrait(game.char().id);$('turnAvatar').style.background=game.char().color;
  const hints={departure:'天赋结算中，马上掷骰出发',roll:p.skip?'正在休养，可用野生狗奶恢复':`点券 ${p.tickets} · 已用卡 ${p.cardsUsed} · 停到自家地可建设`,moving:`${p.reverse?'倒退':'前进'}中 · 还剩 ${s.remaining} 格`,branch:'选择一条路线继续前进',buy:'这块地值得买下来吗？',estate:'支付租金，还是用购地卡收购？',event:'看看岛上发生了什么',end:`点券 ${p.tickets} · 建设 ${p.buildsUsed}/1 · 可继续经营`,debt:'现金不足，可以取款、借款或变卖资产',finished:'看看谁是今天的奶家大富翁'};
  const pipFaces={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
- $('turnHint').textContent=started?hints[s.phase]:'选一位奶伴，开启旅行';$('dice').innerHTML=s.dice.map(n=>`<span class="pip-die" role="img" aria-label="骰子 ${n} 点">${Array.from({length:9},(_,i)=>`<i class="${pipFaces[n].includes(i)?'pip-on':''}"></i>`).join('')}</span>`).join('');$('dice').classList.toggle('rolling',s.phase==='moving');
+ $('turnHint').textContent=started?hints[s.phase]:'选一位奶伴，开启旅行';$('dice').innerHTML=s.dice.map(n=>`<span class="pip-die" role="img" aria-label="骰子 ${n} 点">${Array.from({length:9},(_,i)=>`<i class="${pipFaces[n].includes(i)?'pip-on':''}"></i>`).join('')}</span>`).join('');$('dice').classList.toggle('rolling',!!scene?.fx.diceRolling);
  $('actionBtn').textContent=!started?'选奶伴':s.phase==='finished'?'看排名':!p.human?'等待中':({roll:p.skip?'休养':'掷骰子',end:'结束回合',departure:'天赋中',moving:'前进中',branch:'选路线',buy:'买地',estate:'选地产',event:'看事件',debt:'筹资金'}[s.phase]);
  if($('actionBtn').textContent.length===4)$('actionBtn').textContent=$('actionBtn').textContent.slice(0,2)+'\n'+$('actionBtn').textContent.slice(2);
  $('actionBtn').disabled=!started||(!p.human&&s.phase!=='finished')||['moving','departure'].includes(s.phase);
