@@ -8,6 +8,7 @@ import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
+import {deedsPanel} from './deeds-panel.js';
 import {bankPanel,bankLimit,updateBankPreview} from './bank-panel.js';
 import {stockPanel,updateStockPreview} from './stocks-panel.js';
 import {DIFFICULTIES} from './difficulty.js';
@@ -80,7 +81,7 @@ function render(){selectMenus.sync();const transfers=transferFeed.read(game,star
  $('actionBtn').textContent=!started?'选奶伴':s.phase==='finished'?'看排名':!p.human?'等待中':({roll:p.skip?'休养':'掷骰子',end:'结束回合',departure:'天赋中',moving:'前进中',branch:'选路线',buy:'买地',estate:'选地产',event:'看事件',debt:'筹资金'}[s.phase]);
  if($('actionBtn').textContent.length===4)$('actionBtn').textContent=$('actionBtn').textContent.slice(0,2)+'\n'+$('actionBtn').textContent.slice(2);
  $('actionBtn').disabled=!started||(!p.human&&s.phase!=='finished')||['moving','departure'].includes(s.phase);
- document.querySelectorAll('[data-panel]').forEach(b=>b.disabled=!started||!p.human||!['roll','end','debt'].includes(s.phase));document.querySelector('[data-panel=stocks]').disabled=!started||pinned||!['roll','end','moving','departure'].includes(s.phase);$('cardCount').textContent=s.players[0].cards.length;$('planBtn').disabled=!started||!p.human||s.phase!=='roll';
+ document.querySelectorAll('[data-panel]').forEach(b=>b.disabled=!started||!p.human||!['roll','end','debt'].includes(s.phase));for(const type of ['deeds','cards','bank','stocks'])document.querySelector('.dock-tabs [data-panel='+type+']').disabled=!started||pinned||!!scene?.studio;$('cardCount').textContent=s.players[0].cards.length;$('planBtn').disabled=!started||!p.human||s.phase!=='roll';
  $('diceCount').hidden=!started||!p.human||p.vehicle===0||s.phase!=='roll';$('diceCount').innerHTML=Array.from({length:VEHICLES[p.vehicle].dice},(_,i)=>`<option value="${i+1}" ${p.diceCount===i+1?'selected':''}>${i+1} 颗骰子</option>`).join('');
  $('soundBtn').textContent=s.options.sound?'♫':'♪';$('soundBtn').setAttribute('aria-label',s.options.sound?'关闭声音':'开启声音');$('qualityBtn').textContent=s.options.quality==='low'?'省电':'电影';$('qualityBtn').title=s.options.quality==='low'?'省电画质 · 点击切换电影画质':'电影画质 · 点击切换省电画质';
  $('castBtn').disabled=!scene||!!scene.contextLost;$('followBtn').setAttribute('aria-pressed',String(!!scene?.follow));$('moveIndicator').hidden=!started;$('moveIndicator').textContent=`${game.char().name} · ${TILES[p.pos].name}${s.phase==='moving'?' · 剩 '+s.remaining+' 格':''}`;
@@ -104,8 +105,7 @@ function openPanel(type,id){
  }else if(type==='mapGuide'){showSheet(MAPS[s.mapVersion].name,'路线与电脑设置',`<p>${MAPS[s.mapVersion].description}</p><h3>本局电脑：${DIFFICULTIES[s.difficulty].name}</h3><p>${DIFFICULTIES[s.difficulty].description}</p><p>本局电脑：${s.players.filter(q=>!q.human).map(q=>game.char(q).name+' · '+DIFFICULTIES[game.aiDifficulty(q)].name).join('、')}。种子 ${s.setupSeed??'旧存档未记录'}。</p><p>所有难度的初始资金、租金、掷骰和天赋规则相同，差别只在电脑如何做决策。新局可重新选择强度。</p><p>功能建筑均对应道路格；选择捷径前可打开落点预览，比较租金、补给和起点奖励。</p>`);
  }else if(type==='talents'){showSheet('奶伴专属天赋',s.talents?'本局已开启 · 自动触发，无需额外按键':'本局未开启；新局可勾选开启',CHARACTERS.map(c=>`<div class="talent-row"><span class="talent-face">${portrait(c.id)}</span><div><h3>${c.name} · ${TALENTS[c.id].name}</h3><p>${TALENTS[c.id].text}</p>${s.players.some(q=>q.character===c.id)?'<span class="badge">本局参赛</span>':''}</div></div>`).join(''));
  }else if(type==='deeds'){
-  const types={tea:'奶茶商铺',theater:'大笑剧院',factory:'奶块工厂',garden:'花园庭院',hotel:'奶家旅馆',tower:'奶币办公楼'};
-  const mine=game.owned(p);showSheet('我的奶家地产','从一间小店，到一座小镇',`${guideArt('house','空地到访后可选七类建筑；住宅、旅馆、商场、研究所最高五级，连锁店、加油站、公园仅一级。远程加盖请用工程队。','naishu')}${mine.length?mine.map(o=>`<div class="row estate-row">${buildingArt(o.tile,o.level,game.char(p).estateColor)}<div class="row-head"><strong><span style="color:${GROUPS[o.tile.group].color}">●</span> ${o.tile.name}</strong><span class="badge">${o.level?o.level+' 级':'空地'}</span></div>${businessFacts(game,o.tile.id)}<div class="row-actions">${btn(o.level>=buildingLimit(o)?'已达上限':p.buildSite!==o.tile.id?'停到这里再建设':`加盖 · ${game.buildPrice(o.tile)}`,o.level?'upgrade':'chooseBuilding',`data-id="${o.tile.id}"`,!normal||!(game.canUpgrade(o.tile.id)||game.canBuild(o.tile.id)))}${btn('拆除房屋','confirmDemolish',`data-id="${o.tile.id}"`,!normal||s.phase!=='end'||p.buildSite!==o.tile.id||o.level===0)}${btn(`变卖 · +${fmt(game.cost(o.tile,o.level,businessType(o))*.65)}`,'sell',`data-id="${o.tile.id}"`,!can)}</div></div>`).join(''):'<div class="empty">小镇还在等它的新主人。<br>走到无主地产，就能买下第一块地。</div>'}`);
+  showSheet('我的奶家地产','从一间小店，到一座小镇',deedsPanel(game));
  }else if(type==='cards'){
   showSheet('奶伴的卡包','收好道具，选准下一步',cardsPanel(game));
  }else if(type==='cardTarget'){
@@ -201,6 +201,7 @@ $('sheetBody').addEventListener('change',async e=>{
 let pendingImport=null;
 $('sheetBody').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const {act}=b.dataset,id=+b.dataset.id,index=+b.dataset.index,target=+b.dataset.target;let ok=true;
+ if(act==='locateDeed'){scene?.focusLot(id);openPanel('tile',id);return;}
  if(act==='bankKind'){bankDraft.kind=b.dataset.kind;refreshPanel();return;}
  if(act==='bankQty'){bankDraft.amount=String(b.dataset.amount==='max'?bankLimit(game,bankDraft.kind):b.dataset.amount);$('bankAmount').value=bankDraft.amount;updateBankPreview(game,bankDraft.kind);return;}
  if(act==='applyAdvanced'){readAdvancedFields();if(setupError(advancedDraft,selected,+$('playerCountSelect').value))return;advanced=normalizeSetup(advancedDraft);advancedDraft=null;try{localStorage.setItem('naiwa-setup-v1',JSON.stringify(advanced));}catch{}dismiss(true);picker();render();toast('高级设置已保存，新局按所选阵容开始。');return;}
