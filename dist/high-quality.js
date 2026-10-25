@@ -13,4 +13,5 @@ export class HighQuality{
  resize(w,h,ratio){this.composer.setPixelRatio(ratio);this.composer.setSize(w,h);this.fxaa.uniforms.resolution.value.set(1/(w*ratio),1/(h*ratio));}
  studio(value){this.ao.updateGtaoMaterial({radius:value?.28:.62,thickness:value?.18:.6});this.ao.blendIntensity=value?.58:.7;}
  render(){this.composer.render();}
+ dispose(){if(this.disposed)return;this.disposed=true;for(const pass of this.composer.passes)pass.dispose?.();this.composer.dispose();this.environment.dispose();}
 }

@@ -36,7 +36,8 @@ try{saved=Game.restore(localStorage.getItem(SAVE_KEY));Object.assign(game.s.opti
 try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch(e){console.warn('3D unavailable; using playable map',e);$('fallback').hidden=false;}
 $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-pressed',String(e.detail.follow)));
 $('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
-$('scene').addEventListener('renderlost',()=>{$('fallback').hidden=false;toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
+$('scene').addEventListener('renderlost',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;$('fallback').hidden=false;save();toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
+$('scene').addEventListener('renderrestored',()=>{$('fallback').hidden=true;if(scene)scene.paused=gamePaused;render();scene?.renderStill();toast('3D 画面已恢复，继续当前旅程。');});
 const miniMap=new MiniMap($('miniMap'),{jump:id=>{if(started&&!pinned&&!scene?.studio){scene?.focusTile(id);sound();}},inspect:id=>{if(started&&!pinned)openPanel('tile',id);}});
 const transferFeed=new TransferFeed();
 const newsFeed=new NewsFeed($('newsFlash'));const actionPacer=new ActionPacer();
@@ -73,7 +74,7 @@ function render(){const transfers=transferFeed.read(game,started);TILES=game.til
  document.querySelectorAll('[data-panel]').forEach(b=>b.disabled=!started||!p.human||!['roll','end','debt'].includes(s.phase));document.querySelector('[data-panel=stocks]').disabled=!started||pinned||!['roll','end','moving','departure'].includes(s.phase);$('cardCount').textContent=s.players[0].cards.length;$('planBtn').disabled=!started||!p.human||s.phase!=='roll';
  $('diceCount').hidden=!started||!p.human||p.vehicle===0||s.phase!=='roll';$('diceCount').innerHTML=Array.from({length:VEHICLES[p.vehicle].dice},(_,i)=>`<option value="${i+1}" ${p.diceCount===i+1?'selected':''}>${i+1} 颗骰子</option>`).join('');
  $('soundBtn').textContent=s.options.sound?'♫':'♪';$('soundBtn').setAttribute('aria-label',s.options.sound?'关闭声音':'开启声音');$('qualityBtn').textContent=s.options.quality==='low'?'省电':'电影';$('qualityBtn').title=s.options.quality==='low'?'省电画质 · 点击切换电影画质':'电影画质 · 点击切换省电画质';
- $('followBtn').setAttribute('aria-pressed',String(!!scene?.follow));$('moveIndicator').hidden=!started;$('moveIndicator').textContent=`${game.char().name} · ${TILES[p.pos].name}${s.phase==='moving'?' · 剩 '+s.remaining+' 格':''}`;
+ $('castBtn').disabled=!scene||!!scene.contextLost;$('followBtn').setAttribute('aria-pressed',String(!!scene?.follow));$('moveIndicator').hidden=!started;$('moveIndicator').textContent=`${game.char().name} · ${TILES[p.pos].name}${s.phase==='moving'?' · 剩 '+s.remaining+' 格':''}`;
  if(!$('fallback').hidden)$('fallback').innerHTML=`<div class="fallback-grid">${TILES.map(t=>`<button class="fallback-tile ${p.pos===t.id?'current':''}" data-tile="${t.id}" style="background:${GROUPS[t.group].color}50">${t.id+1}. ${esc(t.name)}<br>${s.players.filter(q=>q.alive&&q.pos===t.id).map(q=>game.char(q).name).join(' ')}${s.ownership[t.id]?'<br>⌂ '+game.char(s.players[s.ownership[t.id].player]).name:''}</button>`).join('')}</div>`;
  const currentKey=`${s.phase}:${s.current}:${s.round}:${p.pos}`;
  if(started&&(p.human||s.phase==='finished')&&['buy','estate','event','branch','debt','finished'].includes(s.phase)&&!activePanel&&blockKey!==currentKey){blockKey=currentKey;openPanel(s.phase);}
@@ -168,7 +169,7 @@ $('pauseBtn').addEventListener('click',()=>{if(!pinned&&started)openPanel('pause
 $('shareBtn').addEventListener('click',()=>{if(!pinned)openPanel('share');else toast('先完成当前选择，再分享链接。');});
 $('helpBtn').addEventListener('click',()=>{if(!pinned)openPanel('help');});$('settingsBtn').addEventListener('click',()=>{if(!pinned)openPanel('settings');});$('saveBtn').addEventListener('click',exportSave);
 $('homeBtn').addEventListener('click',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');scene?.home();$('studioPanel').hidden=true;$('startScreen').hidden=started;render();});$('followBtn').addEventListener('click',()=>{if(scene){if(scene.follow)scene.follow=false;else scene.followPlayer();render();toast(scene.follow?'跟随当前奶伴':'自由探索小岛');}});$('qualityBtn').addEventListener('click',()=>{game.s.options.quality=game.s.options.quality==='low'?'auto':'low';commit();});
-$('castBtn').addEventListener('click',()=>{if(pinned||!scene)return;scene.enterStudio(started?game.player.character:selected);$('app').classList.add('is-studio');$('studioPanel').hidden=false;$('miniMap').hidden=true;$('startScreen').hidden=true;$('actionBtn').disabled=true;document.querySelectorAll('.dock-tabs button').forEach(b=>b.disabled=true);});
+$('castBtn').addEventListener('click',()=>{if(pinned||!scene||scene.contextLost)return;scene.enterStudio(started?game.player.character:selected);$('app').classList.add('is-studio');$('studioPanel').hidden=false;$('miniMap').hidden=true;$('startScreen').hidden=true;$('actionBtn').disabled=true;document.querySelectorAll('.dock-tabs button').forEach(b=>b.disabled=true);});
 $('closeStudio').addEventListener('click',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;render();});
 $('studioPanel').addEventListener('click',e=>{const char=e.target.closest('[data-studio-char]'),mode=e.target.closest('[data-studio-mode]'),view=e.target.closest('[data-studio-view]');if(char)scene?.enterStudio(char.dataset.studioChar);if(mode&&scene?.studio)scene.studio.mode=mode.dataset.studioMode;if(view&&scene?.studio){scene.studio.yaw=.45+({front:0,side:Math.PI/2,back:Math.PI}[view.dataset.studioView]);scene.studio.manual=true;}});
 $('diceCount').addEventListener('change',e=>{if(game.s.phase==='roll'&&game.player.human){game.player.diceCount=+e.target.value;commit();}});
@@ -223,7 +224,7 @@ $('sheetBody').addEventListener('click',e=>{
 function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||document.hidden||gamePaused||scene?.studio||game.s.phase==='finished')return;
  if(activePanel&&['settings','help','sources','share','news','confirmRestart','talents','mapGuide','stocks','advanced'].includes(activePanel.type))return;
  const s=game.s,phase=s.phase,beforeHead=s.logs[0],beforePlayer=s.current;
- if(!actionPacer.ready({news:newsFeed.busy,moving:!!scene?.isMoving(),effects:!!scene?.fx.items.length}))return;
+ const visuals=scene&&!scene.contextLost;if(!actionPacer.ready({news:newsFeed.busy,moving:!!visuals&&scene.isMoving(),effects:!!visuals&&!!scene.fx.items.length}))return;
  let changed=false;if(!game.player.alive&&phase==='end')changed=game.end();else if(!game.player.human)changed=game.ai();else if(phase==='departure')changed=game.roll();else if(phase==='moving')changed=game.step();
  changed=changed||s.phase!==phase||s.logs[0]!==beforeHead||s.current!==beforePlayer;if(changed){actionPacer.after(phase,s.options.speed);save();render();}
 }
