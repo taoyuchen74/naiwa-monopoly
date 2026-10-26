@@ -8,6 +8,7 @@ import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
+import {talentsPanel} from './talent-panel.js';
 import {resumeCard,exportableState} from './save-menu.js';
 import {cardTargetPanel} from './card-target-panel.js';
 import {deedsPanel} from './deeds-panel.js';
@@ -75,7 +76,7 @@ function render(){selectMenus.sync();const transfers=transferFeed.read(game,star
  $('round').textContent=started?`第 ${s.round} / ${s.maxRounds} 轮`:'准备出发';$('logRound').textContent=`第 ${s.round} 轮`;$('weather').textContent=started?['周日','周一','周二','周三','周四','周五','周六'][s.round%7]+' · '+LIGHTING[lightingMode(s.options.lighting)].label:LIGHTING[lightingMode(s.options.lighting)].label+' · 宜大笑';
  $('players').innerHTML=s.players.map(q=>{const c=game.char(q);return `<div data-player-id="${q.id}" class="player ${started&&s.current===q.id?'active':''} ${q.alive?'':'out'}"><div class="player-head"><span class="mini-face" style="--c:${c.color}">${portrait(c.id)}</span><div><div class="player-name">${c.name} ${q.human?'<span class="badge">你</span>':''}</div><div class="player-role">${q.alive?'':'本局已破产'}</div></div><div class="player-money"><small>●</small>${fmt(q.money)}</div></div><div class="player-stats"><span>地产 <strong>${game.owned(q).length}</strong></span><span>净资产 <strong>${fmt(game.worth(q))}</strong></span></div>${statusTags(q)?`<div class="status-pills">${statusTags(q)}</div>`:''}</div>`;}).join('');
  $('logs').innerHTML=s.logs.slice(0,20).map(l=>`<div class="log"><span class="log-time">${String(l.round).padStart(2,'0')}</span><span>${esc(l.text)}</span></div>`).join('');
- $('turnName').textContent=started?s.phase==='finished'?'本次旅行圆满结束':`${game.char().name}${p.human?'，轮到你啦':'正在旅行'}`:'准备好了吗？';$('talentBtn').title=game.s.talents?TALENTS[game.player.character].text:'本局天赋未开启';$('turnAvatar').innerHTML=portrait(game.char().id);$('turnAvatar').style.background=game.char().color;
+ $('turnName').textContent=started?s.phase==='finished'?'本次旅行圆满结束':`${game.char().name}${p.human?'，轮到你啦':'正在旅行'}`:'准备好了吗？';$('talentBtn').title=game.s.talents?TALENTS[s.players[0].character].text:'本局天赋未开启';$('turnAvatar').innerHTML=portrait(game.char().id);$('turnAvatar').style.background=game.char().color;
  const hints={departure:'天赋结算中，马上掷骰出发',roll:p.skip?'正在休养，可用野生狗奶恢复':`点券 ${p.tickets} · 已用卡 ${p.cardsUsed} · 停到自家地可建设`,moving:`${p.reverse?'倒退':'前进'}中 · 还剩 ${s.remaining} 格`,branch:'选择一条路线继续前进',buy:'这块地值得买下来吗？',estate:'支付租金，还是用购地卡收购？',event:'看看岛上发生了什么',end:`点券 ${p.tickets} · 建设 ${p.buildsUsed}/1 · 可继续经营`,debt:'现金不足，可以取款、借款或变卖资产',finished:'看看谁是今天的奶家大富翁'};
  const pipFaces={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
  for(const receipt of transfers){const clear=pulseTransferCards($('players'),receipt);if(!scene?.showTransfer(receipt,clear))setTimeout(clear,1200);}
@@ -105,7 +106,7 @@ function openPanel(type,id){
  if(type==='advanced'){advancedDraft??=normalizeSetup(advanced);showSheet('高级对局设置','自定义电脑席位与公平起始条件',advancedPanel(advancedDraft,selected,+$('playerCountSelect').value,$('difficultySelect').value));
  }else if(type==='overview'){showSheet('全岛大地图','看清归属、建筑与奶伴位置','<div class="map-overview"></div>');new MapOverview($('sheetBody').firstElementChild,game,{selected:id??game.player.pos,inspect:tile=>{scene?.focusTile(tile);openPanel('tile',tile);}});
  }else if(type==='mapGuide'){showSheet(MAPS[s.mapVersion].name,'路线与电脑设置',`<p>${MAPS[s.mapVersion].description}</p><h3>本局电脑：${DIFFICULTIES[s.difficulty].name}</h3><p>${DIFFICULTIES[s.difficulty].description}</p><p>本局电脑：${s.players.filter(q=>!q.human).map(q=>game.char(q).name+' · '+DIFFICULTIES[game.aiDifficulty(q)].name).join('、')}。种子 ${s.setupSeed??'旧存档未记录'}。</p><p>所有难度的初始资金、租金、掷骰和天赋规则相同，差别只在电脑如何做决策。新局可重新选择强度。</p><p>功能建筑均对应道路格；选择捷径前可打开落点预览，比较租金、补给和起点奖励。</p>`);
- }else if(type==='talents'){showSheet('奶伴专属天赋',s.talents?'本局已开启 · 自动触发，无需额外按键':'本局未开启；新局可勾选开启',CHARACTERS.map(c=>`<div class="talent-row"><span class="talent-face">${portrait(c.id)}</span><div><h3>${c.name} · ${TALENTS[c.id].name}</h3><p>${TALENTS[c.id].text}</p>${s.players.some(q=>q.character===c.id)?'<span class="badge">本局参赛</span>':''}</div></div>`).join(''));
+ }else if(type==='talents'){showSheet('奶伴专属天赋',s.talents?'我的技能进度 · 自动触发':'本局未开启；新局可勾选开启',talentsPanel(game));
  }else if(type==='deeds'){
   showSheet('我的奶家地产','从一间小店，到一座小镇',deedsPanel(game));
  }else if(type==='cards'){
