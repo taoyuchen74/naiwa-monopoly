@@ -44,6 +44,15 @@ export async function boot(page) {
         status: document.querySelector('#loadingStatus')?.textContent,
         progress: document.querySelector('#loadingProgress')?.value,
         ready: document.readyState,
+        fonts: document.fonts.status,
+        faces: [...document.fonts].map((face) => ({ family: face.family, status: face.status })),
+        images: [...document.images].map((image) => ({
+          complete: image.complete,
+          width: image.naturalWidth,
+          source: image.currentSrc.slice(0, 90),
+        })),
+        audioBytes: globalThis.__NAIWA_LAUGH_BYTES__?.byteLength,
+        gl: document.querySelector('#scene canvas')?.getContext('webgl2')?.getParameter(7937),
       })),
     );
     throw error;
