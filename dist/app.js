@@ -9,6 +9,7 @@ import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
 import {researchChangePanel} from './research-panel.js';
+import {shopPanel} from './shop-panel.js';
 import {debtPanel,debtBankDraft} from './debt-panel.js';
 import {talentsPanel} from './talent-panel.js';
 import {resumeCard,exportableState} from './save-menu.js';
@@ -120,7 +121,7 @@ function openPanel(type,id){
  }else if(type==='stocks'){
   showSheet('奶家证券所','持仓成本 · 浮动盈亏 · 成交记录',stockPanel(game,{window:stockWindow,held:stockHeld}));queueMicrotask(()=>game.s.market.forEach((_,i)=>updateStockPreview(game,i)));
  }else if(type==='shop'){
-  showSheet('奶家补给商店','给下一次出发，多一点准备',`${guideArt('vehicle',game.canShop()?'欢迎到店：用点券选卡，也能购入交通工具。':'请停在地图上的补给商店购买；现在可以先浏览商品。')}<div class="panel-note">奶币 ${fmt(p.money)} · 点券 ${p.tickets}/150 · 本回合购卡 ${p.shopUsed}/2。拾取地图金币 +10 点券；经过起点 +25；补给站 +30 及随机卡。点券不计入净资产。</div><h3>出行工具</h3>${VEHICLES.slice(1).map(v=>`<div class="row shop-vehicle">${art('vehicle')}<div class="row-head"><strong>${v.name}</strong><span class="badge">${v.price} 奶币</span></div><p>每回合可选 1—${v.dice} 颗骰子。购入更高等级工具后替换原工具。</p>${btn(p.vehicle>=v.id?'已拥有或已升级':'购买工具','vehicle',`data-id="${v.id}"`,!normal||!game.canShop()||p.vehicle>=v.id||p.money<v.price)}</div>`).join('')}<h3>奶伴道具卡</h3>${Object.entries(CARDS).map(([key,c])=>`<div class="row collectible-card">${art(key)}<div class="row-head"><strong><span class="card-icon">${c.icon}</span>${c.name}</strong><span class="badge">${game.cardPrice(key)} 点券</span></div><p>${c.description}</p>${btn('放进卡包','shop',`data-key="${key}"`,!normal||!game.canShop()||p.tickets<game.cardPrice(key)||p.cards.length>=15||p.shopUsed>=2)}</div>`).join('')}`);
+  showSheet('奶家补给商店','给下一次出发，多一点准备',shopPanel(game));
  }else if(type==='tile'){
   const t=TILES[id],o=s.ownership[id];showSheet(t.name,`${GROUPS[t.group].name} · 地图第 ${id+1} 格`,t.kind==='property'?`${buildingArt(t,o?.level||0,o?game.char(s.players[o.player]).estateColor:'#77aa8b')}${stats([[t.price,'空地价格'],[o?o.level+' 级':'待售','建筑等级']])}${businessFacts(game,id)}<p>${o?`这块地属于${game.char(s.players[o.player]).name}。`:'落在这里时，可以决定是否购买。'}${o?.level?BUSINESSES[businessType(o)].text:'空地可选择七种建筑。只有住宅参与街区联营；其他设施按自身机制经营。'}</p>${o?.player===p.id&&can?`<div class="row-actions">${btn('建设与经营','chooseBuilding',`data-id="${id}"`,!normal||!(game.canUpgrade(id)||game.canBuild(id)||businessType(o)==='research'&&p.pos===id))}${btn('变卖地产','sell',`data-id="${id}"`)}</div>`:''}`:landmarkPanel(game,t));
  }else if(type==='buy'){

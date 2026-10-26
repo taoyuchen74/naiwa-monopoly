@@ -2,9 +2,11 @@ import * as THREE from './vendor/three.module.js';
 import {propertyBuilding,landmark} from './buildings.js';
 import {disposeUnique} from './render-kit.js';
 import {portrait} from './portraits.js';
+import {vehicleModel} from './characters.js';
 const cache=new Map();let renderer;
 export function art(key){
  const shapes={
+ car:'<path d="M22 58h116v26H22Z" fill="#eab949" stroke="#a17d35" stroke-width="3"/><path d="M45 58l11-30h54l18 30Z" fill="#f0dfb3" stroke="#a17d35" stroke-width="3"/><path d="M61 34h17v19H54ZM84 34h22l11 19H84Z" fill="#72a8b5"/><circle cx="47" cy="83" r="15" fill="#38545c"/><circle cx="118" cy="83" r="15" fill="#38545c"/><circle cx="47" cy="83" r="7" fill="#e7d5ae"/><circle cx="118" cy="83" r="7" fill="#e7d5ae"/><rect x="132" y="61" width="7" height="10" rx="2" fill="#fff3b8"/>',
  tea:'<path d="M53 34h56l-7 61H61Z" fill="#edcf97" stroke="#ae8e58" stroke-width="3"/><ellipse cx="81" cy="34" rx="30" ry="8" fill="#f9eac0"/><path d="M86 16l-5 54" stroke="#6aaa9c" stroke-width="7"/><path d="M62 62h38v25H62Z" fill="#f5e4bc"/><g fill="#7c634a"><circle cx="71" cy="84" r="4"/><circle cx="83" cy="87" r="4"/><circle cx="92" cy="81" r="4"/></g>',
  theater:'<path d="M33 45h94v51H33Z" fill="#ebd7aa" stroke="#a58b5a" stroke-width="3"/><path d="M24 42l56-26 57 26Z" fill="#ce8063"/><rect x="28" y="46" width="104" height="20" rx="4" fill="#dcaf57"/><path d="M48 69h22v27H48ZM91 69h22v27H91Z" fill="#866c54"/><path d="M45 56h71" stroke="#fff0bb" stroke-width="5" stroke-dasharray="4 8"/>',
  factory:'<path d="M28 49h103v48H28Z" fill="#dbb082" stroke="#9b805b" stroke-width="3"/><path d="M25 50l35-21 28 21 27-18 25 18Z" fill="#77a0a7"/><path d="M108 41V16h17v31" fill="#bb8063"/><path d="M42 66h21v17H42ZM80 65h40v32H80Z" fill="#668b98"/><circle cx="119" cy="9" r="8" fill="#d7d7bd"/>',
@@ -25,10 +27,10 @@ export function art(key){
  return `<svg viewBox="0 0 160 110" xmlns="http://www.w3.org/2000/svg" class="item-art" aria-hidden="true"><ellipse cx="80" cy="98" rx="55" ry="7" fill="#8c794d" opacity=".12"/>${shapes[key]||shapes.house}</svg>`;
 }
 export function guideArt(kind,text,character='naiwa'){return `<div class="illustrated-guide"><div class="guide-drawing">${art(kind)}</div><div><span class="guide-face">${portrait(character)}</span><p>${text}</p></div></div>`;}
-function modelImage(key,tile,makeModel,description,fallback,width=200){
+function modelImage(key,tile,makeModel,description,fallback,width=200,minSpan=1.6){
  if(cache.has(key))return cache.get(key);let model;
  try{if(!renderer){renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;}renderer.setSize(width,width*.8);
- const scene=new THREE.Scene();model=makeModel();scene.add(model);scene.add(new THREE.HemisphereLight('#fff6df','#8a9e9a',2.4));const light=new THREE.DirectionalLight('#ffebc1',2.5);light.position.set(-3,6,5);scene.add(light);const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),span=Math.max(1.6,size.y*.72);const camera=new THREE.OrthographicCamera(-span*1.25,span*1.25,span,-span,.1,50);camera.position.set(center.x+4,center.y+3.3,center.z+5);camera.lookAt(center);renderer.render(scene,camera);const result=`<img class="building-thumb" src="${renderer.domElement.toDataURL('image/png')}" alt="${tile.name} · ${description}">`;cache.set(key,result);return result;
+ const scene=new THREE.Scene();model=makeModel();scene.add(model);scene.add(new THREE.HemisphereLight('#fff6df','#8a9e9a',2.4));const light=new THREE.DirectionalLight('#ffebc1',2.5);light.position.set(-3,6,5);scene.add(light);const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),span=Math.max(minSpan,size.y*.72);const camera=new THREE.OrthographicCamera(-span*1.25,span*1.25,span,-span,.1,50);camera.position.set(center.x+4,center.y+3.3,center.z+5);camera.lookAt(center);renderer.render(scene,camera);const result=`<img class="building-thumb" src="${renderer.domElement.toDataURL('image/png')}" alt="${tile.name} · ${description}">`;cache.set(key,result);return result;
  }catch{return art(fallback);}finally{if(model)disposeUnique(model);}
 }
 export function buildingImage(tile,level,color='#70a58b'){
@@ -38,3 +40,4 @@ export function landmarkImage(tile){
  const fallback={bank:'bank',hospital:'recover',stock:'stocks',shop:'vehicle',spirit:'shield',event:'theater',rest:'house',tax:'recover',start:'dice'};
  return modelImage(`landmark:${tile.id}:${tile.kind}:${tile.name}`,tile,()=>landmark(tile),'公共建筑模型',fallback[tile.kind]||'house',320);
 }
+export function vehicleImage(id){return modelImage(`vehicle:${id}`,{name:id===1?'奶蛙自行车':'奶罐小车'},()=>vehicleModel(id),'交通工具模型',id===1?'vehicle':'car',320,.9);}
