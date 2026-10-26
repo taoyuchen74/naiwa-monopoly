@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { boot, start, state, advanceUntil } from './helpers.mjs';
 
 test('select character → settle dice → buy land → wait for computer', async ({ page }) => {
-  await boot(page);
+  const errors = await boot(page);
   await start(page, 'naishu');
   const before = await state(page);
   // Seed 17's first roll is asserted, not patched into the engine.
@@ -23,4 +23,5 @@ test('select character → settle dice → buy land → wait for computer', asyn
   expect((await state(page)).current).toBe(1);
   await expect(page.locator('#actionBtn')).toHaveText(/等待/);
   await expect(page.locator('#actionBtn')).toBeDisabled();
+  expect(errors).toEqual([]);
 });

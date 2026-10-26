@@ -3,7 +3,7 @@ import { PNG } from './png.mjs';
 import { boot, start, state } from './helpers.mjs';
 
 test('portrait ↔ landscape keeps rendered map and dialogs aligned', async ({ page }) => {
-  await boot(page);
+  const errors = await boot(page);
   await start(page);
   const before = await state(page);
   for (let i = 0; i < 2; i++) {
@@ -48,4 +48,5 @@ test('portrait ↔ landscape keeps rendered map and dialogs aligned', async ({ p
     await page.locator('#closeSheet').click();
   }
   expect(await state(page)).toEqual(before);
+  expect(errors).toEqual([]);
 });

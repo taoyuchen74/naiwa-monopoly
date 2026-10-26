@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { boot, start, state, advanceUntil, SAVE_KEY } from './helpers.mjs';
 
 test('download save → clear storage → import file → continue exact game', async ({ page }) => {
-  await boot(page);
+  const errors = await boot(page);
   await start(page, 'naicha');
   const original = await state(page);
   await page.locator('#settingsBtn').click();
@@ -29,4 +29,5 @@ test('download save → clear storage → import file → continue exact game', 
   await expect(page.locator('#actionBtn')).toBeEnabled();
   await page.locator('#actionBtn').click();
   await advanceUntil(page, async () => (await state(page)).phase === 'moving');
+  expect(errors).toEqual([]);
 });

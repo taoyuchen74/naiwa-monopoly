@@ -66,8 +66,8 @@
 
 | 成品          | 当前基线 bytes / gzip bytes | 上限 bytes / gzip bytes |
 | ------------- | --------------------------- | ----------------------- |
-| Web 主脚本    | 950778 / 271469             | 980000 / 280000         |
-| 离线完整 HTML | 1227045 / 411702            | 1280000 / 425000        |
+| Web 主脚本    | 950305 / 271295             | 980000 / 280000         |
+| 离线完整 HTML | 1226579 / 411524            | 1280000 / 425000        |
 
 900KB／250KB只是需求示例，已小于当前主脚本，不能无说明地设成必败门槛。配置不在 CI 内自动更新；抬高预算必须审阅原因。JSDoc 与无用绑定清理不改变游戏规则；构建大小有极小压缩差异，由报告展示。
 
@@ -80,3 +80,5 @@ LICENSE 的 MIT 范围仅限原创代码和原创文档。程序模型实现不�
 所有要求的配置、三个 YAML、Playwright 三条 spec 和预算脚本的完整文本见 [交付文件全文](ENGINEERING-FILES.md)；真实源文件为最终依据。
 
 实现依据：[TypeScript checkJs](https://www.typescriptlang.org/tsconfig/checkJs.html)、[Playwright Clock](https://playwright.dev/docs/clock)、[c8 all 与覆盖率门槛](https://github.com/bcoe/c8)。
+
+无头浏览器只启用必要的 WebGL 软件回退，不强制整个浏览器使用 SwiftShader。依据：[Chromium 的 SwiftShader 模式区分](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md)。强制全部软件渲染曾造成启动字体和帧调度停滞；该失败由首次 CI 捕获，已保留报告用于诊断。

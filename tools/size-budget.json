@@ -2,21 +2,21 @@
   "description": "Bytes, not KiB. Rebaseline only with measured rationale in PR; a growing artifact must not raise its own limit.",
   "script": {
     "bytes": {
-      "baseline": 950778,
+      "baseline": 950305,
       "limit": 980000
     },
     "gzipBytes": {
-      "baseline": 271469,
+      "baseline": 271295,
       "limit": 280000
     }
   },
   "portable": {
     "bytes": {
-      "baseline": 1227045,
+      "baseline": 1226579,
       "limit": 1280000
     },
     "gzipBytes": {
-      "baseline": 411702,
+      "baseline": 411524,
       "limit": 425000
     }
   }

@@ -320,7 +320,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
-      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      args: ['--enable-unsafe-swiftshader'],
     },
   },
   projects: [
@@ -366,9 +366,31 @@ export async function boot(page) {
       },
     });
   });
+  const errors = [];
+  page.on('pageerror', (error) => {
+    errors.push(error.message);
+    console.error('E2E page error:', error.message);
+  });
+  page.on('console', (message) => {
+    if (message.type() === 'error') console.error('E2E console:', message.text());
+  });
   await page.goto('/');
-  await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+  try {
+    await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+  } catch (error) {
+    console.error(
+      'E2E startup:',
+      await page.evaluate(() => ({
+        hidden: document.hidden,
+        status: document.querySelector('#loadingStatus')?.textContent,
+        progress: document.querySelector('#loadingProgress')?.value,
+        ready: document.readyState,
+      })),
+    );
+    throw error;
+  }
   await expect(page.locator('#app')).not.toHaveAttribute('inert');
+  return errors;
 }
 
 // Wait for observable rule/UI state instead of a fixed animation duration.
@@ -393,7 +415,7 @@ import { test, expect } from '@playwright/test';
 import { boot, start, state, advanceUntil } from './helpers.mjs';
 
 test('select character → settle dice → buy land → wait for computer', async ({ page }) => {
-  await boot(page);
+  const errors = await boot(page);
   await start(page, 'naishu');
   const before = await state(page);
   // Seed 17's first roll is asserted, not patched into the engine.
@@ -414,6 +436,7 @@ test('select character → settle dice → buy land → wait for computer', asyn
   expect((await state(page)).current).toBe(1);
   await expect(page.locator('#actionBtn')).toHaveText(/等待/);
   await expect(page.locator('#actionBtn')).toBeDisabled();
+  expect(errors).toEqual([]);
 });
 ```
 
@@ -425,7 +448,7 @@ import { readFile } from 'node:fs/promises';
 import { boot, start, state, advanceUntil, SAVE_KEY } from './helpers.mjs';
 
 test('download save → clear storage → import file → continue exact game', async ({ page }) => {
-  await boot(page);
+  const errors = await boot(page);
   await start(page, 'naicha');
   const original = await state(page);
   await page.locator('#settingsBtn').click();
@@ -451,6 +474,7 @@ test('download save → clear storage → import file → continue exact game', 
   await expect(page.locator('#actionBtn')).toBeEnabled();
   await page.locator('#actionBtn').click();
   await advanceUntil(page, async () => (await state(page)).phase === 'moving');
+  expect(errors).toEqual([]);
 });
 ```
 
@@ -462,7 +486,7 @@ import { PNG } from './png.mjs';
 import { boot, start, state } from './helpers.mjs';
 
 test('portrait ↔ landscape keeps rendered map and dialogs aligned', async ({ page }) => {
-  await boot(page);
+  const errors = await boot(page);
   await start(page);
   const before = await state(page);
   for (let i = 0; i < 2; i++) {
@@ -507,6 +531,7 @@ test('portrait ↔ landscape keeps rendered map and dialogs aligned', async ({ p
     await page.locator('#closeSheet').click();
   }
   expect(await state(page)).toEqual(before);
+  expect(errors).toEqual([]);
 });
 ```
 
@@ -572,21 +597,21 @@ if (failed) process.exitCode = 1;
   "description": "Bytes, not KiB. Rebaseline only with measured rationale in PR; a growing artifact must not raise its own limit.",
   "script": {
     "bytes": {
-      "baseline": 950778,
+      "baseline": 950305,
       "limit": 980000
     },
     "gzipBytes": {
-      "baseline": 271469,
+      "baseline": 271295,
       "limit": 280000
     }
   },
   "portable": {
     "bytes": {
-      "baseline": 1227045,
+      "baseline": 1226579,
       "limit": 1280000
     },
     "gzipBytes": {
-      "baseline": 411702,
+      "baseline": 411524,
       "limit": 425000
     }
   }

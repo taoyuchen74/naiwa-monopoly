@@ -22,7 +22,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
-      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      args: ['--enable-unsafe-swiftshader'],
     },
   },
   projects: [

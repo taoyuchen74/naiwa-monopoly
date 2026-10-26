@@ -25,9 +25,31 @@ export async function boot(page) {
       },
     });
   });
+  const errors = [];
+  page.on('pageerror', (error) => {
+    errors.push(error.message);
+    console.error('E2E page error:', error.message);
+  });
+  page.on('console', (message) => {
+    if (message.type() === 'error') console.error('E2E console:', message.text());
+  });
   await page.goto('/');
-  await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+  try {
+    await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+  } catch (error) {
+    console.error(
+      'E2E startup:',
+      await page.evaluate(() => ({
+        hidden: document.hidden,
+        status: document.querySelector('#loadingStatus')?.textContent,
+        progress: document.querySelector('#loadingProgress')?.value,
+        ready: document.readyState,
+      })),
+    );
+    throw error;
+  }
   await expect(page.locator('#app')).not.toHaveAttribute('inert');
+  return errors;
 }
 
 // Wait for observable rule/UI state instead of a fixed animation duration.
