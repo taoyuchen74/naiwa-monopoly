@@ -16,7 +16,7 @@ test('AI event receipts capture real results, wait for their turn, and pause wit
  const voices=[],feed=new NewsFeed(root,{onEvent:d=>voices.push(d.mood)}),g=Game.create({character:'naiwa',opponents:['naicha'],playerCount:2,seed:46});
  const advance=()=>{const [id,fn]=timers.entries().next().value;timers.delete(id);fn();};
  try{
-  g.s.current=1;g.player.pos=g.tiles.find(t=>t.kind==='event').id;g.player.spirit='misfortune';g.player.spiritTurns=4;g.int=n=>n===EVENTS.length?2:0;g.event();
+  feed.setSpeed(2);g.s.current=1;g.player.pos=g.tiles.find(t=>t.kind==='event').id;g.player.spirit='misfortune';g.player.spiritTurns=4;g.int=n=>n===EVENTS.length?2:0;g.event();
   const state=JSON.stringify(g.s),title=g.s.notice.title;feed.sync(g,true);assert.equal(voices.length,0);assert.equal(feed.queue.length,1);feed.sync(g,true);assert.equal(feed.queue.length,1);assert.equal(JSON.stringify(g.s),state);
   // A queued receipt is a snapshot, not a pointer into later mutable game state.
   g.s.notice.title='later';g.s.notice.text='later';g.player.money=1;advance();assert.ok(classes.has('news-event'));assert.ok(root.innerHTML.includes(title));assert.ok(root.innerHTML.includes('奶币 −113'));assert.ok(root.innerHTML.includes('电脑 · 奶茶'));assert.deepEqual(voices,['sad']);assert.ok(feed.remaining>=2200);

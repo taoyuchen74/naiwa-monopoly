@@ -1,3 +1,4 @@
+import {animationSpeed} from './pacing.js';
 import {portrait} from './portraits.js';
 import {eventPresentation,eventActor} from './event-panel.js';
 import {art} from './illustrations.js';
@@ -7,7 +8,7 @@ export function shortNews(text){if(/暂时放弃|存款利息/.test(text))return
 export class NewsFeed{
  constructor(root,{onEvent=()=>{}}={}){this.root=root;this.onEvent=onEvent;this.queue=[];this.timer=null;this.paused=false;this.remaining=2400;this.speed=1;}
  get busy(){return !this.root.hidden||this.queue.length>0;}
- setSpeed(speed){this.speed=Math.min(2,Math.max(1,speed||1));}
+ setSpeed(speed){this.speed=animationSpeed(speed);}
  sync(game,started){
   if(!started){this.reset();return;}const event=game.s.phase==='event'&&!game.player?.human&&game.s.notice;
   if(this.game!==game){this.reset();this.game=game;this.turn=`${game.s.round}:${game.s.current}`;this.head=game.s.logs[0];this.push(`第 ${game.s.round} 轮 · ${game.char().name}的回合`);if(event)this.pushEvent(game);return;}
