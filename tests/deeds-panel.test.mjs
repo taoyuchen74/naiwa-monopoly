@@ -13,5 +13,5 @@ test('deed values match net-asset accounting and individual sale proceeds exactl
 });
 
 test('ordinary building and selling affordances respect local stops, phase and the one-build limit',()=>{
- const g=make(),id=g.owned(g.player).find(o=>o.level).tile.id;Object.assign(g.player,{pos:id,buildSite:id,buildsUsed:0,money:8000});g.s.phase='end';let html=deedsPanel(g),tag=()=>html.match(new RegExp('<button[^>]+data-act="upgrade" data-id="'+id+'"[^>]*>'))[0];assert.ok(!tag().includes('disabled'));g.player.buildsUsed=1;html=deedsPanel(g);assert.ok(tag().includes('disabled'));g.s.phase='debt';html=deedsPanel(g);assert.ok(tag().includes('disabled'));assert.ok(html.match(/<button[^>]+data-act="sell"[^>]+>/g).every(t=>!t.includes('disabled')));
+ const g=make(),id=g.owned(g.player).find(o=>o.level).tile.id;Object.assign(g.player,{pos:id,buildSite:id,buildsUsed:0,money:8000});g.s.phase='end';let html=deedsPanel(g),tag=()=>html.match(new RegExp('<button[^>]+data-act="upgrade" data-id="'+id+'"[^>]*>'))[0];assert.ok(!tag().includes('disabled'));g.player.buildsUsed=1;html=deedsPanel(g);assert.ok(tag().includes('disabled'));g.s.phase='debt';html=deedsPanel(g);assert.ok(tag().includes('disabled'));assert.ok(html.match(/<button[^>]+data-act="confirmSell"[^>]+>/g).every(t=>!t.includes('disabled')));
 });

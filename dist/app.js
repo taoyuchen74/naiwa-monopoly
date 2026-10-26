@@ -10,6 +10,7 @@ import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
 import {researchChangePanel} from './research-panel.js';
 import {shopPanel} from './shop-panel.js';
+import {disposalPanel} from './disposal-panel.js';
 import {debtPanel,debtBankDraft} from './debt-panel.js';
 import {talentsPanel} from './talent-panel.js';
 import {resumeCard,exportableState} from './save-menu.js';
@@ -97,7 +98,7 @@ function render(){selectMenus.sync();const transfers=transferFeed.read(game,star
  if(started&&p.human&&s.phase==='end'&&!activePanel&&blockKey!==currentKey){blockKey=currentKey;if(game.canUpgrade(p.pos)||game.canBuild(p.pos)||businessType(s.ownership[p.pos])==='research'&&s.ownership[p.pos]?.player===p.id)openPanel('buildHere',p.pos);else if(TILES[p.pos].kind==='shop')openPanel('shop');}
 }
 function syncNewsPause(){newsFeed.setPaused(document.hidden||gamePaused||!$('sheet').hidden);}
-function showSheet(title,subtitle,html,lock=false){scene?.cancelGestures();if(activePanel?.type==='tile')scene?.selectTile(activePanel.id,'inspect');else if(activePanel?.type==='buy')scene?.selectTile(game.player.pos,'buy');$('app').classList.add('has-dialog');previousFocus=document.activeElement;$('sheet').dataset.panel=activePanel?.type||'';$('sheet').dataset.detail=activePanel?.type==='tile'&&TILES[activePanel.id]?.kind!=='property'?'landmark':'';$('sheetTitle').textContent=title;$('sheetSubtitle').textContent=subtitle;$('sheetBody').innerHTML=html;$('sheet').hidden=false;$('sheetBody').scrollTop=0;$('sheetBackdrop').hidden=false;$('sheetBackdrop').classList.toggle('live-map',['deeds','tile','confirmDemolish','buy','branch'].includes(activePanel?.type));pinned=lock;$('closeSheet').hidden=lock;syncNewsPause();queueMicrotask(()=>{const target=lock?$('sheetBody').querySelector('button,input,select'):$('closeSheet');target?.focus({preventScroll:true});});}
+function showSheet(title,subtitle,html,lock=false){scene?.cancelGestures();if(activePanel?.type==='tile')scene?.selectTile(activePanel.id,'inspect');else if(activePanel?.type==='buy')scene?.selectTile(game.player.pos,'buy');$('app').classList.add('has-dialog');previousFocus=document.activeElement;$('sheet').dataset.panel=activePanel?.type||'';$('sheet').dataset.detail=activePanel?.type==='tile'&&TILES[activePanel.id]?.kind!=='property'?'landmark':'';$('sheetTitle').textContent=title;$('sheetSubtitle').textContent=subtitle;$('sheetBody').innerHTML=html;$('sheet').hidden=false;$('sheetBody').scrollTop=0;$('sheetBackdrop').hidden=false;$('sheetBackdrop').classList.toggle('live-map',['deeds','tile','confirmDemolish','confirmSell','buy','branch'].includes(activePanel?.type));pinned=lock;$('closeSheet').hidden=lock;syncNewsPause();queueMicrotask(()=>{const target=lock?$('sheetBody').querySelector('button,input,select'):$('closeSheet');target?.focus({preventScroll:true});});}
 function dismiss(force=false){if(pinned&&!force)return;if(gamePaused)setPaused(false);scene?.clearSelection();$('app').classList.remove('has-dialog');activePanel=null;pinned=false;$('sheet').hidden=true;$('sheetBackdrop').hidden=true;syncNewsPause();previousFocus?.focus?.({preventScroll:true});if(started&&['buy','estate','event','branch','debt','finished'].includes(game.s.phase))blockKey='';}
 const stats=items=>`<div class="stat-grid">${items.map(([v,l])=>`<div class="stat-box"><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>`;
 const btn=(label,act,data='',disabled=false,cls='secondary')=>`<button class="${cls}" data-act="${act}" ${data} ${disabled?'disabled':''}>${label}</button>`;
@@ -123,7 +124,7 @@ function openPanel(type,id){
  }else if(type==='shop'){
   showSheet('奶家补给商店','给下一次出发，多一点准备',shopPanel(game));
  }else if(type==='tile'){
-  const t=TILES[id],o=s.ownership[id];showSheet(t.name,`${GROUPS[t.group].name} · 地图第 ${id+1} 格`,t.kind==='property'?`${buildingArt(t,o?.level||0,o?game.char(s.players[o.player]).estateColor:'#77aa8b')}${stats([[t.price,'空地价格'],[o?o.level+' 级':'待售','建筑等级']])}${businessFacts(game,id)}<p>${o?`这块地属于${game.char(s.players[o.player]).name}。`:'落在这里时，可以决定是否购买。'}${o?.level?BUSINESSES[businessType(o)].text:'空地可选择七种建筑。只有住宅参与街区联营；其他设施按自身机制经营。'}</p>${o?.player===p.id&&can?`<div class="row-actions">${btn('建设与经营','chooseBuilding',`data-id="${id}"`,!normal||!(game.canUpgrade(id)||game.canBuild(id)||businessType(o)==='research'&&p.pos===id))}${btn('变卖地产','sell',`data-id="${id}"`)}</div>`:''}`:landmarkPanel(game,t));
+  const t=TILES[id],o=s.ownership[id];showSheet(t.name,`${GROUPS[t.group].name} · 地图第 ${id+1} 格`,t.kind==='property'?`${buildingArt(t,o?.level||0,o?game.char(s.players[o.player]).estateColor:'#77aa8b')}${stats([[t.price,'空地价格'],[o?o.level+' 级':'待售','建筑等级']])}${businessFacts(game,id)}<p>${o?`这块地属于${game.char(s.players[o.player]).name}。`:'落在这里时，可以决定是否购买。'}${o?.level?BUSINESSES[businessType(o)].text:'空地可选择七种建筑。只有住宅参与街区联营；其他设施按自身机制经营。'}</p>${o?.player===p.id&&can?`<div class="row-actions">${btn('建设与经营','chooseBuilding',`data-id="${id}"`,!normal||!(game.canUpgrade(id)||game.canBuild(id)||businessType(o)==='research'&&p.pos===id))}${btn('变卖地产','confirmSell',`data-id="${id}"`)}</div>`:''}`:landmarkPanel(game,t));
  }else if(type==='buy'){
   const t=TILES[p.pos];showSheet('发现一块好地盘',`${t.name} · ${GROUPS[t.group].name}`,`${buildingArt(t,0,game.char(p).estateColor)}<p>购地后可选择住宅、连锁店、旅馆、商场、加油站、研究所或公园。之后需再次停靠才能加盖；工程队可远程加盖。</p>${stats([[t.price,'购买价格'],[game.rent(t.id),'初始租金'],[fmt(p.money),'当前现金']])}<div class="button-grid">${btn('先路过看看','pass')}${btn('买下这块地','buy','',p.money<t.price,'primary')}</div>`,true);
  }else if(type==='plan'){
@@ -157,8 +158,8 @@ function openPanel(type,id){
   showSheet('奶家创作手账','素材来源与后续计划',`<div class="panel-note">非官方粉丝游戏。角色模型、地图、建筑和界面由本项目制作。配乐为重新编排的器乐与原创曲；笑声使用社区小游戏的短片段，具体来源见声音设置。</div><div class="credit-list"><p>文化与表现参考：</p><ul class="rules"><li><a href="https://milkyfrog.com/games" target="_blank" rel="noopener">奶蛙小游戏合集</a></li><li><a href="https://naiwaxiaowu.pages.dev/" target="_blank" rel="noopener">奶蛙的小窝</a>：互动与陪伴表现</li><li><a href="https://milkfrog-bath.pages.dev/" target="_blank" rel="noopener">奶蛙爱洗澡</a>：情绪表情</li><li><a href="https://nailong-dance.pages.dev/" target="_blank" rel="noopener">奶娃街舞</a>：动态表现</li><li><a href="https://naiwanaichadian.pages.dev/" target="_blank" rel="noopener">奶蛙奶茶铺</a>：经营场景</li><li><a href="https://www.douyin.com/video/7673579319512764654" target="_blank" rel="noopener">抖音奶币与野生狗奶二创</a></li></ul></div><p>本版为原创风格化轻量模型。奶蛙、奶鼠、奶狗参考用户三视图及公开视频，奶蛋和奶茶参考农庄视频，奶虫参考此前视频图像。模型采用连续曲面、绘制腹色与关节动画，为原创重建，未提取视频源模型。</p><p>本版已支持六名角色、2—6 人、指定电脑与随机阵容。后续方向：账号与云存档。本版仅包含本机单机。</p><p>3D 引擎 Three.js，MIT 许可随部署包附带。</p>`);
  }else if(type==='confirmRestart'){
   showSheet('准备新的旅行','新局正式开始时替换存档',`<p>先选择奶伴与规则。当前旅行会保留到新局正式开始，也可以先导出备份。</p><div class="row-actions">${btn('导出当前存档','export','',!started&&!saved)}${btn('保留当前旅行','cancel')}${btn('重新选择奶伴','newGame','',false,'primary')}</div>`,true);
- }else if(type==='confirmDemolish'){
-  const o=s.ownership[id],t=TILES[id];if(!o||o.player!==p.id||!o.level){dismiss(true);return;}showSheet('拆除这栋房屋？',t.name,`<p>拆除 ${o.level} 级房屋，土地仍归你所有。回收材料获得 ${Math.floor((game.cost(t,o.level,businessType(o))-t.price)*.25)} 奶币；租金恢复为空地水平。</p><div class="row-actions">${btn('保留房屋','cancel')}${btn('确认拆除','demolish',`data-id="${id}"`,false,'secondary danger')}</div>`,true);
+ }else if(type==='confirmDemolish'||type==='confirmSell'){
+  showSheet(type==='confirmSell'?'变卖这块地产？':'拆除这栋房屋？',TILES[id]?.name||'地产处置',disposalPanel(game,id,type==='confirmSell'?'sell':'demolish'),true);
  }else if(type==='confirmBankrupt'){
   showSheet('确认申请破产？','这会结束你本局的旅行',`<p>系统将清算你的资产，尽可能支付本次欠款。你将退出本局，电脑奶伴继续比赛。</p><div class="row-actions">${btn('再想想办法','panel','data-panel="debt"')}${btn('确认破产退出','bankrupt','','','secondary danger')}</div>`,true);
  }
@@ -213,6 +214,7 @@ $('sheetBody').addEventListener('click',e=>{
  if(act==='applyAdvanced'){readAdvancedFields();if(setupError(advancedDraft,selected,+$('playerCountSelect').value))return;advanced=normalizeSetup(advancedDraft);advancedDraft=null;try{localStorage.setItem('naiwa-setup-v1',JSON.stringify(advanced));}catch{}dismiss(true);picker();render();toast('高级设置已保存，新局按所选阵容开始。');return;}
  if(act==='resetAdvanced'){advancedDraft=normalizeSetup();openPanel('advanced');return;}
  if(act==='allRandom'){readAdvancedFields();advancedDraft.opponents=[];openPanel('advanced');return;}
+ if(act==='confirmSell'){openPanel('confirmSell',id);return;}
  if(act==='chooseBuilding'){openPanel('buildHere',id);return;}
  if(act==='chooseResearch'){openPanel('researchChange',{id,key:b.dataset.key});return;}
  if(act==='stockFilter'){stockHeld=!stockHeld;openPanel('stocks');return;}
@@ -240,7 +242,7 @@ $('sheetBody').addEventListener('click',e=>{
  else if(act==='cancel'){dismiss(true);render();return;}
  else if(act==='viewBoard'){dismiss(true);blockKey=`finished:${game.s.current}:${game.s.round}:${game.player.pos}`;render();return;}
  else if(act==='import'){if(!pendingImport)return;game=pendingImport;pendingImport=null;started=true;scene?.followPlayer();dismiss(true);blockKey='';$('startScreen').hidden=true;commit();toast('存档已导入。');return;}
- if(ok){if(['construct','upgrade','demolish','sell'].includes(act))scene?.focusLot(id);commit();if(act==='research'){openPanel('buildHere',id);return;}if(activePanel?.type==='buildHere'&&['upgrade','construct'].includes(act))dismiss(true);if(activePanel&&!['buy','estate','event','branch','finished','debt','confirmBankrupt'].includes(activePanel.type))refreshPanel();else if(activePanel?.type==='debt')openPanel('debt');}else commit(false);
+ if(ok){if(['construct','upgrade','demolish','sell'].includes(act))scene?.focusLot(id);commit();if(act==='sell'||act==='demolish'){dismiss(true);if(game.s.phase==='debt')render();else openPanel('deeds');return;}if(act==='research'){openPanel('buildHere',id);return;}if(activePanel?.type==='buildHere'&&['upgrade','construct'].includes(act))dismiss(true);if(activePanel&&!['buy','estate','event','branch','finished','debt','confirmBankrupt'].includes(activePanel.type))refreshPanel();else if(activePanel?.type==='debt')openPanel('debt');}else commit(false);
 });
 function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||document.hidden||gamePaused||scene?.studio||game.s.phase==='finished')return;
  if(activePanel)return;

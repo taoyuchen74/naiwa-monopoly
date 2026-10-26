@@ -33,8 +33,8 @@ function modelImage(key,tile,makeModel,description,fallback,width=200,minSpan=1.
  const scene=new THREE.Scene();model=makeModel();scene.add(model);scene.add(new THREE.HemisphereLight('#fff6df','#8a9e9a',2.4));const light=new THREE.DirectionalLight('#ffebc1',2.5);light.position.set(-3,6,5);scene.add(light);const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),span=Math.max(minSpan,size.y*.72);const camera=new THREE.OrthographicCamera(-span*1.25,span*1.25,span,-span,.1,50);camera.position.set(center.x+4,center.y+3.3,center.z+5);camera.lookAt(center);renderer.render(scene,camera);const result=`<img class="building-thumb" src="${renderer.domElement.toDataURL('image/png')}" alt="${tile.name} · ${description}">`;cache.set(key,result);return result;
  }catch{return art(fallback);}finally{if(model)disposeUnique(model);}
 }
-export function buildingImage(tile,level,color='#70a58b'){
- return modelImage(`property:${tile.name}:${tile.group}:${tile.buildingType||'legacy'}:${tile.id}:${level}:${color}`,tile,()=>propertyBuilding(tile,level,color,true),level?level+'级建筑':'空地','house');
+export function buildingImage(tile,level,color='#70a58b',owned=true){
+ return modelImage(`property:${tile.name}:${tile.group}:${tile.buildingType||'legacy'}:${tile.id}:${level}:${color}:${owned}`,tile,()=>propertyBuilding(tile,level,color,owned),level?level+'级建筑':'空地','house');
 }
 export function landmarkImage(tile){
  const fallback={bank:'bank',hospital:'recover',stock:'stocks',shop:'vehicle',spirit:'shield',event:'theater',rest:'house',tax:'recover',start:'dice'};
