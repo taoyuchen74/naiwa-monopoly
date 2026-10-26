@@ -8,6 +8,7 @@ import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
+import {researchChangePanel} from './research-panel.js';
 import {debtPanel,debtBankDraft} from './debt-panel.js';
 import {talentsPanel} from './talent-panel.js';
 import {resumeCard,exportableState} from './save-menu.js';
@@ -129,6 +130,8 @@ function openPanel(type,id){
   showSheet('这次会走到哪里？','先看风险，再决定用卡或骰子数量',`<div class="panel-note">${p.forced?'已指定 '+p.forced+' 步':p.slowTurns?'慢行生效：本次 1 步':count+' 颗骰子的真实落点概率'}。有岔路时会列出两条路线；费用按当前状态估算，事件内容仍随机。点券 ${p.tickets}，本回合已用卡 ${p.cardsUsed}。</div>${[...weights].map(([steps,w])=>`<div class="row"><div class="row-head"><strong>${steps} 步</strong><span class="badge">${(w*100).toFixed(1)}%</span></div>${game.preview(steps).map(r=>`<p>${landingText(r)}</p>`).join('')}</div>`).join('')}<div class="row-actions">${btn('去卡包决定','panel','data-panel="cards"')}${btn('回地图','cancel')}</div>`);
  }else if(type==='buildHere'){
   showSheet('地产建设与经营',TILES[p.pos].name,businessPanel(game,p.pos));
+ }else if(type==='researchChange'){
+  showSheet('切换研发项目？',TILES[id.id]?.name||'研究所工作台',researchChangePanel(game,id.id,id.key));
  }else if(type==='estate'){
   const t=TILES[p.pos],o=s.ownership[p.pos];showSheet('来到对手的地产',`${game.char(s.players[o.player]).name} · ${t.name}`,estatePanel(game),true);
  }else if(type==='branch'){
@@ -210,6 +213,7 @@ $('sheetBody').addEventListener('click',e=>{
  if(act==='resetAdvanced'){advancedDraft=normalizeSetup();openPanel('advanced');return;}
  if(act==='allRandom'){readAdvancedFields();advancedDraft.opponents=[];openPanel('advanced');return;}
  if(act==='chooseBuilding'){openPanel('buildHere',id);return;}
+ if(act==='chooseResearch'){openPanel('researchChange',{id,key:b.dataset.key});return;}
  if(act==='stockFilter'){stockHeld=!stockHeld;openPanel('stocks');return;}
  if(act==='stockQty'){const input=$('qty'+id),pos=game.position(id,game.s.players[0]);input.value=b.dataset.qty==='maxBuy'?Math.min(10000,Math.floor(game.s.players[0].money/pos.price)):b.dataset.qty==='maxSell'?Math.min(10000,pos.qty):b.dataset.qty;updateStockPreview(game,id);return;}
  if(act==='resumeGame'){dismiss(true);render();return;}
@@ -235,7 +239,7 @@ $('sheetBody').addEventListener('click',e=>{
  else if(act==='cancel'){dismiss(true);render();return;}
  else if(act==='viewBoard'){dismiss(true);blockKey=`finished:${game.s.current}:${game.s.round}:${game.player.pos}`;render();return;}
  else if(act==='import'){if(!pendingImport)return;game=pendingImport;pendingImport=null;started=true;scene?.followPlayer();dismiss(true);blockKey='';$('startScreen').hidden=true;commit();toast('存档已导入。');return;}
- if(ok){if(['construct','upgrade','demolish','sell'].includes(act))scene?.focusLot(id);commit();if(activePanel?.type==='buildHere'&&['upgrade','construct'].includes(act))dismiss(true);if(activePanel&&!['buy','estate','event','branch','finished','debt','confirmBankrupt'].includes(activePanel.type))refreshPanel();else if(activePanel?.type==='debt')openPanel('debt');}else commit(false);
+ if(ok){if(['construct','upgrade','demolish','sell'].includes(act))scene?.focusLot(id);commit();if(act==='research'){openPanel('buildHere',id);return;}if(activePanel?.type==='buildHere'&&['upgrade','construct'].includes(act))dismiss(true);if(activePanel&&!['buy','estate','event','branch','finished','debt','confirmBankrupt'].includes(activePanel.type))refreshPanel();else if(activePanel?.type==='debt')openPanel('debt');}else commit(false);
 });
 function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||document.hidden||gamePaused||scene?.studio||game.s.phase==='finished')return;
  if(activePanel)return;
