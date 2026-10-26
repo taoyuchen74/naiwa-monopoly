@@ -53,6 +53,4 @@ export function animateCharacter(root,{time,moving=false,mood=null,alive=true}){
  if(d.laughMouth&&!d.canine){d.laughMouth.visible=happy;animateLaugh(d.laughMouth,time,motion);if(d.mouth)d.mouth.visible=!happy;}
 
 }
-export function vehicleModel(id){const g=new THREE.Group();g.name='vehicle';if(id===1){for(const z of [-.6,.6]){const w=mesh(g,new THREE.TorusGeometry(.32,.045,8,24),'#344b51',[0,.25,z]);w.rotation.y=Math.PI/2;for(let i=0;i<6;i++){const spoke=tube(g,'#b9c7c5',[[0,.25,z],[0,.25+Math.cos(i*Math.PI/3)*.29,z+Math.sin(i*Math.PI/3)*.29]],.009);}}
- tube(g,'#4e9fa8',[[0,.25,-.6],[0,.65,0],[0,.25,.6],[0,.25,-.6]],.04);tube(g,'#4e9fa8',[[0,.25,.6],[0,.86,.5],[0,.9,.7]],.04);box(g,'#344b51',[0,.73,0],[.3,.06,.28]);
- }else{box(g,'#e8b744',[0,.3,0],[1.3,.45,1.7]);box(g,'#f0e1b4',[0,.63,-.1],[1,.45,1]);box(g,'#4d8c9c',[0,.7,.41],[.8,.27,.02]);for(const x of [-.65,.65])for(const z of [-.5,.5])ball(g,'#34464e',[x,.2,z],[.14,.25,.25]);box(g,'#ead18f',[0,.92,-.1],[.6,.1,.6]);for(const x of [-.4,.4])ball(g,'#fff4bd',[x,.35,.87],[.13,.12,.03]);box(g,'#7b8b88',[0,.18,.87],[1.1,.1,.08]);}return g;}
+export {vehicleModel} from './vehicles.js';

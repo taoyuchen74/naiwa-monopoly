@@ -2,7 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import {propertyBuilding,landmark} from './buildings.js';
 import {disposeUnique} from './render-kit.js';
 import {portrait} from './portraits.js';
-import {vehicleModel} from './characters.js';
+import {vehicleModel} from './vehicles.js';
 const cache=new Map();let renderer;
 export function art(key){
  const shapes={
