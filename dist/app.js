@@ -8,6 +8,7 @@ import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
 import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
+import {debtPanel,debtBankDraft} from './debt-panel.js';
 import {talentsPanel} from './talent-panel.js';
 import {resumeCard,exportableState} from './save-menu.js';
 import {cardTargetPanel} from './card-target-panel.js';
@@ -84,7 +85,7 @@ function render(){selectMenus.sync();const transfers=transferFeed.read(game,star
  $('actionBtn').textContent=!started?'选奶伴':s.phase==='finished'?'看排名':!p.human?'等待中':({roll:p.skip?'休养':'掷骰子',end:'结束回合',departure:'天赋中',moving:'前进中',branch:'选路线',buy:'买地',estate:'选地产',event:'看事件',debt:'筹资金'}[s.phase]);
  if($('actionBtn').textContent.length===4)$('actionBtn').textContent=$('actionBtn').textContent.slice(0,2)+'\n'+$('actionBtn').textContent.slice(2);
  $('actionBtn').disabled=!started||(!p.human&&s.phase!=='finished')||['moving','departure'].includes(s.phase);
- document.querySelectorAll('[data-panel]').forEach(b=>b.disabled=!started||!p.human||!['roll','end','debt'].includes(s.phase));for(const type of ['deeds','cards','bank','stocks'])document.querySelector('.dock-tabs [data-panel='+type+']').disabled=!started||pinned||!!scene?.studio;$('cardCount').textContent=s.players[0].cards.length;$('planBtn').disabled=!started||!p.human||s.phase!=='roll';
+ document.querySelectorAll('.dock-tabs [data-panel]').forEach(b=>b.disabled=!started||!p.human||!['roll','end','debt'].includes(s.phase));for(const type of ['deeds','cards','bank','stocks'])document.querySelector('.dock-tabs [data-panel='+type+']').disabled=!started||pinned||!!scene?.studio;$('cardCount').textContent=s.players[0].cards.length;$('planBtn').disabled=!started||!p.human||s.phase!=='roll';
  $('diceCount').hidden=!started||!p.human||p.vehicle===0||s.phase!=='roll';$('diceCount').innerHTML=Array.from({length:VEHICLES[p.vehicle].dice},(_,i)=>`<option value="${i+1}" ${p.diceCount===i+1?'selected':''}>${i+1} 颗骰子</option>`).join('');
  $('soundBtn').textContent=s.options.sound?'♫':'♪';$('soundBtn').setAttribute('aria-label',s.options.sound?'关闭声音':'开启声音');$('qualityBtn').textContent=s.options.quality==='low'?'省电':'电影';$('qualityBtn').title=s.options.quality==='low'?'省电画质 · 点击切换电影画质':'电影画质 · 点击切换省电画质';
  $('castBtn').disabled=!scene||!!scene.contextLost;$('followBtn').setAttribute('aria-pressed',String(!!scene?.follow));$('moveIndicator').hidden=!started;$('moveIndicator').textContent=`${game.char().name} · ${TILES[p.pos].name}${s.phase==='moving'?' · 剩 '+s.remaining+' 格':''}`;
@@ -135,7 +136,7 @@ function openPanel(type,id){
  }else if(type==='event'){
   const n=s.notice;showSheet(n?.title||'岛上新鲜事',`${game.char().name}的旅行手账`,eventPanel(game),true);sound(n?.mood);
  }else if(type==='debt'){
-  const d=s.debt;showSheet('小金库需要周转','先筹款，再继续旅行',`<p>${esc(d.label)}需要支付 <b>${fmt(d.amount)}</b> 奶币，当前现金 <b>${fmt(p.money)}</b>。</p><div class="button-grid">${btn('去银行筹款','panel','data-panel="bank"')}${btn('卖出股票','panel','data-panel="stocks"')}${btn('变卖地产','panel','data-panel="deeds"')}${btn('支付并继续','settle','',p.money<d.amount,'primary')}</div><h3>申请破产</h3><p>会清算存款、股票、地产与交通工具，尽可能偿还本次欠款，并退出这局旅行。</p>${btn('查看破产确认','confirmBankrupt','','', 'secondary danger')}`,true);
+  showSheet('小金库需要周转','先筹款，再继续旅行',debtPanel(game),true);
  }else if(type==='finished'){
   showSheet('奶家发财纪念册','本次旅行结算',resultsPanel(game),true);
  }else if(type==='settings'){
@@ -213,7 +214,7 @@ $('sheetBody').addEventListener('click',e=>{
  if(act==='stockQty'){const input=$('qty'+id),pos=game.position(id,game.s.players[0]);input.value=b.dataset.qty==='maxBuy'?Math.min(10000,Math.floor(game.s.players[0].money/pos.price)):b.dataset.qty==='maxSell'?Math.min(10000,pos.qty):b.dataset.qty;updateStockPreview(game,id);return;}
  if(act==='resumeGame'){dismiss(true);render();return;}
  if(act==='copyLink'){navigator.clipboard?.writeText($('shareUrl').value).then(()=>toast('试玩链接已复制，发给朋友就能玩。')).catch(()=>{$('shareUrl').select();toast('请长按链接复制。');});if(!navigator.clipboard){$('shareUrl').select();toast('请长按链接复制。');}return;}
- if(act==='panel'){openPanel(b.dataset.panel);return;}
+ if(act==='panel'){if(game.s.phase==='debt'){if(b.dataset.panel==='bank'){const draft=debtBankDraft(game);if(draft)bankDraft=draft;}if(b.dataset.panel==='stocks')stockHeld=true;}openPanel(b.dataset.panel);return;}
  if(act==='card'){const key=game.player.cards[index],reason=game.cardHint(key);if(reason){toast(reason);openPanel('cards');return;}if(CARDS[key].target==='self'){ok=game.card(index);if(ok){dismiss(true);commit();}else commit(false);}else openPanel('cardTarget',index);return;}
  if(act==='useCard'){const reason=game.cardHint(game.player.cards[index]);if(reason){toast(reason);openPanel('cards');return;}ok=game.card(index,target);if(ok){dismiss(true);commit();}else commit(false);return;}
  if(act==='construct')ok=game.construct(id,b.dataset.type);else if(act==='research')ok=game.setResearch(id,b.dataset.key);else if(act==='upgrade')ok=game.upgrade(id);else if(act==='sell')ok=game.sell(id);else if(act==='demolish'){ok=game.demolish(id);if(ok)dismiss(true);}else if(act==='confirmDemolish'){openPanel('confirmDemolish',id);return;}else if(act==='bank')ok=game.bank(b.dataset.kind,+$('bankAmount').value);else if(act==='trade')ok=game.trade(id,+$('qty'+id).value*+b.dataset.sign);else if(act==='shop')ok=game.shop(b.dataset.key);else if(act==='vehicle')ok=game.vehicle(id);
