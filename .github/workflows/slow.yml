@@ -1,0 +1,25 @@
+name: Seed simulation
+on:
+  schedule:
+    - cron: '20 19 * * *'
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: seeds-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  simulate-100:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-slow')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:slow

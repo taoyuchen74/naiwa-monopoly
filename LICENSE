@@ -1,0 +1,43 @@
+MIT License — original source code only
+
+Copyright (c) 2026 奶蛙大富翁 contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Scope / 授权范围
+
+MIT applies only to original source code and original documentation contributed
+to this repository. It does not grant rights to third-party character IP,
+names, likenesses, trademarks, reference videos, or recordings. In particular,
+dist/audio/naiwa-laugh-excerpt.mp3 has no verified open redistribution license
+and is NOT licensed under MIT by this repository. Public accessibility and
+attribution do not establish permission. Obtain permission from the relevant
+rights holders before redistributing such material or using it commercially.
+
+Three.js retains its MIT license at dist/vendor/THREE-LICENSE.txt. The bundled
+font retains SIL OFL 1.1 at dist/fonts/OFL.txt. Generated HTML/web bundles contain
+multiple components and are not wholly relicensed under MIT. Original procedural
+model code is covered; this does not license third-party character designs.
+See docs/SOURCES.md for provenance and the distinction between references,
+original implementations, and redistributed third-party assets.
+
+本许可证仅授权本仓库原创代码和原创文档，不授予第三方角色、名称、形象、商标、
+参考视频或录音的权利。短笑声没有已核实的开放再分发许可，不在 MIT 授权范围内。
+公开可访问或注明来源不等于获得授权；再分发及商业用途须另行向相关权利人核实。
+字体及 Three.js 保持各自原许可，生成的网页／离线文件并非整体按 MIT 重新授权。

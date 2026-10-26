@@ -1,0 +1,66 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Lint changed files (full history, merge-base diff)
+        env:
+          LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
+        run: npm run lint
+      # c8 runs npm test once, then enforces per-module thresholds.
+      - run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: error
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build:site
+      - run: npm run check:size
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: size-report
+          path: artifacts/size-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: out/
+          include-hidden-files: true
+          if-no-files-found: error
+  e2e:
+    needs: build
+    uses: ./.github/workflows/e2e.yml
+    with:
+      from-ci: true

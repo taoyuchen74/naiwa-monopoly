@@ -1,14 +1,19 @@
 import {businessType} from './businesses.js';
 import {difficulty} from './difficulty.js';
-import {CARDS} from './content.js';
+/** @param {number} count */
 export function diceWeights(count){let values=new Map([[0,1]]);for(let i=0;i<count;i++){const next=new Map();for(const [sum,w]of values)for(let d=1;d<=6;d++)next.set(sum+d,(next.get(sum+d)||0)+w/6);values=next;}return values;}
+/** @param {import("./engine.js").Game} g @param {import("./game-types.js").Route} r */
 export function landingValue(g,r){const p=g.player,t=g.tiles[r.id],o=g.s.ownership[r.id];let value=(r.passesStart?400+(g.s.talents&&p.character==='naiwa'?80:0):0)-r.rent+(r.points||0)*(p.tickets<100?1.5:.3);
  if(t.kind==='property'){if(!o)value+=p.money>=t.price+250?130+g.district(t.id,p.id).count*65:5;else if(o.player===p.id)value+=o.level<g.buildingLimit(o)&&p.money>=g.upgradeCost(t)?55:10;}
  else value+=({hospital:p.skip?0:-210,tax:-g.payment(180),shop:125,rest:120,spirit:20,event:45,bank:0,stock:0,start:0}[t.kind]||0);if(g.aiDifficulty()==='hard'){if(o?.player===p.id)value+=g.district(t.id,p.id).count*18;if(!o&&t.kind==='property')value+=g.district(t.id,p.id).count*50;let risk=0;for(let step=1;step<=6;step++){const options=g.preview(step,{from:r.id,reverse:false});risk+=Math.min(...options.map(x=>x.rent))/6;}value-=risk*.35;}return value;}
+/** @param {import("./engine.js").Game} g @param {number} steps @param {import("./game-types.js").PreviewOptions} [opts] */
 export function bestRoute(g,steps,opts){const options=g.preview(steps,opts);return options.sort((a,b)=>landingValue(g,b)-landingValue(g,a))[0];}
+/** @param {import("./engine.js").Game} g @param {number} count */
 export function expectedMove(g,count,{reverse=false}={}){let value=0,rent=0;for(const [steps,weight]of diceWeights(count)){const r=bestRoute(g,steps,{reverse});value+=weight*landingValue(g,r);rent+=weight*r.rent;}return {value,rent};}
+/** @param {import("./engine.js").Game} g @returns {import("./game-types.js").Move} */
 export function chooseMove(g){const p=g.player;if(p.forced)return {count:1,value:landingValue(g,bestRoute(g,p.forced))};if(p.slowTurns)return {count:1,value:landingValue(g,bestRoute(g,1))};let best;for(let count=1;count<=(p.vehicle===2?3:p.vehicle===1?2:1);count++){const option={count,...expectedMove(g,count,{reverse:p.reverse})};if(!best||option.value>best.value)best=option;}return best;}
-function useBestCard(g){if(g.aiDifficulty()==='easy'){const i=g.player.cards.indexOf('recover');return i>=0&&(g.player.skip||g.player.spirit==='misfortune')?g.card(i):false;}const p=g.player;const normal=chooseMove(g),choices=[];
+/** @param {import("./engine.js").Game} g */
+function useBestCard(g){if(g.aiDifficulty()==='easy'){const i=g.player.cards.indexOf('recover');return i>=0&&(g.player.skip||g.player.spirit==='misfortune')?g.card(i):false;}const p=g.player;const normal=chooseMove(g),choices=/** @type {import("./game-types.js").CardChoice[]} */ ([]);
  for(const [index,key]of p.cards.entries()){
   if(key==='recover')choices.push({index,value:p.skip?600:p.spirit==='misfortune'?250:25});
   if(key==='shield'&&!p.shield)choices.push({index,value:normal.rent-20});
@@ -27,15 +32,19 @@ function useBestCard(g){if(g.aiDifficulty()==='easy'){const i=g.player.cards.ind
  }
  choices.sort((a,b)=>b.value-a.value);for(const c of choices)if(c.value>difficulty(g).cardThreshold&&g.card(c.index,c.target))return true;return false;
 }
+/** @param {import("./engine.js").Game} g */
 function aiTrade(g){const p=g.player;if(p.aiTradeDone)return false;p.aiTradeDone=true;if(g.aiDifficulty()==='easy')return false;
  const hard=g.aiDifficulty()==='hard';for(let i=0;i<4;i++){const o=g.position(i);if(o.qty&&o.average!==null&&(o.price>=o.average*(hard?1.18:1.12)||o.price<=o.average*(hard?.8:.75)))return g.trade(i,-Math.min(o.qty,hard?8:4));}
  if(p.money<2200)return false;const candidates=g.s.market.map((m,i)=>{const h=m.history.slice(-5),mean=h.reduce((n,v)=>n+v,0)/h.length;return{i,ratio:m.price/(hard?mean:m.history[0]),price:m.price};}).sort((a,b)=>a.ratio-b.ratio);const best=candidates[0];if(hard&&best.ratio>.98)return false;const qty=Math.min(hard?8:2,Math.floor((p.money-1800)/best.price));return qty>0?g.trade(best.i,qty):false;
 }
+/** @param {import("./engine.js").Game} g */
 function aiBank(g){const p=g.player;if(p.aiBankDone||!g.canBank())return false;p.aiBankDone=true;if(p.loan&&p.money>p.loan+700)return g.bank('repay',p.loan);if(g.aiDifficulty()==='hard'&&p.money>1900)return g.bank('deposit',Math.min(700,p.money-1400));return false;}
+/** @param {import("./engine.js").Game} g @param {number} reserve */
 function develop(g,reserve){const p=g.player,o=g.s.ownership[p.pos];if(!o||o.player!==p.id)return false;
  if(!o.level&&g.canBuild(p.pos)){const own=g.owned(p),late=g.s.round>g.s.maxRounds*.7,types=g.aiDifficulty()==='easy'?['residence']:late?['chain','residence']:!own.some(x=>businessType(x)==='research')&&g.s.round<g.s.maxRounds*.4&&p.money>2000?['research','residence']:p.character==='naishu'?['chain','mall','residence']:p.character==='naigou'?['hotel','residence']:p.character==='naidan'?['mall','residence']:own.some(x=>businessType(x)==='chain')?['chain','residence']:g.s.players.some(x=>x.id!==p.id&&x.vehicle)?['gas','residence']:['hotel','residence'];for(const type of types)if(g.canConstruct(p.pos,type)&&p.money>=g.buildPrice(g.tiles[p.pos],type)+reserve)return g.construct(p.pos,type);return false;}
  return g.canUpgrade(p.pos)&&p.money>=g.buildPrice(g.tiles[p.pos])+reserve?g.upgrade(p.pos):false;
 }
+/** @param {import("./engine.js").Game} g @returns {boolean} */
 export function takeAiTurn(g){const p=g.player,cfg=difficulty(g);if(p.human||g.s.phase==='finished')return false;
  if(g.s.phase==='departure')return g.roll();
  if(g.s.phase==='roll'){

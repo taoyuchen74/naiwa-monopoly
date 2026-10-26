@@ -7,7 +7,9 @@ export const TALENTS={
  naidan:{name:'躺着也能赢',icon:'★',text:'每次出发自动获得 75 奶币；每四次出发，为自己最低级的一块地产免费加盖一层。无需操作，最高五级。',strong:true},
  naicha:{name:'暖心补给',icon:'♡',text:'非租金费用减少 50%；每三次出发补充 20 点券和一张野生狗奶。满包按原规则补偿。'}
 };
+/** @param {import("./engine.js").Game} g @param {import("./game-types.js").Player} p @param {string} [id] */
 export const hasTalent=(g,p,id=p.character)=>g.s.talents===true&&p.character===id;
+/** @param {import("./engine.js").Game} g */
 export function departureTalent(g){const p=g.player;if(!g.s.talents||p.talentReady)return false;p.talentReady=true;p.departures=(p.departures||0)+1;const id=p.character;
  if(id==='naichong')g.income(p,60,'【细水长流】');
  if(id==='naigou'){if(g.int(2)===0)g.income(p,240,'【傻狗有傻福】捡到钱包');else{const loss=Math.min(40,p.money);p.money-=loss;g.log(`奶狗【傻狗有傻福】摔丢 ${loss} 奶币，拍拍肚子继续走。`);}}

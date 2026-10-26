@@ -1,3 +1,4 @@
+/** @type {Record<string,import("./game-types.js").Business>} */
 export const BUSINESSES={
  residence:{name:'普通住宅',max:5,cost:1,architecture:'residence',text:'逐层加盖，向对手收租；同街区住宅参与联营加收。'},
  chain:{name:'连锁便利店',max:1,cost:1.2,architecture:'tea',text:'只建一级；同一业主每多一间连锁店，所有分店统一提高收费，上限400。不参与街区联营。'},
@@ -7,13 +8,19 @@ export const BUSINESSES={
  research:{name:'奶家研究所',max:5,cost:1.2,architecture:'research',text:'不收过路费；业主每出发三次产出所选道具卡。升级解锁更多研发项目，到访可更换项目。'},
  park:{name:'滨河公园',max:1,cost:.45,architecture:'garden',text:'只建一级，不收任何费用；所有停靠者获得10点券，适合轻松公益玩法。'}
 };
+/** @param {import("./game-types.js").Ownership} o @returns {import("./game-types.js").BusinessId} */
 export const businessType=o=>o?.buildingType||'residence';
+/** @param {import("./game-types.js").Ownership} o */
 export const buildingLimit=o=>BUSINESSES[businessType(o)]?.max||5;
-export const researchChoices=level=>['dice','shield','demolish','build','steal'].slice(0,level);
+/** @param {number} level @returns {import("./game-types.js").CardId[]} */
+export const researchChoices=level=>(/** @type {import('./game-types.js').CardId[]} */ (['dice','shield','demolish','build','steal'])).slice(0,level);
+/** @param {import("./engine.js").Game} g */
 export function businessDeparture(g){const p=g.player;if(p.businessReady)return false;p.businessReady=true;let changed=false;for(const own of g.owned(p)){if(businessType(own)!=='research'||!own.level)continue;const o=g.s.ownership[own.tile.id];o.researchProgress=(o.researchProgress||0)+1;changed=true;if(o.researchProgress>=3){o.researchProgress=0;const choices=researchChoices(o.level),key=choices.includes(o.researchCard)?o.researchCard:choices[0];g.log(`${g.char(p).name}的「${own.tile.name}」研究完成。`);g.giveCard(p,key);}}return changed;}
+/** @param {import("./game-types.js").Ownership} o */
 export function repairBuilding(o){if(o.level===0){o.buildingType='residence';delete o.researchCard;delete o.researchProgress;}else if(businessType(o)==='research'&&!researchChoices(o.level).includes(o.researchCard))o.researchCard=researchChoices(o.level)[0];}
 
 // The collection and decision preview share the same pre-discount outcomes.
+/** @param {import("./engine.js").Game} g @param {number} id */
 export function propertyChargeOptions(g,id){const o=g.s.ownership[id],type=businessType(o),base=g.baseRent(id,o.level);
  if(o.level&&type==='hotel')return [1,2,3].map(days=>({amount:Math.round(base*.65)*days,skip:days,suffix:`住宿${days}回合费用`,label:`${days}回合`}));
  if(o.level&&type==='mall')return [.75,1,1.5].map(rate=>({amount:Math.round(base*rate),skip:0,suffix:`购物消费（${rate*100}%）`,label:`${rate*100}%`}));

@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "noImplicitAny": true,
+    "strictNullChecks": false,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": [],
+    "skipLibCheck": true
+  },
+  "include": [
+    "types/browser-imports.d.ts",
+    "types/contracts.js",
+    "dist/talents.js",
+    "dist/game-types.js",
+    "dist/engine.js",
+    "dist/content.js",
+    "dist/strategy.js",
+    "dist/businesses.js"
+  ],
+  "exclude": ["dist/vendor", "node_modules", "out", "artifacts"]
+}
