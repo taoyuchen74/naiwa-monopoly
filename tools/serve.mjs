@@ -26,6 +26,7 @@ createServer(async (req, res) => {
     res.writeHead(200, {
       'Content-Type': mime[extname(file)] || 'application/octet-stream',
       'Cache-Control': 'no-store',
+      'Content-Length': data.length,
     });
     res.end(data);
   } catch {
