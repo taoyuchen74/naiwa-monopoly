@@ -125,9 +125,10 @@ export class IslandScene{
   for(const [id,token]of this.pickupMeshes)token.position.y=this.reduced?.24:.24+Math.sin(time*2+id)*.055;
   animateCharacter(this.hero,{time,mood:this.game?.s.phase==='event'?this.game.s.notice?.mood:null});if(this.showcase){animateCharacter(this.showcase,{time});this.showcase.rotation.y=.3+Math.sin(time*.4)*.18;}
   if(!this.reduced){for(const [i,b]of this.floats.entries()){b.position.y=-.45+Math.sin(time*1.1+i)*.035;b.rotation.z=Math.sin(time+i)*.015;}for(const [i,r]of this.ripples.entries())r.scale.x=1+Math.sin(time*.8+i)*.08;
-   for(const [i,j]of this.waterJets.entries())j.scale.y=1+Math.sin(time*3+i)*.035;
+
    if(Math.floor(time*2)!==this.lastSmoke){this.lastSmoke=Math.floor(time*2);if(this.quality!=='low')for(const p of this.smokestacks)this.fx.spawn('dust',new THREE.Vector3(p.x,p.y,p.z),'#d3d3c2');}
   }
+  this.fountainSpray?.update(time,{reduced:this.reduced,low:this.quality==='low'});
   this.drawFrame();this.el.dataset.drawCalls=String(this.renderer.info.render.calls);this.el.dataset.triangles=String(this.renderer.info.render.triangles);this.el.dataset.effects=String(this.fx.items.length);
  }
 }

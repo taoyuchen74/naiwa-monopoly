@@ -5,14 +5,14 @@ import {EffectSystem} from '../dist/effects.js';import {DICE_DURATION,DICE_FACES
 import {animationSpeed,ActionPacer} from '../dist/pacing.js';
 
 function sample(speed,{studio=false,paused=false,hidden=false}={}){
- const game=Game.create({seed:54,talents:false});game.s.options.speed=speed;game.player.pos=1;const updates=[],marker=new THREE.Group();marker.material={color:new THREE.Color()};
- const scene={animate(){},last:0,time:0,reduced:false,selection:{visible:false},camera:new THREE.OrthographicCamera(),fx:{items:[],update:dt=>updates.push(dt),spawn(){}},game,tiles:game.tiles,pawns:game.s.players.map(()=>new THREE.Group()),turnMarker:marker,follow:false,pickupMeshes:new Map(),hero:new THREE.Group(),floats:[],ripples:[],waterJets:[],smokestacks:[],quality:'low',drawFrame(){},el:{dataset:{}},renderer:{info:{render:{calls:0,triangles:0}}}};
+ const game=Game.create({seed:54,talents:false});game.s.options.speed=speed;game.player.pos=1;const updates=[],flows=[],marker=new THREE.Group();marker.material={color:new THREE.Color()};
+ const scene={animate(){},last:0,time:0,reduced:false,selection:{visible:false},camera:new THREE.OrthographicCamera(),fx:{items:[],update:dt=>updates.push(dt),spawn(){}},fountainSpray:{update:(time,options)=>flows.push({time,...options})},game,tiles:game.tiles,pawns:game.s.players.map(()=>new THREE.Group()),turnMarker:marker,follow:false,pickupMeshes:new Map(),hero:new THREE.Group(),floats:[],ripples:[],waterJets:[],smokestacks:[],quality:'low',drawFrame(){},el:{dataset:{}},renderer:{info:{render:{calls:0,triangles:0}}}};
  scene.paused=paused;if(studio)scene.studio={model:new THREE.Group(),yaw:0,manual:true,mode:'idle'};
  const oldDoc=globalThis.document,oldRaf=globalThis.requestAnimationFrame;try{globalThis.document={hidden};globalThis.requestAnimationFrame=()=>0;IslandScene.prototype.animate.call(scene,20);}finally{globalThis.document=oldDoc;globalThis.requestAnimationFrame=oldRaf;}
- const t=game.tiles[game.player.pos],target=new THREE.Vector2(t.x+(game.player.id-(game.s.players.length-1)/2)*.4,t.z-.15);return {dt:updates[0],ambient:scene.time,action:scene.actionTime,distance:target.distanceTo(new THREE.Vector2(scene.pawns[0].position.x,scene.pawns[0].position.z))};
+ const t=game.tiles[game.player.pos],target=new THREE.Vector2(t.x+(game.player.id-(game.s.players.length-1)/2)*.4,t.z-.15);return {flow:flows[0],dt:updates[0],ambient:scene.time,action:scene.actionTime,distance:target.distanceTo(new THREE.Vector2(scene.pawns[0].position.x,scene.pawns[0].position.z))};
 }
 test('fast mode accelerates real scene effects and movement without speeding up the ambient clock',()=>{
- const normal=sample(1),fast=sample(2);assert.equal(normal.dt,.02);assert.equal(fast.dt,.04);assert.equal(fast.ambient,normal.ambient);assert.ok(fast.distance<normal.distance);assert.equal(fast.action,normal.action*2);
+ const normal=sample(1),fast=sample(2);assert.equal(normal.dt,.02);assert.equal(fast.dt,.04);assert.equal(fast.ambient,normal.ambient);assert.deepEqual(fast.flow,normal.flow);assert.equal(fast.flow.time,fast.ambient);assert.ok(fast.distance<normal.distance);assert.equal(fast.action,normal.action*2);
 });
 
 test('studio viewing keeps its natural cadence and paused or hidden scenes advance neither clock',()=>{
