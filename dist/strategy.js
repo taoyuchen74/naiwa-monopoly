@@ -52,9 +52,13 @@ export function takeAiTurn(g){const p=g.player,cfg=difficulty(g);if(p.human||g.s
  if(g.s.phase==='estate'){const price=g.takeoverPrice(p.pos);return g.resolveEstate(g.aiDifficulty()!=='easy'&&p.money>=price+cfg.reserve&&g.district(p.pos,p.id).count>0);}
  if(g.s.phase==='event')return g.acknowledge();
  if(g.s.phase==='debt'){
-  if(p.deposit)g.bank('withdraw',p.deposit);for(let i=0;i<4;i++)if(p.stocks[i])g.trade(i,-p.stocks[i]);
   if(p.money>=g.s.debt.amount)return g.settle();
-  const need=g.s.debt.amount-p.money;if(g.canBank()&&p.loan+need<=1800&&g.bank('borrow',need))return g.settle();
+  // Each funding step gets its own receipt and pacing window. Do not liquidate
+  // remaining investments after the obligation can already be paid.
+  const need=g.s.debt.amount-p.money;
+  if(p.deposit&&g.bank('withdraw',Math.min(p.deposit,need)))return true;
+  for(let i=0;i<4;i++)if(p.stocks[i]&&g.trade(i,-Math.min(p.stocks[i],10000,Math.ceil(need/g.s.market[i].price))))return true;
+  if(g.canBank()&&p.loan+need<=1800&&g.bank('borrow',need))return true;
   const sale=g.owned(p).sort((a,b)=>g.district(a.tile.id).count-g.district(b.tile.id).count||a.level-b.level)[0];if(sale)return g.sell(sale.tile.id);return g.bankrupt();
  }
  if(g.s.phase==='end'){if(useBestCard(g))return true;if(g.canShop()&&p.money>1800&&p.vehicle===0&&g.s.round<g.s.maxRounds-5&&g.vehicle(1))return true;if(g.canShop()&&p.cards.length<10&&p.shopUsed<2){const key=!p.cards.includes('dice')?'dice':!p.cards.includes('build')?'build':!p.cards.includes('shield')?'shield':null;if(key&&g.shop(key))return true;}if(g.canBank()&&p.loan>0&&p.money>p.loan+500&&g.bank('repay',p.loan))return true;if(develop(g,g.aiDifficulty()==='hard'?Math.max(450,Math.min(1300,chooseMove(g).rent*1.5||450)):cfg.reserve))return true;if(aiTrade(g))return true;if(aiBank(g))return true;return g.end();}return false;
