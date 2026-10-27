@@ -1,0 +1,860 @@
+{
+  "environment": {
+    "os": "Windows 11 10.0.26200",
+    "cpu": "Intel Core i7-14650HX",
+    "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "chromium": "156.0.8078.4",
+    "node": "v24.16.0"
+  },
+  "sourceSha256": {
+    "scene.js": "8c950b28a8bef6622bc060d9d31e04d5dc12ee5e6a1d2892d3c34946aef80c85",
+    "high-quality.js": "4a01e818c8c2a61a45964e29400eca5858bc82b6429855796c27e3f46f229523",
+    "render-kit.js": "a0e401606e1525c882de3e2d641a327913d715adda1c3db1a8862b39e1976d77",
+    "strategy.js": "5ddb7f7ccb591dc4b30f8bd5aff211e37749c09619919b912db0afa9f614ce1d",
+    "render-profile.js": "04d02a7ce874f8a81a6c4a8de27d24e2890abbefcfaf1e1785ef883c6b71d111"
+  },
+  "before": {
+    "commit": "a967096fc7f2932d0ce83f60fc6e1b91e52146de",
+    "variant": "reference",
+    "samples": 30,
+    "profiles": [
+      {
+        "name": "desktop",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "dpr": 1,
+        "cpuThrottle": 1,
+        "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "active": {
+          "intervalMs": {
+            "samples": 29,
+            "p50": 225.39999999850988,
+            "p95": 236.19999999925494
+          },
+          "drawCpuMs": {
+            "samples": 30,
+            "p50": 225,
+            "p95": 235.89999999850988
+          },
+          "renders": 32,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1920,
+              1080
+            ],
+            "aoSize": [
+              1920,
+              1080
+            ]
+          }
+        },
+        "menu": {
+          "intervalMs": {
+            "samples": 9,
+            "p50": 227.40000000223517,
+            "p95": 234
+          },
+          "drawCpuMs": {
+            "samples": 10,
+            "p50": 227.10000000149012,
+            "p95": 233.70000000298023
+          },
+          "renders": 12,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1920,
+              1080
+            ],
+            "aoSize": [
+              1920,
+              1080
+            ]
+          }
+        },
+        "staticScene": {
+          "intervalMs": {
+            "samples": 9,
+            "p50": 38.400000002235174,
+            "p95": 1662.300000000745
+          },
+          "drawCpuMs": {
+            "samples": 10,
+            "p50": 37.900000002235174,
+            "p95": 1661.9000000022352
+          },
+          "renders": 12,
+          "resources": {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1920,
+              1080
+            ],
+            "aoSize": [
+              1920,
+              1080
+            ]
+          }
+        },
+        "aiMs": {
+          "samples": 60,
+          "p50": 1.6000000014901161,
+          "p95": 4.100000001490116
+        },
+        "previewCalls": [
+          952,
+          1478,
+          5226,
+          1478,
+          4599,
+          947
+        ],
+        "cycles": [
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1920,
+              1080
+            ],
+            "aoSize": [
+              1920,
+              1080
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1920,
+              1080
+            ],
+            "aoSize": [
+              1920,
+              1080
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1920,
+              1080
+            ],
+            "aoSize": [
+              1920,
+              1080
+            ]
+          }
+        ],
+        "disposal": null,
+        "outputSha256": [
+          "304b1f50fe7f90328ba5dee7c71035c6699da5361aa9ffdc89f2438c42a9cce7",
+          "920c1a345d09db1207ea4a9b12a796f1d1c0d6998723d79ee4298d324e4faefd",
+          "18c924d4dd73397bbf1f04e8ca5cf64dc77512a55e1d43e705b2746724bc0ae2",
+          "eb07f1d951a41172ec7751d817d24802b51e5f65b349bfa0cceef32efd8e7184",
+          "f3d9b225cdfc3ec9a4add533806d042863c5475249c928aafccc7344d5767bc0",
+          "38250fc9e2553d0ad018fd2231797eed421854ed1ddc720cec36f7895c8bc1ea"
+        ]
+      },
+      {
+        "name": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "cpuThrottle": 4,
+        "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "active": {
+          "intervalMs": {
+            "samples": 29,
+            "p50": 218.30000000074506,
+            "p95": 331.5
+          },
+          "drawCpuMs": {
+            "samples": 30,
+            "p50": 215.19999999925494,
+            "p95": 329.1000000014901
+          },
+          "renders": 32,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 2.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              975,
+              2110
+            ],
+            "aoSize": [
+              975,
+              2110
+            ]
+          }
+        },
+        "menu": {
+          "intervalMs": {
+            "samples": 10,
+            "p50": 227.69999999925494,
+            "p95": 265.1000000014901
+          },
+          "drawCpuMs": {
+            "samples": 11,
+            "p50": 225.80000000074506,
+            "p95": 263.19999999925494
+          },
+          "renders": 13,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 2.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              975,
+              2110
+            ],
+            "aoSize": [
+              975,
+              2110
+            ]
+          }
+        },
+        "staticScene": {
+          "intervalMs": {
+            "samples": 12,
+            "p50": 177.39999999850988,
+            "p95": 258.69999999925494
+          },
+          "drawCpuMs": {
+            "samples": 13,
+            "p50": 174.69999999925494,
+            "p95": 254.39999999850988
+          },
+          "renders": 15,
+          "resources": {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 2.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              975,
+              2110
+            ],
+            "aoSize": [
+              975,
+              2110
+            ]
+          }
+        },
+        "aiMs": {
+          "samples": 60,
+          "p50": 9.400000002235174,
+          "p95": 21.899999998509884
+        },
+        "previewCalls": [
+          952,
+          1478,
+          5226,
+          1478,
+          4599,
+          947
+        ],
+        "cycles": [
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 2.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              975,
+              2110
+            ],
+            "aoSize": [
+              975,
+              2110
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 2.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              975,
+              2110
+            ],
+            "aoSize": [
+              975,
+              2110
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 2.5,
+            "shadow": 4096,
+            "aoSamples": 32,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              975,
+              2110
+            ],
+            "aoSize": [
+              975,
+              2110
+            ]
+          }
+        ],
+        "disposal": null,
+        "outputSha256": [
+          "304b1f50fe7f90328ba5dee7c71035c6699da5361aa9ffdc89f2438c42a9cce7",
+          "920c1a345d09db1207ea4a9b12a796f1d1c0d6998723d79ee4298d324e4faefd",
+          "18c924d4dd73397bbf1f04e8ca5cf64dc77512a55e1d43e705b2746724bc0ae2",
+          "eb07f1d951a41172ec7751d817d24802b51e5f65b349bfa0cceef32efd8e7184",
+          "f3d9b225cdfc3ec9a4add533806d042863c5475249c928aafccc7344d5767bc0",
+          "38250fc9e2553d0ad018fd2231797eed421854ed1ddc720cec36f7895c8bc1ea"
+        ]
+      }
+    ]
+  },
+  "after": {
+    "variant": "working tree",
+    "samples": 30,
+    "profiles": [
+      {
+        "name": "desktop",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "dpr": 1,
+        "cpuThrottle": 1,
+        "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "active": {
+          "intervalMs": {
+            "samples": 29,
+            "p50": 129.89999999850988,
+            "p95": 139.69999999925494
+          },
+          "drawCpuMs": {
+            "samples": 30,
+            "p50": 129.59999999776483,
+            "p95": 139.39999999850988
+          },
+          "renders": 32,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1,
+            "shadow": 2048,
+            "aoSamples": 16,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1280,
+              720
+            ],
+            "aoSize": [
+              1280,
+              720
+            ]
+          }
+        },
+        "menu": {
+          "intervalMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "drawCpuMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "renders": 0,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1,
+            "shadow": 2048,
+            "aoSamples": 16,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1280,
+              720
+            ],
+            "aoSize": [
+              1280,
+              720
+            ]
+          }
+        },
+        "staticScene": {
+          "intervalMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "drawCpuMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "renders": 0,
+          "resources": {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1,
+            "shadow": 2048,
+            "aoSamples": 16,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1280,
+              720
+            ],
+            "aoSize": [
+              1280,
+              720
+            ]
+          }
+        },
+        "aiMs": {
+          "samples": 60,
+          "p50": 0.8000000007450581,
+          "p95": 1.5
+        },
+        "previewCalls": [
+          126,
+          244,
+          209,
+          286,
+          257,
+          180
+        ],
+        "cycles": [
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1,
+            "shadow": 2048,
+            "aoSamples": 16,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1280,
+              720
+            ],
+            "aoSize": [
+              1280,
+              720
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1,
+            "shadow": 2048,
+            "aoSamples": 16,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1280,
+              720
+            ],
+            "aoSize": [
+              1280,
+              720
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1,
+            "shadow": 2048,
+            "aoSamples": 16,
+            "cssSize": [
+              1280,
+              720
+            ],
+            "bufferSize": [
+              1280,
+              720
+            ],
+            "aoSize": [
+              1280,
+              720
+            ]
+          }
+        ],
+        "disposal": {
+          "disposed": true,
+          "raf": null,
+          "canvasConnected": false
+        },
+        "outputSha256": [
+          "304b1f50fe7f90328ba5dee7c71035c6699da5361aa9ffdc89f2438c42a9cce7",
+          "920c1a345d09db1207ea4a9b12a796f1d1c0d6998723d79ee4298d324e4faefd",
+          "18c924d4dd73397bbf1f04e8ca5cf64dc77512a55e1d43e705b2746724bc0ae2",
+          "eb07f1d951a41172ec7751d817d24802b51e5f65b349bfa0cceef32efd8e7184",
+          "f3d9b225cdfc3ec9a4add533806d042863c5475249c928aafccc7344d5767bc0",
+          "38250fc9e2553d0ad018fd2231797eed421854ed1ddc720cec36f7895c8bc1ea"
+        ]
+      },
+      {
+        "name": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "cpuThrottle": 4,
+        "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "active": {
+          "intervalMs": {
+            "samples": 30,
+            "p50": 172.80000000074506,
+            "p95": 232.69999999925494
+          },
+          "drawCpuMs": {
+            "samples": 31,
+            "p50": 171.19999999925494,
+            "p95": 229
+          },
+          "renders": 33,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1.25,
+            "shadow": 1024,
+            "aoSamples": 8,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              487,
+              1055
+            ],
+            "aoSize": [
+              244,
+              528
+            ]
+          }
+        },
+        "menu": {
+          "intervalMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "drawCpuMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "renders": 0,
+          "resources": {
+            "calls": 6685,
+            "triangles": 26037729,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1.25,
+            "shadow": 1024,
+            "aoSamples": 8,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              487,
+              1055
+            ],
+            "aoSize": [
+              244,
+              528
+            ]
+          }
+        },
+        "staticScene": {
+          "intervalMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "drawCpuMs": {
+            "samples": 0,
+            "p50": 0,
+            "p95": 0
+          },
+          "renders": 0,
+          "resources": {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 46,
+            "ratio": 1.25,
+            "shadow": 1024,
+            "aoSamples": 8,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              487,
+              1055
+            ],
+            "aoSize": [
+              244,
+              528
+            ]
+          }
+        },
+        "aiMs": {
+          "samples": 60,
+          "p50": 5.5,
+          "p95": 14.300000000745058
+        },
+        "previewCalls": [
+          126,
+          244,
+          209,
+          286,
+          257,
+          180
+        ],
+        "cycles": [
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1.25,
+            "shadow": 1024,
+            "aoSamples": 8,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              487,
+              1055
+            ],
+            "aoSize": [
+              244,
+              528
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1.25,
+            "shadow": 1024,
+            "aoSamples": 8,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              487,
+              1055
+            ],
+            "aoSize": [
+              244,
+              528
+            ]
+          },
+          {
+            "calls": 6665,
+            "triangles": 26008641,
+            "geometries": 443,
+            "textures": 138,
+            "programs": 68,
+            "ratio": 1.25,
+            "shadow": 1024,
+            "aoSamples": 8,
+            "cssSize": [
+              390,
+              844
+            ],
+            "bufferSize": [
+              487,
+              1055
+            ],
+            "aoSize": [
+              244,
+              528
+            ]
+          }
+        ],
+        "disposal": {
+          "disposed": true,
+          "raf": null,
+          "canvasConnected": false
+        },
+        "outputSha256": [
+          "304b1f50fe7f90328ba5dee7c71035c6699da5361aa9ffdc89f2438c42a9cce7",
+          "920c1a345d09db1207ea4a9b12a796f1d1c0d6998723d79ee4298d324e4faefd",
+          "18c924d4dd73397bbf1f04e8ca5cf64dc77512a55e1d43e705b2746724bc0ae2",
+          "eb07f1d951a41172ec7751d817d24802b51e5f65b349bfa0cceef32efd8e7184",
+          "f3d9b225cdfc3ec9a4add533806d042863c5475249c928aafccc7344d5767bc0",
+          "38250fc9e2553d0ad018fd2231797eed421854ed1ddc720cec36f7895c8bc1ea"
+        ]
+      }
+    ],
+    "checkoutBase": "a967096fc7f2932d0ce83f60fc6e1b91e52146de"
+  },
+  "identicalDecisionStates": true,
+  "sourceHashNormalization": "LF"
+}

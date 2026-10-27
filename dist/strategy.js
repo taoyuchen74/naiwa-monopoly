@@ -1,16 +1,24 @@
 import {businessType} from './businesses.js';
 import {difficulty} from './difficulty.js';
 import {CARDS,VEHICLES} from './content.js';
+// A decision owns its cache. Never retain route data across mutations/turns.
+const evaluations=new WeakMap();
+function evaluate(g,fn){if(evaluations.has(g))return fn();evaluations.set(g,{previews:new Map(),landings:new Map(),moves:new Map(),blocks:null});try{return fn();}finally{evaluations.delete(g);}}
+function preview(g,steps,opts={}){const c=evaluations.get(g);if(!c)return g.preview(steps,opts);const p=g.player,blocks=opts.blocks===undefined?g.s.blocks:opts.blocks,key=JSON.stringify([steps,opts.from===undefined?p.pos:opts.from,opts.first??null,opts.reverse===undefined?p.reverse:opts.reverse,Object.entries(blocks).sort((a,b)=>Number(a[0])-Number(b[0]))]);if(!c.previews.has(key))c.previews.set(key,g.preview(steps,opts));return c.previews.get(key);}
+export function landingValue(g,r){return evaluate(g,()=>{const cache=evaluations.get(g).landings;if(!cache.has(r))cache.set(r,scoreLanding(g,r));return cache.get(r);});}
+export function expectedMove(g,count,opts={}){return evaluate(g,()=>{const cache=evaluations.get(g).moves,key=JSON.stringify([count,!!opts.reverse]);if(!cache.has(key))cache.set(key,scoreMove(g,count,opts));return cache.get(key);});}
+export function chooseMove(g){return evaluate(g,()=>choose(g));}
+export function takeAiTurn(g){return evaluate(g,()=>takeTurn(g));}
 // Cash-equivalent utility, not cash income: scarce coupons are more useful,
 // and coupons beyond the real 150-point cap have no value.
 export function couponValue(g,amount){const p=g.player;return Math.min(amount,Math.max(0,150-p.tickets))*(p.tickets<100?1.5:.3);}
 export function diceWeights(count){let values=new Map([[0,1]]);for(let i=0;i<count;i++){const next=new Map();for(const [sum,w]of values)for(let d=1;d<=6;d++)next.set(sum+d,(next.get(sum+d)||0)+w/6);values=next;}return values;}
-export function landingValue(g,r){const p=g.player,t=g.tiles[r.id],o=g.s.ownership[r.id];let value=(r.passesStart?400+(g.s.talents&&p.character==='naiwa'?80:0):0)-r.rent+couponValue(g,(r.points||0)+(o?.level&&businessType(o)==='park'?10:0));
+function scoreLanding(g,r){const p=g.player,t=g.tiles[r.id],o=g.s.ownership[r.id];let value=(r.passesStart?400+(g.s.talents&&p.character==='naiwa'?80:0):0)-r.rent+couponValue(g,(r.points||0)+(o?.level&&businessType(o)==='park'?10:0));
  if(t.kind==='property'){if(!o)value+=p.money>=t.price+250?130+g.district(t.id,p.id).count*65:5;else if(o.player===p.id)value+=o.level<g.buildingLimit(o)&&p.money>=g.upgradeCost(t)?55:10;}
- else value+=({hospital:p.skip?0:-210,tax:-g.payment(180),shop:125,rest:120,spirit:20,event:45,bank:0,stock:0,start:0}[t.kind]||0);if(g.aiDifficulty()==='hard'){if(o?.player===p.id)value+=g.district(t.id,p.id).count*18;if(!o&&t.kind==='property')value+=g.district(t.id,p.id).count*50;let risk=0;for(let step=1;step<=6;step++){const options=g.preview(step,{from:r.id,reverse:false});risk+=Math.min(...options.map(x=>x.rent))/6;}value-=risk*.35;}return value;}
-export function bestRoute(g,steps,opts){const options=g.preview(steps,opts);return options.sort((a,b)=>landingValue(g,b)-landingValue(g,a))[0];}
-export function expectedMove(g,count,{reverse=false}={}){let value=0,rent=0;for(const [steps,weight]of diceWeights(count)){const r=bestRoute(g,steps,{reverse});value+=weight*landingValue(g,r);rent+=weight*r.rent;}return {value,rent};}
-export function chooseMove(g){const p=g.player;if(p.forced)return {count:1,value:landingValue(g,bestRoute(g,p.forced))};if(p.slowTurns)return {count:1,value:landingValue(g,bestRoute(g,1))};let best;for(let count=1;count<=(p.vehicle===2?3:p.vehicle===1?2:1);count++){const option={count,...expectedMove(g,count,{reverse:p.reverse})};if(!best||option.value>best.value)best=option;}return best;}
+ else value+=({hospital:p.skip?0:-210,tax:-g.payment(180),shop:125,rest:120,spirit:20,event:45,bank:0,stock:0,start:0}[t.kind]||0);if(g.aiDifficulty()==='hard'){if(o?.player===p.id)value+=g.district(t.id,p.id).count*18;if(!o&&t.kind==='property')value+=g.district(t.id,p.id).count*50;let risk=0;for(let step=1;step<=6;step++){const options=preview(g,step,{from:r.id,reverse:false});risk+=Math.min(...options.map(x=>x.rent))/6;}value-=risk*.35;}return value;}
+export function bestRoute(g,steps,opts){return evaluate(g,()=>{let best,score=-Infinity;for(const r of preview(g,steps,opts)){const value=landingValue(g,r);if(value>score){best=r;score=value;}}return best;});}
+function scoreMove(g,count,{reverse=false}={}){let value=0,rent=0;for(const [steps,weight]of diceWeights(count)){const r=bestRoute(g,steps,{reverse});value+=weight*landingValue(g,r);rent+=weight*r.rent;}return {value,rent};}
+function choose(g){const p=g.player;if(p.forced)return {count:1,value:landingValue(g,bestRoute(g,p.forced))};if(p.slowTurns)return {count:1,value:landingValue(g,bestRoute(g,1))};let best;for(let count=1;count<=(p.vehicle===2?3:p.vehicle===1?2:1);count++){const option={count,...expectedMove(g,count,{reverse:p.reverse})};if(!best||option.value>best.value)best=option;}return best;}
 function useBestCard(g){if(g.aiDifficulty()==='easy'){const i=g.player.cards.indexOf('recover');return i>=0&&(g.player.skip||g.player.spirit==='misfortune')?g.card(i):false;}const p=g.player;const normal=chooseMove(g),choices=[];
  for(const [index,key]of p.cards.entries()){
   if(!g.canUseCard(key))continue;
@@ -22,12 +30,12 @@ function useBestCard(g){if(g.aiDifficulty()==='easy'){const i=g.player.cards.ind
   if(['build','demolish','steal'].includes(key))for(const target of g.cardTargets(key)){
    const t=g.tiles[target.id];if(key==='demolish'&&target.player===p.id&&!target.obstacle)continue;let value;
    if(key==='build')value=g.upgradeCost(t)*.55+(g.rent(t.id,target.level+1)-g.rent(t.id))*.3;
-   if(key==='demolish')value=target.obstacle?(g.preview(6).some(r=>r.blocked&&r.id===target.id)?100:0):g.upgradeCost(t)*.25+(g.rent(t.id)-g.rent(t.id,target.level-1))*.3;
+   if(key==='demolish')value=target.obstacle?(preview(g,6).some(r=>r.blocked&&r.id===target.id)?100:0):g.upgradeCost(t)*.25+(g.rent(t.id)-g.rent(t.id,target.level-1))*.3;
    if(key==='steal'){if(p.money<g.takeoverPrice(t.id)+450)continue;value=g.district(t.id,p.id).count*55-g.cost(t,target.level,businessType(target))*.18;}
    choices.push({index,target:t.id,value});
   }
   // Stop yourself on a useful plot. This can also hold a rival behind you on a later turn.
-  if(key==='block'&&!p.reverse)for(let n=1;n<=6;n++){let at=p.pos;for(let k=0;k<n;k++)at=g.tiles[at].next[0];if(g.s.blocks[at]!==undefined)continue;let expected=0;for(const [steps,w]of diceWeights(normal.count)){const r=bestRoute(g,steps,{blocks:{...g.s.blocks,[at]:p.id}});expected+=w*landingValue(g,r);}choices.push({index,target:n,value:expected-normal.value-45});}
+  if(key==='block'&&!p.reverse){const cache=evaluations.get(g);if(!cache.blocks){cache.blocks=[];for(let n=1;n<=6;n++){let at=p.pos;for(let k=0;k<n;k++)at=g.tiles[at].next[0];if(g.s.blocks[at]!==undefined)continue;let expected=0;for(const [steps,w]of diceWeights(normal.count)){const r=bestRoute(g,steps,{blocks:{...g.s.blocks,[at]:p.id}});expected+=w*landingValue(g,r);}cache.blocks.push({target:n,value:expected-normal.value-45});}}for(const score of cache.blocks)choices.push({index,...score});}
  }
  choices.sort((a,b)=>b.value-a.value);for(const c of choices)if(c.value>difficulty(g).cardThreshold&&g.card(c.index,c.target))return true;return false;
 }
@@ -57,7 +65,7 @@ function develop(g,reserve){const p=g.player,o=g.s.ownership[p.pos];if(!o||o.pla
  if(!o.level&&g.canBuild(p.pos)){const own=g.owned(p),late=g.s.round>g.s.maxRounds*.7,types=g.aiDifficulty()==='easy'?['residence']:late?['chain','residence']:!own.some(x=>businessType(x)==='research')&&g.s.round<g.s.maxRounds*.4&&p.money>2000?['research','residence']:p.character==='naishu'?['chain','mall','residence']:p.character==='naigou'?['hotel','residence']:p.character==='naidan'?['mall','residence']:own.some(x=>businessType(x)==='chain')?['chain','residence']:g.s.players.some(x=>x.id!==p.id&&x.vehicle)?['gas','residence']:['hotel','residence'];if(g.aiDifficulty()!=='easy'&&couponValue(g,10)>0&&g.s.maxRounds-g.s.round>=8)types.push('park');const candidates=types.filter(type=>g.canConstruct(p.pos,type)&&p.money>=g.buildPrice(g.tiles[p.pos],type)+reserve).map(type=>({type,value:constructionValue(g,type)}));candidates.sort((a,b)=>b.value-a.value);return candidates.length?g.construct(p.pos,candidates[0].type):false;}
  return g.canUpgrade(p.pos)&&p.money>=g.buildPrice(g.tiles[p.pos])+reserve?g.upgrade(p.pos):false;
 }
-export function takeAiTurn(g){const p=g.player,cfg=difficulty(g);if(p.human||g.s.phase==='finished')return false;
+function takeTurn(g){const p=g.player,cfg=difficulty(g);if(p.human||g.s.phase==='finished')return false;
  if(g.s.phase==='departure')return g.roll();
  if(g.s.phase==='roll'){
   if(p.money<500&&p.deposit&&g.bank('withdraw',Math.min(p.deposit,900)))return true;
