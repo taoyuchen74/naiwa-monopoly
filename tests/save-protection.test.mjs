@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup} from '../dist/engine.js';
+import {Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup,createSaveRepository} from '../dist/engine.js';
 import {archiveSummary} from '../dist/save-menu.js';
 import {normalizeSetup,setupError} from '../dist/setup.js';
 
@@ -11,7 +11,7 @@ const archive=()=>{const g=Game.create({character:'naicha',playerCount:6,seed:53
 function harness(raw=null){
  const data=new Map(raw?[[SAVE_KEY,raw]]:[]),writes=[],nodes={playerCountSelect:{value:'3'},roundSelect:{value:'20'},difficultySelect:{value:'normal'},talentsEnabled:{checked:true},startScreen:{hidden:false},saveStatus:{}};
  const localStorage={getItem:key=>data.get(key)??null,setItem(key,value){writes.push(key);data.set(key,String(value));}};
- const context={Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup,archiveSummary,normalizeSetup,setupError,localStorage,game:Game.create({seed:7481}),saved:null,started:false,selected:'naiwa',advanced:normalizeSetup(),advancedDraft:null,scene:null,activePanel:null,blockKey:'',actionPacer:{reset(){}},$:id=>nodes[id],writePreferences(){},readPreferences:(_storage,options)=>options,btn:(text,act)=>`<button data-act="${act}">${text}</button>`,showSheet(...args){context.dialog=args;},toast(text){context.message=text;},dismiss(){context.dialog=null;},render(){},sound(){}};
+ const context={repository:createSaveRepository(localStorage),Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup,archiveSummary,normalizeSetup,setupError,localStorage,game:Game.create({seed:7481}),saved:null,started:false,selected:'naiwa',advanced:normalizeSetup(),advancedDraft:null,scene:null,activePanel:null,blockKey:'',actionPacer:{reset(){}},$:id=>nodes[id],writePreferences(){},readPreferences:(_storage,options)=>options,btn:(text,act)=>`<button data-act="${act}">${text}</button>`,showSheet(...args){context.dialog=args;},toast(text){context.message=text;},dismiss(){context.dialog=null;},render(){},sound(){}};
  context.commit=()=>runInNewContext('save()',context);
  runInNewContext(source.slice(source.indexOf('function save()'),source.indexOf('function commit(')),context);
  runInNewContext(source.slice(source.indexOf('let pendingOverwrite='),source.indexOf('function readAdvancedFields(')),context);
@@ -44,6 +44,12 @@ test('backup write failure aborts a new game before changing game state or archi
 });
 test('a changed archive requires a fresh confirmation rather than backing up unreviewed progress',()=>{
  const h=harness(JSON.stringify(archive().s));h.run('startFresh()');const newer=archive();newer.s.round=9;h.data.set(SAVE_KEY,JSON.stringify(newer.s));h.run('startFresh(true)');assert.equal(h.context.started,false);assert.match(h.context.dialog[1],/9 \/ 50/);assert.deepEqual(h.writes,[]);
+});
+
+test('new auto write failure after backup keeps the active game and previous auto intact',()=>{
+ const raw=JSON.stringify(archive().s),h=harness(raw),preview=h.context.game,write=h.context.localStorage.setItem;
+ h.run('startFresh()');h.context.localStorage.setItem=(key,value)=>{if(key===SAVE_KEY)throw Error('quota');write(key,value);};h.run('startFresh(true)');
+ assert.equal(h.context.game,preview);assert.equal(h.context.started,false);assert.equal(h.data.get(SAVE_KEY),raw);assert.equal(h.data.get(BACKUP_KEY),raw);
 });
 test('corrupt archives and backups are refused without changing either stored value',()=>{
  const h=harness('{');assert.equal(h.context.saved,null);assert.throws(()=>backupStoredGame(h.context.localStorage,'{'));h.data.set(BACKUP_KEY,'{');assert.equal(restoreStoredBackup(h.context.localStorage),null);assert.equal(h.data.get(SAVE_KEY),'{');assert.equal(h.data.get(BACKUP_KEY),'{');assert.deepEqual(h.writes,[]);

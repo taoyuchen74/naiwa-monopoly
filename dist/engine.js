@@ -2,30 +2,28 @@ import {TransferLog} from './transfers.js';
 import {rosterFor} from './setup.js';
 import {BUSINESSES,businessType,buildingLimit,propertyChargeOptions,businessDeparture,researchChoices,repairBuilding} from './businesses.js';
 import {mapTiles} from './maps.js';
-import {emptyBook,migratePortfolio,recordTrade,stockPosition,portfolio} from './portfolio.js';
+import {emptyBook,recordTrade,stockPosition,portfolio} from './portfolio.js';
 import {hasTalent,departureTalent} from './talents.js?v=16';
 import {takeAiTurn} from './strategy.js';
 import {CHARACTERS,TILES,STOCKS,CARDS,EVENTS,SPIRITS,VEHICLES,POINT_STOPS} from './content.js';
-export const MAX_BUILDING_LEVEL=5;
-export const ROUND_OPTIONS=[20,30,50,80];
-export const SAVE_KEY='naiwa-monopoly-v2';
-export const BACKUP_KEY=SAVE_KEY+'-backup';
+import {migrateSave,MAX_BUILDING_LEVEL,ROUND_OPTIONS} from './save-schema.js';
+import {createSaveRepository} from './save-repository.js';
+export {MAX_BUILDING_LEVEL,ROUND_OPTIONS};
+export {createSaveRepository};
+export {SAVE_KEY,BACKUP_KEY} from './save-repository.js';
 /** @param {Storage} storage @param {Game} game @param {number} [now] */
 export function storeGame(storage,game,now=Date.now()){
- const state={...game.s,savedAt:now};storage.setItem(SAVE_KEY,JSON.stringify(state));Object.assign(game.s,{savedAt:now});
+ createSaveRepository(storage).save('auto',game.s,{now});Object.assign(game.s,{savedAt:now});
 }
 /** Keep the exact archive, including legacy fields, before allowing replacement.
  * @param {Storage} storage @param {string} raw */
 export function backupStoredGame(storage,raw){
- if(!Game.restore(raw)||storage.getItem(SAVE_KEY)!==raw)throw Error('Archive changed');
- storage.setItem(BACKUP_KEY,raw);
+ createSaveRepository(storage).backupAuto(raw);
 }
 /** @param {Storage} storage @returns {Game|null} */
 export function restoreStoredBackup(storage){
- const raw=storage.getItem(BACKUP_KEY),restored=Game.restore(raw);if(!restored)return null;
- storage.setItem(SAVE_KEY,raw);return restored;
+ const state=createSaveRepository(storage).restoreBackup();return state?new Game(state):null;
 }
-const copy=x=>JSON.parse(JSON.stringify(x));
 const round=n=>Math.round(n);
 function mixedSeed(seed){let x=(seed>>>0)^0x9e3779b9;x=Math.imul(x^(x>>>16),0x85ebca6b);x=Math.imul(x^(x>>>13),0xc2b2ae35);return ((x^(x>>>16))>>>0)||1;}
 export class Game {
@@ -35,29 +33,7 @@ export class Game {
   const count=[2,3,4,5,6].includes(+playerCount)?+playerCount:3;const chars=rosterFor(character,count,opponents,seed);
   const game=new Game({version:2,rules:7,setupSeed:seed>>>0,mapVersion:mapVersion===1?1:2,difficulty:['easy','normal','hard'].includes(difficulty)?difficulty:'normal',talents:!!talents,firstPlayer:0,seed:mixedSeed(seed),round:1,maxRounds:ROUND_OPTIONS.includes(+rounds)?+rounds:50,current:0,phase:'roll',dice:[1],remaining:0,moveTotal:0,moveSteps:0,players:chars.map((c,id)=>({id,character:c,human:id===0,difficulty:id&&['easy','normal','hard'].includes(seatLevels[id-1])?seatLevels[id-1]:['easy','normal','hard'].includes(difficulty)?difficulty:'normal',money:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60,businessReady:false,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0,buildSite:null,bankAccess:false,talentReady:false,departures:0,deposit:0,loan:0,stocks:[0,0,0,0],stockBook:emptyBook(),stockLegacy:false,stockTrades:[],cards:['dice','shield','recover'],vehicle:0,diceCount:1,pos:0,history:[],alive:true,skip:0,spirit:null,spiritTurns:0,shield:false,reverse:false,forced:0})),ownership:{},blocks:{},pickups:{},market:STOCKS.map(t=>({...t,history:[t.price],change:0,previous:t.price})),logs:[{round:1,text:'奶家发财岛开张！每位奶伴带着 '+([2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200)+' 奶币出发。'}],notice:null,debt:null,options:{sound:true,speed:1,quality:'auto',lighting:'day'},winner:null});if(randomStart){game.s.current=game.int(count);game.s.firstPlayer=game.s.current;game.log(`随机先手：${game.char().name}先出发，每人行动一次算一轮。`);}return game;
  }
- static restore(raw){
-  try{const s=typeof raw==='string'?JSON.parse(raw):copy(raw);const TILES=mapTiles(s?.mapVersion??1);if(s&&s.mapVersion===undefined)s.mapVersion=1;if(s&&s.difficulty===undefined)s.difficulty='normal';if(!s||![1,2].includes(s.mapVersion)||!['easy','normal','hard'].includes(s.difficulty)||s.version!==2||!Array.isArray(s.players)||![2,3,4,5,6].includes(s.players.length)||!['roll','departure','moving','branch','buy','estate','event','end','debt','finished'].includes(s.phase))return null;
-   if(!Number.isInteger(s.current)||s.current<0||s.current>=s.players.length||!Number.isInteger(s.round)||s.round<1||!ROUND_OPTIONS.includes(s.maxRounds)||s.round>s.maxRounds||!Number.isInteger(s.seed)||!Number.isInteger(s.remaining)||s.remaining<0||s.remaining>18)return null;
-   if(s.moveSteps===undefined)s.moveSteps=null;if(s.moveSteps!==null&&(!Number.isInteger(s.moveSteps)||s.moveSteps<0||s.moveSteps>18))return null;
-   if(!s.options||!s.market||s.market.length!==4||!s.ownership||!s.blocks||!Array.isArray(s.logs)||!Array.isArray(s.dice))return null;
-   for(const p of s.players)if(p.character==='dounai')p.character='naicha';if(s.players.some(p=>!migratePortfolio(p)))return null;
-   if(new Set(s.players.map(p=>p.character)).size!==s.players.length||s.players.some((p,i)=>p.human&&i!==0))return null;
-   for(const [index,p] of s.players.entries()){if(p.id!==index||typeof p.human!=='boolean'||typeof p.alive!=='boolean'||!Number.isInteger(p.pos)||!CHARACTERS.some(c=>c.id===p.character)||!TILES[p.pos]||![p.money,p.deposit,p.loan,...p.stocks].every(n=>Number.isSafeInteger(n)&&n>=0)||p.stocks.length!==4||!Array.isArray(p.cards)||p.cards.length>15||p.cards.some(c=>!CARDS[c])||!Array.isArray(p.history)||p.history.length>80||p.history.some(i=>!Number.isInteger(i)||!TILES[i])||!VEHICLES[p.vehicle]||!Number.isInteger(p.diceCount)||p.diceCount<1||p.diceCount>VEHICLES[p.vehicle].dice||!Number.isInteger(p.skip)||p.skip<0||p.skip>3||!Number.isInteger(p.forced)||p.forced<0||p.forced>6||!Number.isInteger(p.spiritTurns)||p.spiritTurns<0||p.spiritTurns>4||p.spirit&&!SPIRITS[p.spirit])return null;}
-   for(const [id,o] of Object.entries(s.ownership)){if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||o.level>buildingLimit(o)||o.researchProgress!==undefined&&(!Number.isInteger(o.researchProgress)||o.researchProgress<0||o.researchProgress>2)||o.researchCard!==undefined&&(!researchChoices(o.level).includes(o.researchCard)||businessType(o)!=='research'))return null;if(!TILES[id]||TILES[id].kind!=='property'||!Number.isInteger(o.player)||o.player<0||o.player>=s.players.length||!Number.isInteger(o.level)||o.level<0||o.level>MAX_BUILDING_LEVEL)return null;}
-   for(const m of s.market){if(m.previous===undefined)m.previous=Number.isFinite(m.change)?Math.max(20,Math.min(500,m.price-m.change)):m.price;if(!Number.isSafeInteger(m.previous)||m.previous<20||m.previous>500)return null;}
-   if(s.market.some(m=>!Number.isSafeInteger(m.price)||m.price<20||m.price>500||!Array.isArray(m.history)||m.history.length>20||m.history.some(n=>!Number.isFinite(n)||n<20||n>500)))return null;
-   for(const key of ['music','voice'])if(key in s.options&&typeof s.options[key]!=='boolean')return null;
-   for(const key of ['musicVolume','effectsVolume','voiceVolume'])if(key in s.options&&(!Number.isFinite(s.options[key])||s.options[key]<0||s.options[key]>1))return null;
-   if('track'in s.options&&!['ode','town'].includes(s.options.track))return null;
-   if(s.options.lighting===undefined)s.options.lighting='day';if(!['day','golden','night'].includes(s.options.lighting))return null;
-   if(typeof s.options.sound!=='boolean'||![1,2,4].includes(s.options.speed)||!['auto','low'].includes(s.options.quality)||s.logs.some(l=>typeof l.text!=='string'||!Number.isInteger(l.round)))return null;
-   if(Object.entries(s.blocks).some(([id,owner])=>!TILES[id]||!Number.isInteger(owner)||owner<0||owner>=s.players.length))return null;
-   if(s.phase==='estate'&&(!s.ownership[s.players[s.current].pos]||s.ownership[s.players[s.current].pos].player===s.current))return null;
-   if(s.phase==='branch'&&(TILES[s.players[s.current].pos].next.length!==2||s.remaining<=0))return null;
-   if(s.phase==='debt'&&(!s.debt||!Number.isSafeInteger(s.debt.amount)||s.debt.amount<=0||s.debt.to!==null&&(!Number.isInteger(s.debt.to)||!s.players[s.debt.to])||typeof s.debt.label!=='string'))return null;
-   if(s.firstPlayer===undefined)s.firstPlayer=0;if(!Number.isInteger(s.firstPlayer)||s.firstPlayer<0||s.firstPlayer>=s.players.length)return null;if(s.pickups===undefined)s.pickups={};if(!s.pickups||typeof s.pickups!=='object'||Object.entries(s.pickups).some(([id,owner])=>!POINT_STOPS.includes(+id)||!Number.isInteger(owner)||!s.players[owner]))return null;if(s.talents===undefined)s.talents=false;if(typeof s.talents!=='boolean')return null;s.rules=7;for(const p of s.players){for(const [key,value]of Object.entries({tickets:60,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0})){if(p[key]===undefined)p[key]=value;if(!Number.isInteger(p[key])||p[key]<0||p[key]>(key==='tickets'?150:key==='slowTurns'?3:key==='shopUsed'?2:key==='cardsUsed'?32:1))return null;}if(p.difficulty===undefined)p.difficulty=s.difficulty;if(!['easy','normal','hard'].includes(p.difficulty))return null;if(p.businessReady===undefined)p.businessReady=false;if(typeof p.businessReady!=='boolean')return null;if(p.talentReady===undefined)p.talentReady=false;if(p.departures===undefined)p.departures=0;if(typeof p.talentReady!=='boolean'||!Number.isSafeInteger(p.departures)||p.departures<0)return null;if(p.buildSite===undefined)p.buildSite=null;if(p.bankAccess===undefined)p.bankAccess=false;if(p.buildSite!==null&&(!Number.isInteger(p.buildSite)||!TILES[p.buildSite])||typeof p.bankAccess!=='boolean')return null;}return new Game(s);
-  }catch{return null;}
- }
+ static restore(raw){const state=migrateSave(raw);return state?new Game(state):null;}
  aiDifficulty(p=this.player){return p.difficulty||this.s.difficulty;}
  buildingLimit(o){return buildingLimit(o);}
  get tiles(){return mapTiles(this.s.mapVersion);}

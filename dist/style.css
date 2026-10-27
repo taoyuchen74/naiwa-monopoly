@@ -308,6 +308,7 @@ summary:focus-visible,[tabindex]:focus-visible,[contenteditable]:focus-visible{o
 .bank-projection span,.bank-projection small{color:#70502e}
 .bank-projection b{color:#365b31}
 .portfolio-total small{color:#604528}
+.save-slots{display:grid;gap:16px}.save-slot{padding:14px;border:2px solid #b18b50;border-radius:12px;background:#fff0cb}.save-slot h3{margin-top:0}.save-slot-summary{display:flex;gap:12px;align-items:flex-start}.save-slot-summary>span{width:56px;flex-shrink:0}.save-slot-summary svg,.save-slot-summary img{width:56px;height:56px}.save-slot-summary>div{min-width:0}.save-slot-summary p{margin:5px 0;overflow-wrap:anywhere}.save-slot .row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px}.save-slot button,.slot-import input{min-height:44px;min-width:0;font-size:14px}.slot-import{display:block;margin-top:12px}.slot-import input{display:block;width:100%;max-width:100%}
 button.player:focus-visible{outline-color:#85391f}
 #app[data-layout] .welcome-panel{display:flex;flex-direction:column;overflow:hidden}
 #app[data-layout] .welcome-content{flex:1;min-height:0;overflow-y:auto;padding-bottom:12px}
