@@ -44,7 +44,7 @@
 
 ## CI 与确定性 E2E
 
-三个 YAML：`.github/workflows/ci.yml`、`e2e.yml`、`slow.yml`。普通 CI 有 test、build、e2e 三个 job：test 与 build 并行，e2e 复用 build 的同一份 out artifact，不另行打包；手动单独运行 e2e 时才现场构建。固定使用 GitHub ubuntu-24.04 runner，复用其预装 Chrome 系统库，只安装 Playwright 默认 Chromium headless shell（`--only-shell`）并按 lockfile 缓存浏览器；不在每次运行时 apt 升级系统库或安装本游戏无需的日文／泰文字体，图形用例串行运行，避免软件 WebGL 争用，失败保留截图、trace和HTML报告。没有默认重试掩盖不稳定测试。
+三个 YAML：`.github/workflows/ci.yml`、`e2e.yml`、`slow.yml`。普通 CI 有 test、build、e2e 三个 job：test 与 build 并行，e2e 复用 build 的同一份 out artifact，不另行打包；手动单独运行 e2e 时才现场构建。固定使用 GitHub ubuntu-24.04 runner，复用其预装 Chrome 系统库，只安装 Playwright 默认 Chromium headless shell（`--only-shell`）并按 lockfile 缓存浏览器；不在每次运行时 apt 升级系统库或安装本游戏无需的日文／泰文字体，图形用例串行运行，在 runner 预装的 Xvfb 虚拟显示器中启用系统 OpenGL，避免强制 SwiftShader 的低帧率，失败保留截图、trace和HTML报告。没有默认重试掩盖不稳定测试。
 
 三条 spec 在390×844和844×390各执行一次，共6条浏览器用例：
 
@@ -81,4 +81,4 @@ LICENSE 的 MIT 范围仅限原创代码和原创文档。程序模型实现不�
 
 实现依据：[TypeScript checkJs](https://www.typescriptlang.org/tsconfig/checkJs.html)、[Playwright Clock](https://playwright.dev/docs/clock)、[c8 all 与覆盖率门槛](https://github.com/bcoe/c8)。
 
-无头浏览器只启用必要的 WebGL 软件回退，不强制整个浏览器使用 SwiftShader。依据：[Chromium 的 SwiftShader 模式区分](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md)。强制全部软件渲染曾造成启动字体和帧调度停滞；该失败由首次 CI 捕获，已保留报告用于诊断。
+无头浏览器启用系统图形后端（`--enable-gpu`），CI 通过预装的 Xvfb 与 ANGLE OpenGL 保留真实 WebGL 画面、原生点击稳定性检查和默认动画。没有使用强制点击、二维地图或空白截图替代三维流程。依据：[Chromium 无头模式 GPU 文档](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/gpu/using-gpu-hardware-in-headless-chrome.md)。首次 CI 的启动／点击超时报告保留用于诊断，最终是否通过以实际工作流记录为准。

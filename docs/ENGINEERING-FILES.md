@@ -258,7 +258,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --only-shell chromium
-      - run: npm run test:e2e
+      - run: xvfb-run --auto-servernum npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -326,7 +326,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
-      args: ['--enable-unsafe-swiftshader'],
+      args: [
+        '--enable-gpu',
+        '--enable-unsafe-swiftshader',
+        ...(process.env.CI ? ['--use-gl=angle', '--use-angle=gl'] : []),
+      ],
     },
   },
   projects: [
