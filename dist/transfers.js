@@ -1,9 +1,7 @@
 // Runtime receipts describe completed payments. They are intentionally outside saved state.
 /** @typedef {{from:number,to:number,amount:number,kind:string,tile:number,round:number}} Receipt */
 export class TransferLog{
- /** @type {(Receipt & {sequence:number})[]} */
- items;
- constructor(){this.sequence=0;this.items=[];}
+ constructor(){this.sequence=0;this.items=/** @type {(Receipt & {sequence:number})[]} */ ([]);}
  /** @param {Receipt} receipt */
  record(receipt){const entry=Object.freeze({...receipt,sequence:++this.sequence});this.items.push(entry);if(this.items.length>16)this.items.shift();return entry;}
  /** @param {number} sequence */

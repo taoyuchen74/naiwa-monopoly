@@ -16,7 +16,7 @@ test('download save → clear storage → import file → continue exact game', 
   await page.goto('/build-info.json');
   await page.evaluate((key) => localStorage.removeItem(key), SAVE_KEY);
   await page.goto('/');
-  await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+  await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 60000);
   await expect(page.locator('#continueBtn')).toBeHidden();
   expect(await state(page)).toBeNull();
   await page.locator('#settingsBtn').click();

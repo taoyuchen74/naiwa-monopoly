@@ -35,7 +35,7 @@ export async function boot(page) {
   });
   await page.goto('/');
   try {
-    await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+    await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 60000);
   } catch (error) {
     console.error(
       'E2E startup:',

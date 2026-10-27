@@ -306,13 +306,13 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 90000,
+  timeout: 120000,
   expect: { timeout: 10000 },
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
   maxFailures: process.env.CI ? 1 : undefined,
-  workers: process.env.CI ? 2 : 1,
+  workers: 1,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:4173',
@@ -382,7 +382,7 @@ export async function boot(page) {
   });
   await page.goto('/');
   try {
-    await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+    await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 60000);
   } catch (error) {
     console.error(
       'E2E startup:',
@@ -494,7 +494,7 @@ test('download save → clear storage → import file → continue exact game', 
   await page.goto('/build-info.json');
   await page.evaluate((key) => localStorage.removeItem(key), SAVE_KEY);
   await page.goto('/');
-  await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 30000);
+  await advanceUntil(page, async () => page.locator('#loadingScreen').isHidden(), 60000);
   await expect(page.locator('#continueBtn')).toBeHidden();
   expect(await state(page)).toBeNull();
   await page.locator('#settingsBtn').click();

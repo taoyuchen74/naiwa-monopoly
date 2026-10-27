@@ -44,7 +44,7 @@
 
 ## CI 与确定性 E2E
 
-三个 YAML：`.github/workflows/ci.yml`、`e2e.yml`、`slow.yml`。普通 CI 有 test、build、e2e 三个 job：test 与 build 并行，e2e 复用 build 的同一份 out artifact，不另行打包；手动单独运行 e2e 时才现场构建。固定使用 GitHub ubuntu-24.04 runner，复用其预装 Chrome 系统库，只安装 Playwright 默认 Chromium headless shell（`--only-shell`）并按 lockfile 缓存浏览器；不在每次运行时 apt 升级系统库或安装本游戏无需的日文／泰文字体，并行2 worker，失败保留截图、trace和HTML报告。没有默认重试掩盖不稳定测试。
+三个 YAML：`.github/workflows/ci.yml`、`e2e.yml`、`slow.yml`。普通 CI 有 test、build、e2e 三个 job：test 与 build 并行，e2e 复用 build 的同一份 out artifact，不另行打包；手动单独运行 e2e 时才现场构建。固定使用 GitHub ubuntu-24.04 runner，复用其预装 Chrome 系统库，只安装 Playwright 默认 Chromium headless shell（`--only-shell`）并按 lockfile 缓存浏览器；不在每次运行时 apt 升级系统库或安装本游戏无需的日文／泰文字体，图形用例串行运行，避免软件 WebGL 争用，失败保留截图、trace和HTML报告。没有默认重试掩盖不稳定测试。
 
 三条 spec 在390×844和844×390各执行一次，共6条浏览器用例：
 
