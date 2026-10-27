@@ -1,3 +1,4 @@
+import {RULES} from './rules-config.js';
 export const CHARACTERS = [
 
  {id:'naiwa',estateColor:'#45a078',name:'奶蛙',subtitle:'笑一笑，好运到',color:'#f7c945',accent:'#78a84d',style:'均衡经营',description:'圆肚子、绿眼睛，今天也要捧腹大笑。'},
@@ -8,7 +9,7 @@ export const CHARACTERS = [
  {id:'naicha',estateColor:'#c67396',name:'奶茶',subtitle:'暖心补给',color:'#f3c958',accent:'#58372e',style:'补给支援',description:'金色奶茶杯、圆润杯把、深色手套和短腿，笑着为奶伴补给。'}
 ];
 export const GROUPS=[{name:'奶茶街',color:'#ee9e83'},{name:'大笑巷',color:'#edcb56'},{name:'奶块工坊',color:'#a7b9e4'},{name:'奶家花园',color:'#8cbea0'},{name:'奶币港',color:'#70b8ca'},{name:'星野大道',color:'#c79cce'}];
-const special={0:['start','奶家起点','每次经过领取 400 奶币'],3:['event','表情包广场'],6:['bank','奶币银行'],9:['shop','奶家便利店'],12:['hospital','奶蛙疗养院'],15:['stock','奶家证券所'],18:['event','野生狗奶摊'],21:['spirit','大笑神殿'],24:['rest','奶蛙的小窝'],27:['shop','奶伴补给站'],30:['bank','奶币储蓄所'],33:['event','奶蛙街舞台'],36:['tax','奶泡清洁站'],39:['stock','奶家交易所']};
+const special={0:['start','奶家起点',`每次经过领取 ${RULES.startIncome} 奶币`],3:['event','表情包广场'],6:['bank','奶币银行'],9:['shop','奶家便利店'],12:['hospital','奶蛙疗养院'],15:['stock','奶家证券所'],18:['event','野生狗奶摊'],21:['spirit','大笑神殿'],24:['rest','奶蛙的小窝'],27:['shop','奶伴补给站'],30:['bank','奶币储蓄所'],33:['event','奶蛙街舞台'],36:['tax','奶泡清洁站'],39:['stock','奶家交易所']};
 const names=['珍珠奶茶铺','奶茶小站','大笑照相馆','奶蛙剧场','奶块面包房','奶虫甜品屋','金耳鼠商店','奶家小花园','快乐洗澡堂','奶茶夜市','奶币码头','大肚子旅馆','绿眼睛书店','奶鼠玩具屋','星野小剧场','奶蛙设计室','奶盖工厂','微笑便利店','奶家餐厅','金蛙小公寓','奶罐车站','蛋壳展览馆','奶香商场','大笑电影院','圆肚子食堂','奶家邮局'];
 export const TILES=Array.from({length:48},(_,id)=>{
  let x,z;if(id<40){const angle=2.4-id*Math.PI*2/40;x=14*Math.cos(angle)+.7*Math.sin(angle*3);z=10.7*Math.sin(angle)+.65*Math.cos(angle*2);}else{const from=id<44?35:15,to=id<44?15:35,start=2.4-from*Math.PI*2/40,end=2.4-to*Math.PI*2/40,t=((id<44?id-40:id-44)+1)/5,ax=14*Math.cos(start)+.7*Math.sin(start*3),az=10.7*Math.sin(start)+.65*Math.cos(start*2),bx=14*Math.cos(end)+.7*Math.sin(end*3),bz=10.7*Math.sin(end)+.65*Math.cos(end*2),side=id<44?-1:1;x=ax+(bx-ax)*t;z=az+(bz-az)*t+Math.sin(t*Math.PI)*side*3.7;}

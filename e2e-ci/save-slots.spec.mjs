@@ -53,3 +53,15 @@ test('stale confirmations and quota errors keep existing slot bytes and current 
  await importState(page,'manual2',fixture());await page.evaluate(key=>{window.originalSet=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k===key)throw new DOMException('测试配额不足','QuotaExceededError');return originalSet.call(this,k,v);};},slotKey('manual2'));
  await confirm(page);await expect(page.locator('#toast')).toContainText('空间不足');expect(await raw(page,'manual2')).toBeNull();expect(await raw(page,'auto')).toBe(auto);await page.evaluate(()=>Storage.prototype.setItem=originalSet);
 });
+
+test('real dice selection and bank buttons advance command revisions and per-player sequences',async({page})=>{
+ const state=fixture();state.players[0].pos=6;state.players[0].vehicle=2;state.players[0].diceCount=3;state.players[0].deposit=600;
+ await boot(page,state);await page.locator('#continueBtn').click();
+ const saved=async()=>JSON.parse(await raw(page,'auto'));
+ expect((await saved()).revision).toBe(0);await page.getByRole('combobox',{name:/使用骰子数量/}).click();await page.getByRole('option',{name:'2 颗骰子',exact:true}).click();
+ await expect.poll(async()=>(await saved()).revision).toBe(1);expect((await saved()).players[0].diceCount).toBe(2);
+ await page.locator('.dock-tabs [data-panel=bank]').click();await page.locator('#bankAmount').fill('300');await page.locator('#bankConfirm').click();
+ await expect.poll(async()=>(await saved()).revision).toBe(2);expect((await saved()).players[0].money).toBe(3800);expect((await saved()).players[0].deposit).toBe(900);
+ await page.locator('[data-act=bankKind][data-kind=withdraw]').click();await page.locator('#bankAmount').fill('200');await page.locator('#bankConfirm').click();
+ await expect.poll(async()=>(await saved()).revision).toBe(3);expect((await saved()).players[0].money).toBe(4000);expect((await saved()).players[0].deposit).toBe(700);expect((await saved()).commandSequences).toEqual([3,0,0,0,0,0]);
+});

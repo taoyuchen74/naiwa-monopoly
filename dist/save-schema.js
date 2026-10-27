@@ -2,12 +2,15 @@ import {mapTiles} from './maps.js';
 import {migratePortfolio} from './portfolio.js';
 import {BUSINESSES,businessType,buildingLimit,researchChoices} from './businesses.js';
 import {CHARACTERS,CARDS,SPIRITS,VEHICLES,POINT_STOPS} from './content.js';
-export const MAX_BUILDING_LEVEL=5,ROUND_OPTIONS=[20,30,50,80],SCHEMA_VERSION=1;
+import {MAX_BUILDING_LEVEL,ROUND_OPTIONS} from './rules-config.js';
+export {MAX_BUILDING_LEVEL,ROUND_OPTIONS};
+export const SCHEMA_VERSION=1;
 export const validSaveTime=n=>Number.isSafeInteger(n)&&n>0&&n<=8640000000000000;
 const copy=x=>JSON.parse(JSON.stringify(x));
 export function migrateSave(raw){
   try{const s=typeof raw==='string'?JSON.parse(raw):copy(raw);if(s&&Object.hasOwn(s,'schemaVersion')){if(s.schemaVersion!==SCHEMA_VERSION||!validSaveTime(s.savedAt))return null;delete s.schemaVersion;}const TILES=mapTiles(s?.mapVersion??1);if(s&&s.mapVersion===undefined)s.mapVersion=1;if(s&&s.difficulty===undefined)s.difficulty='normal';if(!s||![1,2].includes(s.mapVersion)||!['easy','normal','hard'].includes(s.difficulty)||s.version!==2||!Array.isArray(s.players)||![2,3,4,5,6].includes(s.players.length)||!['roll','departure','moving','branch','buy','estate','event','end','debt','finished'].includes(s.phase))return null;
    if(!Number.isInteger(s.current)||s.current<0||s.current>=s.players.length||!Number.isInteger(s.round)||s.round<1||!ROUND_OPTIONS.includes(s.maxRounds)||s.round>s.maxRounds||!Number.isInteger(s.seed)||!Number.isInteger(s.remaining)||s.remaining<0||s.remaining>18)return null;
+   if(s.revision===undefined&&s.commandSequences===undefined){s.revision=0;s.commandSequences=s.players.map(()=>0);}if(!Number.isSafeInteger(s.revision)||s.revision<0||!Array.isArray(s.commandSequences)||s.commandSequences.length!==s.players.length||s.commandSequences.some(n=>!Number.isSafeInteger(n)||n<0)||s.commandSequences.reduce((a,n)=>a+n,0)!==s.revision)return null;
    if(s.moveSteps===undefined)s.moveSteps=null;if(s.moveSteps!==null&&(!Number.isInteger(s.moveSteps)||s.moveSteps<0||s.moveSteps>18))return null;
    if(!s.options||!s.market||s.market.length!==4||!s.ownership||!s.blocks||!Array.isArray(s.logs)||!Array.isArray(s.dice))return null;
    for(const p of s.players)if(p.character==='dounai')p.character='naicha';if(s.players.some(p=>!migratePortfolio(p)))return null;

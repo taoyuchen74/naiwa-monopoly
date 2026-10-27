@@ -1,3 +1,4 @@
+import {RULES,bankClosed,stockClosed} from './rules-config.js';
 import {art,landmarkImage} from './illustrations.js';
 import {hasTalent} from './talents.js?v=16';
 
@@ -7,17 +8,17 @@ export function landmarkInfo(g,t){
  const p=g.s.players[0],mine=g.player.id===p.id&&p.human&&g.manageable(),income=n=>Math.round(n*(p.spirit==='fortune'?1.25:1)),fee=n=>g.payment(n,null,p),[type,accent]=theme[t.kind];
  let value,unit,summary,rules,status={tone:'neutral',text:'公共地点不可购买；移动到这里时按规则触发。'},action=null;
  if(t.kind==='start'){
-  value='+'+income(400+(hasTalent(g,p,'naiwa')?80:0));unit='奶币 · 正向经过奖励';summary='绕岛经营一圈，再带着补给出发。';
-  rules=[rule('dice','经过就能领','正向经过或停在起点时发放，倒退不领奖。'),rule('tea','额外 25 点券','点券最多持有 150，可用于补给站买卡。'),rule('house','按你的当前状态预览','已计入奶蛙天赋与财运；再次经过时重新结算。')];
+  value='+'+income(RULES.startIncome+(hasTalent(g,p,'naiwa')?RULES.startTalentBonus:0));unit='奶币 · 正向经过奖励';summary='绕岛经营一圈，再带着补给出发。';
+  rules=[rule('dice','经过就能领','正向经过或停在起点时发放，倒退不领奖。'),rule('tea',`额外 ${RULES.startCoupons} 点券`,`点券最多持有 ${RULES.couponCap}，可用于补给站买卡。`),rule('house','按你的当前状态预览','已计入奶蛙天赋与财运；再次经过时重新结算。')];
  }else if(t.kind==='bank'){
-  value='0.5%';unit='每轮存款利息';summary='把现金存起来，也能借款周转。';
-  rules=[rule('bank','经过后开放本回合业务','可存款、取款、借款或还款；点击地图本身不会获得办理资格。'),rule('stocks','存款 0.5% · 贷款 4%','每轮计息并计入本金。新增借款后的贷款余额上限 1,800。'),rule('slow','周三休息','每七轮的第三轮不办理业务，仍可查看账户。')];
-  status={tone:g.s.round%7===3?'closed':mine&&g.canBank()?'ready':'neutral',text:g.s.round%7===3?'今天周三，银行休息。':!mine?'等到你的经营阶段，可查看自己的账户。':g.canBank()?'本回合已到访，可以办理银行业务。':'尚未到访银行，当前只能查看账户。'};
+  value=RULES.depositInterest*100+'%';unit='每轮存款利息';summary='把现金存起来，也能借款周转。';
+  rules=[rule('bank','经过后开放本回合业务','可存款、取款、借款或还款；点击地图本身不会获得办理资格。'),rule('stocks',`存款 ${RULES.depositInterest*100}% · 贷款 ${RULES.loanInterest*100}%`,`每轮计息并计入本金。新增借款后的贷款余额上限 ${RULES.loanLimit.toLocaleString('zh-CN')}。`),rule('slow','周三休息','每七轮的第三轮不办理业务，仍可查看账户。')];
+  status={tone:bankClosed(g.s.round)?'closed':mine&&g.canBank()?'ready':'neutral',text:bankClosed(g.s.round)?'今天周三，银行休息。':!mine?'等到你的经营阶段，可查看自己的账户。':g.canBank()?'本回合已到访，可以办理银行业务。':'尚未到访银行，当前只能查看账户。'};
   action={panel:'bank',label:'查看我的银行账户',enabled:mine};
  }else if(t.kind==='stock'){
   value='4';unit='家奶家企业';summary='看走势、算成本，再决定买入或卖出。';
   rules=[rule('stocks','报价每轮更新','四家企业行情不同，也会受到随机事件影响。'),rule('bank','自己的经营阶段可远程交易','无需到证券所；周日休市，筹款时可以卖股。'),rule('house','盈亏清楚记账','股票页展示买入均价、持仓浮盈和卖出已实现盈亏。')];
-  status={tone:g.s.round%7===0?'closed':mine?'ready':'neutral',text:g.s.round%7===0?'今天周日，休市期间仍可查看持仓。':mine?'交易日开放，可查看行情与持仓。':'电脑回合：打开行情只查看你的持仓。'};
+  status={tone:stockClosed(g.s.round)?'closed':mine?'ready':'neutral',text:stockClosed(g.s.round)?'今天周日，休市期间仍可查看持仓。':mine?'交易日开放，可查看行情与持仓。':'电脑回合：打开行情只查看你的持仓。'};
   action={panel:'stocks',label:'查看股市与我的持仓',enabled:true};
  }else if(t.kind==='shop'){
   value='+30';unit='点券 · 停靠奖励';summary='停靠领随机卡，到店挑选下次出行的装备。';
