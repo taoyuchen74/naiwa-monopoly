@@ -23,6 +23,6 @@ test('loading errors before DOM readiness remain recoverable and cannot reveal a
 test('game menus use logical coordinates in forced landscape and fit above crowded controls',()=>{
  const game={left:0,top:0,right:390,bottom:844},physical={left:150,top:400,right:180,bottom:520},anchor=logicalRect(physical,game,true);assert.deepEqual(anchor,{left:400,top:210,right:520,bottom:240,width:120});
  for(const [width,height]of [[844,390],[568,320],[390,844]]){const a={left:width-140,top:height-80,bottom:height-45,width:125},p=choicePlacement(a,width,height,8);assert.ok(p.left>=12&&p.top>=12);assert.ok(p.left+p.width<=width-11&&p.top+p.height<=height-11);assert.ok(p.top<a.top,'low controls open upward');}
- const middle=choicePlacement({left:360,top:176,bottom:208,width:160},568,320,5);assert.equal(middle.height,212,'all five choices fit without being clipped at the trigger');
+ const middle=choicePlacement({left:360,top:176,bottom:208,width:160},568,320,5);assert.equal(middle.height,232,'all five choices fit without being clipped at the trigger');
  assert.equal(nextEnabled([{disabled:false},{disabled:true},{disabled:false}],0,1),2);assert.equal(nextEnabled([{disabled:true}],0,1),-1);
 });

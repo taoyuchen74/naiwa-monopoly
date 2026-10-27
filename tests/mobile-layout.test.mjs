@@ -1,0 +1,14 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {GameOrientation,safeInsets,visibleFrame} from '../dist/orientation.js';
+import {safeChoicePlacement} from '../dist/game-selects.js';
+test('custom select popups reserve all four logical safe edges',()=>{for(const [width,height]of [[360,800],[844,390]]){const p=safeChoicePlacement({left:0,top:height-40,bottom:height,width:180},width,height,8,{top:12,right:30,bottom:22,left:14});assert.ok(p.left>=26);assert.ok(p.top>=24);assert.ok(p.left+p.width<=width-42);assert.ok(p.top+p.height<=height-34);}});
+test('all four physical safe edges follow clockwise layout rotation',()=>{const insets={top:12,right:30,bottom:22,left:14};assert.deepEqual(safeInsets(insets),insets);assert.deepEqual(safeInsets(insets,true),{top:30,right:22,bottom:14,left:12});const css=readFileSync(new URL('../dist/style.css',import.meta.url),'utf8');for(const edge of ['top','right','bottom','left'])assert.ok(css.includes('env(safe-area-inset-'+edge+','));});
+test('visual viewport uses visible size and pan offsets without confusing browser page zoom with keyboard resize',()=>{const win={innerWidth:390,innerHeight:844,visualViewport:{width:390,height:400,offsetLeft:0,offsetTop:90,scale:1}};assert.deepEqual(visibleFrame(win),{width:390,height:400,left:0,top:90});win.visualViewport.scale=2;assert.deepEqual(visibleFrame(win),{width:390,height:844,left:0,top:0});});
+test('keyboard contraction cannot silently change the selected layout or lose the focused input',()=>{
+ const oldWindow=globalThis.window,oldRaf=globalThis.requestAnimationFrame,values=new Map();let editing=false,scrolled=0;
+ const input={matches:()=>editing,scrollIntoView(){scrolled++;}},root={dataset:{},ownerDocument:{activeElement:input,getElementById(){}},style:{setProperty:(k,v)=>values.set(k,v)}},button={setAttribute(){},getAttribute(){return '';}};
+ try{globalThis.requestAnimationFrame=fn=>fn();globalThis.window={innerWidth:768,innerHeight:1024,dispatchEvent(){},visualViewport:{width:768,height:1024,scale:1}};const layout=Object.create(GameOrientation.prototype);Object.assign(layout,{root,button,rules:[],mode:'auto',resize(){}});layout.apply();assert.equal(root.dataset.layout,'portrait');editing=true;window.innerHeight=500;window.visualViewport.height=500;window.visualViewport.offsetTop=20;layout.apply();assert.equal(root.dataset.layout,'portrait');assert.equal(root.dataset.rotated,'false');assert.equal(root.dataset.keyboard,'true');assert.equal(root.style.top,'20px');assert.equal(root.style.height,'500px');assert.equal(scrolled,1);editing=false;window.innerHeight=1024;window.visualViewport.height=1024;layout.apply();assert.equal(root.dataset.keyboard,'false');assert.equal(root.style.height,'1024px');}
+ finally{globalThis.window=oldWindow;globalThis.requestAnimationFrame=oldRaf;}
+});
