@@ -1,12 +1,13 @@
 import {test,expect} from '@playwright/test';
 import {Game,SAVE_KEY,BACKUP_KEY} from '../dist/engine.js';
 const errors=new WeakMap();
+const realWebGL=process.env.NAIWA_BROWSER_WEBGL==='1';
 test.beforeEach(({page})=>{const list=[];errors.set(page,list);page.on('pageerror',e=>list.push(e.message));});
 test.afterEach(async({page},info)=>{
  if(info.status!==info.expectedStatus&&!page.isClosed())await info.attach('saved-state.json',{body:await page.evaluate(key=>localStorage.getItem(key)||'null',SAVE_KEY),contentType:'application/json'});
  expect(errors.get(page),'uncaught browser exceptions').toEqual([]);
 });
-async function boot(page,{saved=null,audioFailure=false,webglFailure=false}={}){
+async function boot(page,{saved=null,audioFailure=false,webglFailure=!realWebGL}={}){
  await page.clock.setFixedTime(new Date('2026-01-01T00:00:00Z'));
  await page.addInitScript(({saved,key,audioFailure,webglFailure})=>{
   localStorage.setItem('naiwa-monopoly-preferences-v1',JSON.stringify({sound:audioFailure,music:audioFailure,voice:audioFailure,quality:'low',speed:2}));
@@ -31,7 +32,9 @@ async function rollOne(page){
 
 test('new game → real dice → purchase → construction → end turn in both phone orientations',async({page})=>{
  await boot(page);await page.locator('[data-select-id=playerCountSelect] button').click();await page.getByRole('option',{name:'6 人 · 你 + 5 位电脑',exact:true}).click();await start(page);
- expect((await state(page)).players).toHaveLength(6);await expect(page.locator('#scene > canvas')).toHaveCount(1);expect(await page.locator('#scene > canvas').evaluate(el=>!!el.getContext('webgl2'))).toBe(true);await rollOne(page);await click(page,'[data-act=buy]');
+ expect((await state(page)).players).toHaveLength(6);
+ if(realWebGL){await expect(page.locator('#scene > canvas')).toHaveCount(1);expect(await page.locator('#scene > canvas').evaluate(el=>!!el.getContext('webgl2'))).toBe(true);}else await expect(page.locator('#fallback')).toBeVisible();
+ await rollOne(page);await click(page,'[data-act=buy]');
  await expect.poll(async()=>(await state(page)).ownership[1]?.player).toBe(0);
  await expect(page.locator('#sheet')).toHaveAttribute('data-panel','buildHere');await click(page,'[data-act=construct][data-type=residence]');
  await expect.poll(async()=>(await state(page)).ownership[1]?.level).toBe(1);expect((await state(page)).ownership[1].buildingType).toBe('residence');

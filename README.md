@@ -47,7 +47,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-浏览器用例使用独立上下文、固定种子和时间、减少动态效果及省电画质，通过真实点击、键盘和存档状态验证。CI在推送main及PR时运行单元测试、轻量浏览器测试与构建，上传HTML报告及失败截图、trace和测试存档。更广的移动端、无障碍与渲染生命周期检查分别运行 `npm run test:mobile`、`npm run test:a11y`、`npm run test:performance`；操作说明见 [浏览器QA](docs/BROWSER-QA.md)。
+浏览器用例使用独立上下文、固定种子和时间、减少动态效果，通过真实点击、键盘和存档状态验证。轻量CI主动使用程序已有的简洁地图，避免软件绘图干扰；支持GPU的环境可用 `npm run test:browser:3d` 检查同一套流程的真实WebGL路径。CI在推送main及PR时运行单元测试、轻量浏览器测试与构建，上传HTML报告及失败截图、trace和测试存档。更广的移动端、无障碍与渲染生命周期检查分别运行 `npm run test:mobile`、`npm run test:a11y`、`npm run test:performance`；操作说明见 [浏览器QA](docs/BROWSER-QA.md)。
 
 这些是桌面Chromium及移动视口仿真结果，不代表完成真实安卓、iOS、系统软键盘或移动GPU验证。
 
