@@ -1,10 +1,11 @@
+import {RULES} from './rules-config.js';
 import {businessType,BUSINESSES} from './businesses.js';
 import {CARDS} from './content.js';
 import {buildingImage} from './illustrations.js';
 const fmt=n=>Math.round(n).toLocaleString('zh-CN');
 export function disposalInfo(g,id,kind='sell'){
  const p=g.player,t=g.tiles[id],o=g.s.ownership[id];if(!t||!o||o.player!==p.id||!['sell','demolish'].includes(kind)||kind==='demolish'&&!o.level)return null;
- const value=g.cost(t,o.level,businessType(o)),refund=kind==='sell'?Math.round(value*.65):Math.floor((value-t.price)*.25),afterProperty=kind==='sell'?0:t.price,cashAfter=p.money+refund;
+ const value=g.cost(t,o.level,businessType(o)),refund=kind==='sell'?Math.round(value*RULES.propertySaleRatio):Math.floor((value-t.price)*.25),afterProperty=kind==='sell'?0:t.price,cashAfter=p.money+refund;
  const allowed=p.human&&p.alive&&g.manageable()&&(kind==='sell'||g.s.phase==='end'&&p.pos===id&&p.buildSite===id);
  const reason=allowed?'':!p.human?'等待自己的回合':!g.manageable()?'当前不能处理地产':'拆除房屋需要本次停靠在这里，且不处于筹款阶段。';
  return {kind,t,o,value,refund,cash:p.money,cashAfter,valueLoss:value-afterProperty-refund,allowed,reason,debt:g.s.phase==='debt'?{amount:g.s.debt.amount,gap:Math.max(0,g.s.debt.amount-cashAfter)}:null,research:businessType(o)==='research'&&o.level?{name:CARDS[o.researchCard||'dice'].name,progress:o.researchProgress||0}:null};

@@ -1,3 +1,4 @@
+import {RULES} from './rules-config.js';
 import {estatePanel,branchPanel,quotedLandingFee} from './arrival-panels.js';
 import {TransferFeed,pulseTransferCards} from './transfers.js';
 import {LIGHTING,lightingMode} from './lighting.js';
@@ -92,7 +93,7 @@ function statusTags(p){return [p.skip?`休养 ${p.skip} 回合`:'',p.shield?'免
 function render(){selectMenus.sync();announcements.sync(game,started);const transfers=transferFeed.read(game,started);TILES=game.tiles;const s=game.s,p=game.player;audioState();sceneSounds();newsFeed.setSpeed(s.options.speed);newsFeed.sync(game,started);scene?.setMenu(!started);scene?.sync(game);miniMap.sync(game,{visible:started&&!scene?.studio});$('app').classList.toggle('is-menu',!started);$('app').dataset.phase=s.phase;$('app').dataset.mapVersion=String(s.mapVersion);$('app').style.setProperty('--player-count',s.players.length);
  $('pauseBtn').hidden=!started;$('pauseBtn').setAttribute('aria-pressed',String(gamePaused));
  $('difficultyBtn').textContent=DIFFICULTIES[s.difficulty].name;$('difficultyBtn').title=DIFFICULTIES[s.difficulty].description;$('mapHeading').textContent=MAPS[s.mapVersion].name;
- $('round').textContent=started?`第 ${s.round} / ${s.maxRounds} 轮`:'准备出发';$('logRound').textContent=`第 ${s.round} 轮`;$('weather').textContent=started?['周日','周一','周二','周三','周四','周五','周六'][s.round%7]+' · '+LIGHTING[lightingMode(s.options.lighting)].label:LIGHTING[lightingMode(s.options.lighting)].label+' · 宜大笑';
+ $('round').textContent=started?`第 ${s.round} / ${s.maxRounds} 轮`:'准备出发';$('logRound').textContent=`第 ${s.round} 轮`;$('weather').textContent=started?['周日','周一','周二','周三','周四','周五','周六'][s.round%RULES.weekLength]+' · '+LIGHTING[lightingMode(s.options.lighting)].label:LIGHTING[lightingMode(s.options.lighting)].label+' · 宜大笑';
  $('players').innerHTML=s.players.map(q=>{const c=game.char(q);return `<button type="button" data-player-id="${q.id}" aria-label="${c.name}，查看角色详情" ${started&&s.current===q.id?'aria-current="true"':''} ${started?'':'disabled'} class="player ${started&&s.current===q.id?'active':''} ${q.alive?'':'out'}"><div class="player-head"><span class="mini-face" style="--c:${c.color}">${portrait(c.id)}</span><div><div class="player-name">${c.name} ${q.human?'<span class="badge">你</span>':''}</div><div class="player-role">${q.alive?started&&s.current===q.id?'当前回合':'':'本局已破产'}</div></div><div class="player-money"><small>●</small>${fmt(q.money)}</div></div><div class="player-stats"><span>地产 <strong>${game.owned(q).length}</strong></span><span>净资产 <strong>${fmt(game.worth(q))}</strong></span></div>${statusTags(q)?`<div class="status-pills">${statusTags(q)}</div>`:''}</button>`;}).join('');
  $('logs').innerHTML=s.logs.slice(0,20).map(l=>`<div class="log"><span class="log-time">${String(l.round).padStart(2,'0')}</span><span>${esc(l.text)}</span></div>`).join('');
  $('turnName').textContent=started?s.phase==='finished'?'本次旅行圆满结束':`${game.char().name}${p.human?'，轮到你啦':'正在旅行'}`:'准备好了吗？';$('talentBtn').title=game.s.talents?TALENTS[s.players[0].character].text:'本局天赋未开启';$('turnAvatar').innerHTML=portrait(game.char().id);$('turnAvatar').style.background=game.char().color;
@@ -119,7 +120,7 @@ const stats=items=>`<div class="stat-grid">${items.map(([v,l])=>`<div class="sta
 const btn=(label,act,data='',disabled=false,cls='secondary')=>`<button class="${cls}" data-act="${act}" ${data} ${disabled?'disabled':''}>${label}</button>`;
 function buildingArt(t,level,color){return buildingImage({...t,buildingType:t.buildingType||game.s.ownership[t.id]?.buildingType},level,color);}
 function humanManage(){return started&&game.player.human&&game.manageable();}
-function landingText(r){const t=TILES[r.id];return esc(t.name)+' · '+(r.rent?quotedLandingFee(game,r):r.price?'空地 '+r.price+' 奶币':r.owner===game.player.id?'自己的地产':({shop:'点券 +30 与随机卡',hospital:`费用 ${game.payment(100)}，休养一次`,tax:`费用 ${game.payment(180)}`,rest:`补贴 +${Math.round(120*(game.player.spirit==='fortune'?1.25:1))}`,event:'随机事件',spirit:'随机神灵',bank:'银行',stock:'证券所',start:'起点'}[t.kind]||'已备免租'))+(r.passesStart?` · 经过起点 +${Math.round((400+(game.s.talents&&game.player.character==='naiwa'?80:0))*(game.player.spirit==='fortune'?1.25:1))} / 25点券`:'')+(r.points?' · 途中点券 +'+r.points:'')+(r.blocked?' · 路障截停':'');}
+function landingText(r){const t=TILES[r.id];return esc(t.name)+' · '+(r.rent?quotedLandingFee(game,r):r.price?'空地 '+r.price+' 奶币':r.owner===game.player.id?'自己的地产':({shop:'点券 +30 与随机卡',hospital:`费用 ${game.payment(100)}，休养一次`,tax:`费用 ${game.payment(180)}`,rest:`补贴 +${Math.round(120*(game.player.spirit==='fortune'?1.25:1))}`,event:'随机事件',spirit:'随机神灵',bank:'银行',stock:'证券所',start:'起点'}[t.kind]||'已备免租'))+(r.passesStart?` · 经过起点 +${Math.round((RULES.startIncome+(game.s.talents&&game.player.character==='naiwa'?RULES.startTalentBonus:0))*(game.player.spirit==='fortune'?1.25:1))} / ${RULES.startCoupons}点券`:'')+(r.points?' · 途中点券 +'+r.points:'')+(r.blocked?' · 路障截停':'');}
 function openPanel(type,id){
  const s=game.s,p=game.player;activePanel={type,id};const can=humanManage(),normal=can&&s.phase!=='debt';
  if(type==='saves'){try{showSheet('旅行存档槽','3 个手动槽 + 1 个自动槽',saveSlotsPanel(repository.list(),!!exportableState(game,started,saved)));}catch{showSheet('旅行存档槽','本机存储暂不可用','<p>无法访问本机存档。当前旅行仍可从设置导出 JSON。</p>');}
@@ -171,7 +172,7 @@ function openPanel(type,id){
   let backup=null;try{backup=Game.restore(repository.readBackup().state);}catch{}if(!backup){toast('没有可恢复的有效备份。');return;}
   showSheet('恢复覆盖前存档？',archiveSummary(backup),`<p>会替换当前旅行；这份备份会继续保留。可以先导出当前存档。</p><div class="row-actions">${btn('导出当前存档','export','',!started&&!saved)}${btn('取消恢复','cancel')}${btn('确认恢复','restoreBackup','',false,'primary')}</div>`,true);
  }else if(type==='help'){
-  showSheet('奶家发财指南','先掷一颗骰子，再慢慢学会经营',`<ol class="rules"><li><b>出发：</b>选择奶伴后随机决定先手，所有人完整行动一次算一轮。掷骰移动。经过起点领 400 奶币。每位存活奶伴行动一次算一轮。</li><li><b>置业：</b>踩到空地可买入，并选择七种建筑。住宅、旅馆、商场、研究所最高五级；连锁店、加油站、公园只有一级。普通建设须停到自家地块，每次加一层；工程队可远程加盖。只有住宅参与街区联营。旅馆强制入住、商场抽签消费、加油站按行程和交通工具收费、研究所三次出发产卡、公园免费送点券。</li><li><b>用卡：</b>掷骰前打开卡包。手牌可连用，移动卡须在掷骰前使用；点券来自地图拾取和到站奖励。用点券买卡，可控骰、路障、拆层、免费加盖或慢行。抢地卡仅对脚下的对手地产生效，付 125% 成本；拆除和工程队限附近 8 格。</li><li><b>出行：</b>商店购买自行车或小车后，可在掷骰按钮旁选择骰子数量。岔路自行选方向。</li><li><b>经营：</b>经过银行的本回合可办理存取款和贷款；银行周三休息；股票在自己行动前后可交易，周日休市。商店需到店购买。存款每轮赚 0.5%，贷款每轮计息 4%。股票也会因随机事件涨跌。</li><li><b>神灵：</b>财运增加非交易收入，霉运增加支出，守护抵挡一次负面事件。效果互相替换，持续 3 个后续回合。</li><li><b>周转：</b>付款不足可取款、借款、卖股票或变卖地产；也可申请破产退出。</li><li><b>胜利：</b>坚持到最后，或在轮数结束时拥有最多净资产。手机横屏体验更完整。</li></ol><p>各位角色采用同一规则，电脑也遵守点券、用卡和建设限制，并根据公开地块评估路线。浏览器不支持 3D 时可使用简洁地图继续玩。</p>`);
+  showSheet('奶家发财指南','先掷一颗骰子，再慢慢学会经营',`<ol class="rules"><li><b>出发：</b>选择奶伴后随机决定先手，所有人完整行动一次算一轮。掷骰移动。经过起点领 ${RULES.startIncome} 奶币。每位存活奶伴行动一次算一轮。</li><li><b>置业：</b>踩到空地可买入，并选择七种建筑。住宅、旅馆、商场、研究所最高五级；连锁店、加油站、公园只有一级。普通建设须停到自家地块，每次加一层；工程队可远程加盖。只有住宅参与街区联营。旅馆强制入住、商场抽签消费、加油站按行程和交通工具收费、研究所三次出发产卡、公园免费送点券。</li><li><b>用卡：</b>掷骰前打开卡包。手牌可连用，移动卡须在掷骰前使用；点券来自地图拾取和到站奖励。用点券买卡，可控骰、路障、拆层、免费加盖或慢行。抢地卡仅对脚下的对手地产生效，付 125% 成本；拆除和工程队限附近 8 格。</li><li><b>出行：</b>商店购买自行车或小车后，可在掷骰按钮旁选择骰子数量。岔路自行选方向。</li><li><b>经营：</b>经过银行的本回合可办理存取款和贷款；银行周三休息；股票在自己行动前后可交易，周日休市。商店需到店购买。存款每轮赚 ${RULES.depositInterest*100}%，贷款每轮计息 ${RULES.loanInterest*100}%。股票也会因随机事件涨跌。</li><li><b>神灵：</b>财运增加非交易收入，霉运增加支出，守护抵挡一次负面事件。效果互相替换，持续 3 个后续回合。</li><li><b>周转：</b>付款不足可取款、借款、卖股票或变卖地产；也可申请破产退出。</li><li><b>胜利：</b>坚持到最后，或在轮数结束时拥有最多净资产。手机横屏体验更完整。</li></ol><p>各位角色采用同一规则，电脑也遵守点券、用卡和建设限制，并根据公开地块评估路线。浏览器不支持 3D 时可使用简洁地图继续玩。</p>`);
  }else if(type==='news'){
  showSheet('岛上消息记录','重要消息会在地图中央逐条出现',s.logs.slice(0,40).map(l=>`<div class="row"><small>第 ${l.round} 轮</small><p>${esc(l.text)}</p></div>`).join(''));
  }else if(type==='pause'){
@@ -219,7 +220,8 @@ function performSlot(){
 }
 function handleSlot(act,slot){if(act==='slotCancel'){pendingSlot=null;openPanel('saves');return;}if(act==='slotConfirm'){performSlot();return;}try{if(act==='slotExport'){const item=repository.read(slot),blob=new Blob([repository.export(slot)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='奶蛙大富翁-'+slotName(slot)+(item.state?'-第'+item.state.round+'轮':'-原始数据')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;}prepareSlot(({slotSave:'save',slotLoad:'load',slotDelete:'delete'})[act],slot);}catch(error){toast(error.message);}}
 function exportSave(){const state=exportableState(game,started,saved);if(!state)return;const blob=new Blob([repository.serialize(state)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`奶蛙大富翁-第${state.round}轮.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('已导出旅行存档。');}
-function onAction(){if(!started)return;if(game.s.phase==='finished'){openPanel('finished');return;}if(!game.player.human)return;if(game.s.phase==='departure')return;if(game.s.phase==='roll'){scene?.followPlayer();commit(game.roll());}else if(game.s.phase==='end')commit(game.end());else openPanel(game.s.phase);}
+function send(type,payload={}){return game.command(type,payload,0);}
+function onAction(){if(!started)return;if(game.s.phase==='finished'){openPanel('finished');return;}if(!game.player.human)return;if(game.s.phase==='departure')return;if(game.s.phase==='roll'){scene?.followPlayer();commit(send('roll'));}else if(game.s.phase==='end')commit(send('end'));else openPanel(game.s.phase);}
 function durationHint(){const rounds=+$('roundSelect').value,count=+$('playerCountSelect').value,minutes=rounds*(count*.19+.1);$('durationHint').textContent=rounds===20?'试玩局：适合熟悉操作；完整经营建议 50 轮。':`约 ${Math.round(minutes*.8)}—${Math.round(minutes*1.25)} 分钟，依操作和动画速度变化。`;}
 $('talentsEnabled').addEventListener('change',picker);$('roundSelect').addEventListener('change',durationHint);$('playerCountSelect').addEventListener('change',durationHint);durationHint();
 $('startBtn').addEventListener('click',startFresh);$('continueBtn').addEventListener('click',resume);$('characterPicker').addEventListener('click',e=>{const b=e.target.closest('[data-character]');if(b){selected=b.dataset.character;picker();sound();}});
@@ -238,7 +240,7 @@ $('homeBtn').addEventListener('click',()=>{scene?.leaveStudio();$('app').classLi
 $('castBtn').addEventListener('click',()=>{if(pinned||!scene||scene.contextLost)return;scene.enterStudio(started?game.player.character:selected);$('app').classList.add('is-studio');$('studioPanel').hidden=false;$('miniMap').hidden=true;$('startScreen').hidden=true;$('actionBtn').disabled=true;document.querySelectorAll('.dock-tabs button').forEach(b=>b.disabled=true);});
 $('closeStudio').addEventListener('click',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;render();});
 $('studioPanel').addEventListener('click',e=>{const char=e.target.closest('[data-studio-char]'),mode=e.target.closest('[data-studio-mode]'),view=e.target.closest('[data-studio-view]');if(char)scene?.enterStudio(char.dataset.studioChar);if(mode&&scene?.studio)scene.studio.mode=mode.dataset.studioMode;if(view&&scene?.studio){scene.studio.yaw=.45+({front:0,side:Math.PI/2,back:Math.PI}[view.dataset.studioView]);scene.studio.manual=true;}scene?.invalidate();});
-$('diceCount').addEventListener('change',e=>{if(game.s.phase==='roll'&&game.player.human){game.player.diceCount=+e.target.value;commit();}});
+$('diceCount').addEventListener('change',e=>{if(game.s.phase==='roll'&&game.player.human){commit(send('setDiceCount',{count:+e.target.value}));}});
 document.querySelectorAll('[data-panel]').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.panel)));
 $('players').addEventListener('click',e=>{const b=e.target.closest('[data-player-id]');if(b&&started&&!pinned)openPanel('player',+b.dataset.playerId);});
 $('fallback').addEventListener('click',e=>{const b=e.target.closest('[data-tile]');if(b&&!pinned)openPanel('tile',+b.dataset.tile);});
@@ -275,15 +277,15 @@ $('sheetBody').addEventListener('click',e=>{
  if(act==='resumeGame'){dismiss(true);render();return;}
  if(act==='copyLink'){navigator.clipboard?.writeText($('shareUrl').value).then(()=>toast('试玩链接已复制，发给朋友就能玩。')).catch(()=>{$('shareUrl').select();toast('请长按链接复制。');});if(!navigator.clipboard){$('shareUrl').select();toast('请长按链接复制。');}return;}
  if(act==='panel'){if(game.s.phase==='debt'){if(b.dataset.panel==='bank'){const draft=debtBankDraft(game);if(draft)bankDraft=draft;}if(b.dataset.panel==='stocks')stockHeld=true;}openPanel(b.dataset.panel);return;}
- if(act==='card'){const key=game.player.cards[index],reason=game.cardHint(key);if(reason){toast(reason);openPanel('cards');return;}if(CARDS[key].target==='self'){ok=game.card(index);if(ok){dismiss(true);commit();}else commit(false);}else openPanel('cardTarget',index);return;}
- if(act==='useCard'){const reason=game.cardHint(game.player.cards[index]);if(reason){toast(reason);openPanel('cards');return;}ok=game.card(index,target);if(ok){dismiss(true);commit();}else commit(false);return;}
- if(act==='construct')ok=game.construct(id,b.dataset.type);else if(act==='research')ok=game.setResearch(id,b.dataset.key);else if(act==='upgrade')ok=game.upgrade(id);else if(act==='sell')ok=game.sell(id);else if(act==='demolish'){ok=game.demolish(id);if(ok)dismiss(true);}else if(act==='confirmDemolish'){openPanel('confirmDemolish',id);return;}else if(act==='bank')ok=game.bank(b.dataset.kind,+$('bankAmount').value);else if(act==='trade')ok=game.trade(id,+$('qty'+id).value*+b.dataset.sign);else if(act==='shop')ok=game.shop(b.dataset.key);else if(act==='vehicle')ok=game.vehicle(id);
- else if(act==='estatePay'||act==='estateBuy'){ok=game.resolveEstate(act==='estateBuy');if(ok||game.s.phase==='debt')dismiss(true);}
- else if(act==='buy'||act==='pass'){ok=game.buy(act==='buy');if(ok)dismiss(true);}
- else if(act==='branch'){ok=game.step(id);if(ok)dismiss(true);}
- else if(act==='ack'){ok=game.acknowledge();if(ok)dismiss(true);}
- else if(act==='settle'){ok=game.settle();if(ok)dismiss(true);}
- else if(act==='bankrupt'){ok=game.bankrupt();if(ok)dismiss(true);}
+ if(act==='card'){const key=game.player.cards[index],reason=game.cardHint(key);if(reason){toast(reason);openPanel('cards');return;}if(CARDS[key].target==='self'){ok=send('card',{index});if(ok){dismiss(true);commit();}else commit(false);}else openPanel('cardTarget',index);return;}
+ if(act==='useCard'){const reason=game.cardHint(game.player.cards[index]);if(reason){toast(reason);openPanel('cards');return;}ok=send('card',{index,target});if(ok){dismiss(true);commit();}else commit(false);return;}
+ if(act==='construct')ok=send('construct',{id,buildingType:b.dataset.type});else if(act==='research')ok=send('setResearch',{id,key:b.dataset.key});else if(act==='upgrade')ok=send('upgrade',{id});else if(act==='sell')ok=send('sell',{id});else if(act==='demolish'){ok=send('demolish',{id});if(ok)dismiss(true);}else if(act==='confirmDemolish'){openPanel('confirmDemolish',id);return;}else if(act==='bank')ok=send('bank',{kind:b.dataset.kind,amount:+$('bankAmount').value});else if(act==='trade')ok=send('trade',{stock:id,qty:+$('qty'+id).value*+b.dataset.sign});else if(act==='shop')ok=send('shop',{key:b.dataset.key});else if(act==='vehicle')ok=send('vehicle',{id});
+ else if(act==='estatePay'||act==='estateBuy'){ok=send('resolveEstate',{buy:act==='estateBuy'});if(ok||game.s.phase==='debt')dismiss(true);}
+ else if(act==='buy'||act==='pass'){ok=send('buy',{yes:act==='buy'});if(ok)dismiss(true);}
+ else if(act==='branch'){ok=send('step',{choice:id});if(ok)dismiss(true);}
+ else if(act==='ack'){ok=send('acknowledge');if(ok)dismiss(true);}
+ else if(act==='settle'){ok=send('settle');if(ok)dismiss(true);}
+ else if(act==='bankrupt'){ok=send('bankrupt');if(ok)dismiss(true);}
  else if(act==='confirmBankrupt'){openPanel('confirmBankrupt');return;}
  else if(act==='sound'){unlockSound();game.s.options.sound=!game.s.options.sound;}
  else if(act==='music'){game.s.options.music=!audioOptions(game.s.options).music;}
@@ -304,7 +306,7 @@ function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||docum
  if(activePanel)return;
  const s=game.s,phase=s.phase,beforeHead=s.logs[0],beforePlayer=s.current;
  const visuals=scene&&!scene.contextLost;if(!actionPacer.ready({news:newsFeed.busy,moving:!!visuals&&scene.isMoving(),effects:!!visuals&&!!scene.fx.items.length}))return;
- let changed=false;if(!game.player.alive&&phase==='end')changed=game.end();else if(!game.player.human)changed=game.ai();else if(phase==='departure')changed=game.roll();else if(phase==='moving')changed=game.step();
+ let changed=false;if(!game.player.alive&&phase==='end')changed=game.command('end');else if(!game.player.human)changed=game.command('aiTurn');else if(phase==='departure')changed=game.command('roll');else if(phase==='moving')changed=game.command('step');
  changed=changed||s.phase!==phase||s.logs[0]!==beforeHead||s.current!==beforePlayer;if(changed){actionPacer.after(phase,s.options.speed);save();render();}
 }
 

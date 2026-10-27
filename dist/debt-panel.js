@@ -1,12 +1,13 @@
+import {RULES,bankClosed,stockClosed} from './rules-config.js';
 import {businessType} from './businesses.js';
 import {eventPoseBitmap} from './portrait-renderer.js';
 import {portrait} from './portraits.js';
 import {art} from './illustrations.js';
 const fmt=n=>Math.round(n).toLocaleString('zh-CN'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function debtInfo(g){
- const d=g.s.debt;if(!d)return null;const p=g.player,managing=g.manageable(),bankOpen=g.canBank(),stockOpen=managing&&g.s.round%7!==0,stockValue=g.assets(p).stocks,sale=g.owned(p).reduce((sum,o)=>sum+Math.round(g.cost(o.tile,o.level,businessType(o))*.65),0),credit=Math.max(0,1800-p.loan);
- const bank={deposit:p.deposit,credit,available:bankOpen?p.deposit+credit:0,reason:g.s.round%7===3?'周三休息，当前不能办理业务。':!bankOpen?'本回合尚未获得银行办理资格。':!p.deposit&&!credit?'暂无可取存款或可借额度。':`可取 ${fmt(p.deposit)} · 可借 ${fmt(credit)}`};
- const stocks={value:stockValue,available:stockOpen?stockValue:0,reason:g.s.round%7===0?'周日休市，当前不能卖出股票。':!managing?'当前不能交易股票。':stockValue?'按当前报价卖出，无交易手续费。':'没有股票持仓。'};
+ const d=g.s.debt;if(!d)return null;const p=g.player,managing=g.manageable(),bankOpen=g.canBank(),stockOpen=managing&&!stockClosed(g.s.round),stockValue=g.assets(p).stocks,sale=g.owned(p).reduce((sum,o)=>sum+Math.round(g.cost(o.tile,o.level,businessType(o))*RULES.propertySaleRatio),0),credit=Math.max(0,RULES.loanLimit-p.loan);
+ const bank={deposit:p.deposit,credit,available:bankOpen?p.deposit+credit:0,reason:bankClosed(g.s.round)?'周三休息，当前不能办理业务。':!bankOpen?'本回合尚未获得银行办理资格。':!p.deposit&&!credit?'暂无可取存款或可借额度。':`可取 ${fmt(p.deposit)} · 可借 ${fmt(credit)}`};
+ const stocks={value:stockValue,available:stockOpen?stockValue:0,reason:stockClosed(g.s.round)?'周日休市，当前不能卖出股票。':!managing?'当前不能交易股票。':stockValue?'按当前报价卖出，无交易手续费。':'没有股票持仓。'};
  const deeds={value:sale,available:managing?sale:0,reason:!managing?'当前不能变卖地产。':sale?'按每块地产成本的 65% 四舍五入。':'尚未拥有地产。'};
  const gap=Math.max(0,d.amount-p.money),available=p.money+bank.available+stocks.available+deeds.available,canPay=g.s.phase==='debt'&&p.money>=d.amount;
  return {amount:d.amount,label:d.label,creditor:d.to===null?'公共费用':g.char(g.s.players[d.to]).name,cash:p.money,gap,available,canPay,after:canPay?p.money-d.amount+(d.to===p.id?d.amount:0):null,bank,stocks,deeds};

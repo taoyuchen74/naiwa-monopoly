@@ -1,3 +1,4 @@
+import {RULES} from './rules-config.js';
 import {businessType} from './businesses.js';
 import {difficulty} from './difficulty.js';
 import {CARDS,VEHICLES} from './content.js';
@@ -11,9 +12,9 @@ export function chooseMove(g){return evaluate(g,()=>choose(g));}
 export function takeAiTurn(g){return evaluate(g,()=>takeTurn(g));}
 // Cash-equivalent utility, not cash income: scarce coupons are more useful,
 // and coupons beyond the real 150-point cap have no value.
-export function couponValue(g,amount){const p=g.player;return Math.min(amount,Math.max(0,150-p.tickets))*(p.tickets<100?1.5:.3);}
+export function couponValue(g,amount){const p=g.player;return Math.min(amount,Math.max(0,RULES.couponCap-p.tickets))*(p.tickets<100?1.5:.3);}
 export function diceWeights(count){let values=new Map([[0,1]]);for(let i=0;i<count;i++){const next=new Map();for(const [sum,w]of values)for(let d=1;d<=6;d++)next.set(sum+d,(next.get(sum+d)||0)+w/6);values=next;}return values;}
-function scoreLanding(g,r){const p=g.player,t=g.tiles[r.id],o=g.s.ownership[r.id];let value=(r.passesStart?400+(g.s.talents&&p.character==='naiwa'?80:0):0)-r.rent+couponValue(g,(r.points||0)+(o?.level&&businessType(o)==='park'?10:0));
+function scoreLanding(g,r){const p=g.player,t=g.tiles[r.id],o=g.s.ownership[r.id];let value=(r.passesStart?RULES.startIncome+(g.s.talents&&p.character==='naiwa'?RULES.startTalentBonus:0):0)-r.rent+couponValue(g,(r.points||0)+(o?.level&&businessType(o)==='park'?RULES.couponPickup:0));
  if(t.kind==='property'){if(!o)value+=p.money>=t.price+250?130+g.district(t.id,p.id).count*65:5;else if(o.player===p.id)value+=o.level<g.buildingLimit(o)&&p.money>=g.upgradeCost(t)?55:10;}
  else value+=({hospital:p.skip?0:-210,tax:-g.payment(180),shop:125,rest:120,spirit:20,event:45,bank:0,stock:0,start:0}[t.kind]||0);if(g.aiDifficulty()==='hard'){if(o?.player===p.id)value+=g.district(t.id,p.id).count*18;if(!o&&t.kind==='property')value+=g.district(t.id,p.id).count*50;let risk=0;for(let step=1;step<=6;step++){const options=preview(g,step,{from:r.id,reverse:false});risk+=Math.min(...options.map(x=>x.rent))/6;}value-=risk*.35;}return value;}
 export function bestRoute(g,steps,opts){return evaluate(g,()=>{let best,score=-Infinity;for(const r of preview(g,steps,opts)){const value=landingValue(g,r);if(value>score){best=r;score=value;}}return best;});}
@@ -39,11 +40,11 @@ function useBestCard(g){if(g.aiDifficulty()==='easy'){const i=g.player.cards.ind
  }
  choices.sort((a,b)=>b.value-a.value);for(const c of choices)if(c.value>difficulty(g).cardThreshold&&g.card(c.index,c.target))return true;return false;
 }
-function aiTrade(g){const p=g.player;if(p.aiTradeDone)return false;p.aiTradeDone=true;if(g.aiDifficulty()==='easy')return false;
+function aiTrade(g){const p=g.player;if(p.aiTradeDone)return false;g.markAiAction('trade');if(g.aiDifficulty()==='easy')return false;
  const hard=g.aiDifficulty()==='hard';for(let i=0;i<4;i++){const o=g.position(i);if(o.qty&&o.average!==null&&(o.price>=o.average*(hard?1.18:1.12)||o.price<=o.average*(hard?.8:.75)))return g.trade(i,-Math.min(o.qty,hard?8:4));}
  if(p.money<2200)return false;const candidates=g.s.market.map((m,i)=>{const h=m.history.slice(-5),mean=h.reduce((n,v)=>n+v,0)/h.length;return{i,ratio:m.price/(hard?mean:m.history[0]),price:m.price};}).sort((a,b)=>a.ratio-b.ratio);const best=candidates[0];if(hard&&best.ratio>.98)return false;const qty=Math.min(hard?8:2,Math.floor((p.money-1800)/best.price));return qty>0?g.trade(best.i,qty):false;
 }
-function aiBank(g){const p=g.player;if(p.aiBankDone||!g.canBank())return false;p.aiBankDone=true;if(p.loan&&p.money>p.loan+700)return g.bank('repay',p.loan);if(g.aiDifficulty()==='hard'&&p.money>1900)return g.bank('deposit',Math.min(700,p.money-1400));return false;}
+function aiBank(g){const p=g.player;if(p.aiBankDone||!g.canBank())return false;g.markAiAction('bank');if(p.loan&&p.money>p.loan+700)return g.bank('repay',p.loan);if(g.aiDifficulty()==='hard'&&p.money>1900)return g.bank('deposit',Math.min(700,p.money-1400));return false;}
 function upgradeVehicle(g){const p=g.player;if(!g.canShop())return false;
  if(p.vehicle===0)return p.money>1800&&g.s.round<g.s.maxRounds-5&&g.vehicle(1);
  if(p.vehicle!==1||g.aiDifficulty()==='easy'||p.skip||p.forced||p.slowTurns)return false;
@@ -56,7 +57,7 @@ function upgradeVehicle(g){const p=g.player;if(!g.canShop())return false;
 function constructionValue(g,type){const p=g.player,id=p.pos,t=g.tiles[id],remaining=g.s.maxRounds-g.s.round,visits=remaining/g.tiles.length,base=g.baseRent(id,1),own=g.owned(p);let income;
  if(type==='park')income=visits*couponValue(g,10);
  else if(type==='research')income=Math.floor(remaining/3)*couponValue(g,CARDS.dice.price);
- else {const rivals=g.s.players.filter(q=>q.alive&&q.id!==p.id);const fee=q=>type==='chain'?Math.min(400,100+50*own.filter(o=>o.level&&businessType(o)==='chain').length):type==='hotel'?Math.round(base*.65)*2:type==='mall'?base*13/12:type==='gas'?30+15*(g.aiDifficulty(q)==='easy'?3.5:3.5*(q.vehicle+1))+60*q.vehicle:base+Math.min(base,Math.round(g.district(id,p.id).support*.35));income=visits*rivals.reduce((sum,q)=>sum+g.payment(fee(q),p.id,q),0);}
+ else {const rivals=g.s.players.filter(q=>q.alive&&q.id!==p.id);const fee=q=>type==='chain'?Math.min(RULES.chainRentCap,100+50*own.filter(o=>o.level&&businessType(o)==='chain').length):type==='hotel'?Math.round(base*.65)*2:type==='mall'?base*13/12:type==='gas'?30+15*(g.aiDifficulty(q)==='easy'?3.5:3.5*(q.vehicle+1))+60*q.vehicle:base+Math.min(base,Math.round(g.district(id,p.id).support*.35));income=visits*rivals.reduce((sum,q)=>sum+g.payment(fee(q),p.id,q),0);}
  // Construction adds an asset but ties up cash. Charge a modest liquidity
  // cost instead of treating all spent cash as a loss in net worth.
  return income-g.buildPrice(t,type)*.25;
@@ -73,7 +74,7 @@ function takeTurn(g){const p=g.player,cfg=difficulty(g);if(p.human||g.s.phase===
   if(upgradeVehicle(g))return true;
   if(g.canShop()&&p.cards.length<12&&p.shopUsed<2){const need=!p.cards.includes('dice')?'dice':!p.cards.includes('build')?'build':!p.cards.includes('shield')?'shield':null;if(need&&g.shop(need))return true;}
   if(aiTrade(g))return true;
-  const move=g.aiDifficulty()==='easy'?{count:1}:chooseMove(g);p.diceCount=move.count;return g.roll();
+  const move=g.aiDifficulty()==='easy'?{count:1}:chooseMove(g);g.setDiceCount(move.count);return g.roll();
  }
  if(g.s.phase==='branch'){if(g.aiDifficulty()==='easy'){const next=g.tiles[p.pos].next;return g.step(next[g.int(next.length)]);}const scored=g.tiles[p.pos].next.map(first=>({first,value:landingValue(g,bestRoute(g,g.s.remaining,{first}))}));scored.sort((a,b)=>b.value-a.value);return g.step(scored[0].first);}
  if(g.s.phase==='moving')return g.step();
@@ -87,7 +88,7 @@ function takeTurn(g){const p=g.player,cfg=difficulty(g);if(p.human||g.s.phase===
   const need=g.s.debt.amount-p.money;
   if(p.deposit&&g.bank('withdraw',Math.min(p.deposit,need)))return true;
   for(let i=0;i<4;i++)if(p.stocks[i]&&g.trade(i,-Math.min(p.stocks[i],10000,Math.ceil(need/g.s.market[i].price))))return true;
-  if(g.canBank()&&p.loan+need<=1800&&g.bank('borrow',need))return true;
+  if(g.canBank()&&p.loan+need<=RULES.loanLimit&&g.bank('borrow',need))return true;
   const sale=g.owned(p).sort((a,b)=>g.district(a.tile.id).count-g.district(b.tile.id).count||a.level-b.level)[0];if(sale)return g.sell(sale.tile.id);return g.bankrupt();
  }
  if(g.s.phase==='end'){if(useBestCard(g))return true;if(upgradeVehicle(g))return true;if(g.canShop()&&p.cards.length<10&&p.shopUsed<2){const key=!p.cards.includes('dice')?'dice':!p.cards.includes('build')?'build':!p.cards.includes('shield')?'shield':null;if(key&&g.shop(key))return true;}if(g.canBank()&&p.loan>0&&p.money>p.loan+500&&g.bank('repay',p.loan))return true;if(develop(g,g.aiDifficulty()==='hard'?Math.max(450,Math.min(1300,chooseMove(g).rent*1.5||450)):cfg.reserve))return true;if(aiTrade(g))return true;if(aiBank(g))return true;return g.end();}return false;
