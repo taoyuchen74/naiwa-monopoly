@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "test:mobile": "playwright test --config=playwright.mobile.config.mjs",
     "dev": "python -m http.server 4173 --directory dist",
     "build": "node tools/build.mjs",
     "build:site": "node tools/build-web.mjs",
     "preview": "python -m http.server 4173 --directory out"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "esbuild": "0.25.0"
   }
 }

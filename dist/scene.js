@@ -95,8 +95,8 @@ export class IslandScene{
  isMoving(){if(this.contextLost||!this.game||this.studio)return false;return this.game.s.players.some(p=>{const t=this.tiles[p.pos],pawn=this.pawns[p.id];return pawn&&Math.hypot(pawn.position.x-(t.x+(p.id-(this.game.s.players.length-1)/2)*.4),pawn.position.z-(t.z-.15+(p.id%2)*.22))>.075;});}
  drawFrame(){this.updateLabelVisibility();this.fx.anchorDice(this.camera,this.aspect<.8);this.renderer.info.autoReset=false;this.renderer.info.reset();if(this.quality==='low')this.renderer.render(this.scene,this.camera);else this.highQuality.render();}
  renderStill(){if(!this.contextLost&&!this.renderer.getContext().isContextLost()){this.updateCamera();this.drawFrame();}}
- cameraChanged(){this.el.dispatchEvent(new CustomEvent('camerachange',{detail:{follow:this.follow}}));}
- zoomBy(factor){if(this.studio){this.studio.zoom=Math.max(.65,Math.min(2.5,this.studio.zoom*factor));}else{this.zoom=Math.max(.65,Math.min(3.3,this.zoom*factor));this.followZoom=this.zoom;}this.updateCamera();}
+ cameraChanged(){this.el.dispatchEvent(new CustomEvent('camerachange',{detail:{follow:this.follow,zoom:this.studio?.zoom||this.zoom,offset:{x:this.offset.x,z:this.offset.z}}}));}
+ zoomBy(factor){if(this.studio){this.studio.zoom=Math.max(.65,Math.min(2.5,this.studio.zoom*factor));}else{this.zoom=Math.max(.65,Math.min(3.3,this.zoom*factor));this.followZoom=this.zoom;}this.updateCamera();this.cameraChanged();}
  cancelGestures(){const c=this.renderer.domElement,ids=[...(this.gestures?.points.keys()||[])];this.gestures?.reset();for(const id of ids)try{if(c.hasPointerCapture(id))c.releasePointerCapture(id);}catch{}}
  controls(){const c=this.renderer.domElement;c.style.touchAction='none';this.gestures=new MapGestures({
   isStudio:()=>!!this.studio,turn:dx=>{this.studio.yaw+=dx*.012;this.studio.manual=true;},zoom:factor=>this.zoomBy(factor),
