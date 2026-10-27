@@ -12,11 +12,11 @@ export const businessType=o=>o?.buildingType||'residence';
 export const buildingLimit=o=>BUSINESSES[businessType(o)]?.max||5;
 export const researchChoices=level=>['dice','shield','demolish','build','steal'].slice(0,level);
 export function businessDeparture(g){const p=g.player;if(p.businessReady)return false;p.businessReady=true;let changed=false;for(const own of g.owned(p)){if(businessType(own)!=='research'||!own.level)continue;const o=g.s.ownership[own.tile.id];o.researchProgress=(o.researchProgress||0)+1;changed=true;if(o.researchProgress>=3){o.researchProgress=0;const choices=researchChoices(o.level),key=choices.includes(o.researchCard)?o.researchCard:choices[0];g.log(`${g.char(p).name}的「${own.tile.name}」研究完成。`);g.giveCard(p,key);}}return changed;}
-export function repairBuilding(o){if(o.level===0){o.buildingType='residence';delete o.researchCard;delete o.researchProgress;}else if(businessType(o)==='research'&&!researchChoices(o.level).includes(o.researchCard))o.researchCard=researchChoices(o.level)[0];}
+export function repairBuilding(o){if(o.level===0){o.buildingType='residence';delete o.researchCard;delete o.researchProgress;delete o.closedUntilRound;}else if(businessType(o)==='research'&&!researchChoices(o.level).includes(o.researchCard))o.researchCard=researchChoices(o.level)[0];}
 
 // The collection and decision preview share the same pre-discount outcomes.
 export function propertyChargeOptions(g,id){const o=g.s.ownership[id],type=businessType(o),base=g.baseRent(id,o.level);
- if(o.level&&type==='hotel')return [1,2,3].map(days=>({amount:Math.round(base*.65)*days,skip:days,suffix:`住宿${days}回合费用`,label:`${days}回合`}));
- if(o.level&&type==='mall')return [.75,1,1.5].map(rate=>({amount:Math.round(base*rate),skip:0,suffix:`购物消费（${rate*100}%）`,label:`${rate*100}%`}));
+ if(o.level&&type==='hotel')return [1,2,3].map(days=>({amount:g.facilityFee(id,Math.round(base*.65)*days),skip:days,suffix:`住宿${days}回合费用`,label:`${days}回合`}));
+ if(o.level&&type==='mall')return [.75,1,1.5].map(rate=>({amount:g.facilityFee(id,Math.round(base*rate)),skip:0,suffix:`购物消费（${rate*100}%）`,label:`${rate*100}%`}));
  return [{amount:g.rent(id),skip:0,suffix:o.level&&type==='gas'?'加油费':'租金',label:'本次'}];
 }

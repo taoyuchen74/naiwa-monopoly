@@ -30,8 +30,14 @@ export const CARDS={
  recover:{name:'野生狗奶',icon:'♧',price:20,description:'移除休养与霉运，获得 80 奶币补给。',target:'self'},
  demolish:{name:'奶块拆除卡',icon:'♜',price:25,description:'拆去 8 格范围内一层房屋，或清除路障；不会夺走土地。',target:'enemyBuilt'},
  build:{name:'奶家工程队',icon:'⚒',price:65,description:'为 8 格范围内自己的地产免费加盖一层，不占常规建设次数。',target:'own'},
+ ward:{name:'奶伴护盾卡',icon:'◉',price:30,description:'抵消下一次个人负面随机事件或霉神到访；不抵消租金、税费或疗养费。与神灵守护并存时优先消耗护盾，不叠加。',target:'self',effect:'negativeEvent',duration:0,charges:1},
+ swap:{name:'奶伴换位卡',icon:'⇄',price:40,description:'掷骰前与一名存活且位置不同的对手交换位置。双方来路和倒退清空，不触发起点奖励、落地、收费或路障；之后照常掷骰。',target:'opponent',effect:'swap',duration:0},
+ insurance:{name:'安心租金保险',icon:'◇',price:40,description:'掷骰前生效，含本回合在内三次本人回合结束前，地产收费减免50%；不免旅馆休养，不影响收购。不与同类叠加，免租卡优先。',target:'self',effect:'rentReduction',duration:3,reduction:.5},
  slow:{name:'慢慢走卡',icon:'♧',price:25,description:'自己接下来三次行动各走 1 格，便于连续买地或享受当地建设折扣。',target:'self'}
 };
+// Phase, duration and effect values are shared by rules, AI and presentation.
+export const CARD_TIMINGS={beforeMove:{phases:['roll'],label:'出发前'},beforeRent:{phases:['estate'],label:'抵达付租前'},action:{phases:['roll','end'],label:'行动前后'}};
+for(const [key,card]of Object.entries(CARDS)){card.duration??=key==='slow'?3:0;card.timing=key==='steal'?'beforeRent':['dice','turn','slow','block','swap','insurance'].includes(key)?'beforeMove':'action';}
 export const SPIRITS={fortune:{name:'大笑财神',icon:'✦',description:'非交易收入增加 25%'},misfortune:{name:'奶泡霉神',icon:'☁',description:'租金和费用增加 25%'},guardian:{name:'奶蛋守护',icon:'◉',description:'抵挡一次负面事件'}};
 export const VEHICLES=[{id:0,name:'步行',dice:1,price:0},{id:1,name:'奶蛙自行车',dice:2,price:600},{id:2,name:'奶罐小车',dice:3,price:1200}];
 export const EVENTS=[
@@ -44,7 +50,20 @@ export const EVENTS=[
  {name:'奶茶新品大卖',art:'tea',text:'品鉴活动获得 160 奶币，奶茶实业行情上涨。',kind:'gain',amount:160,stock:0,change:.12},
  {name:'奶蛙爱洗澡',art:'recover',text:'洗香香，休息一回合，获补贴 100 奶币。',kind:'rest',amount:100},
  {name:'奶币港口顺风',art:'vehicle',text:'运输收入 220 奶币，奶币物流行情上涨。',kind:'gain',amount:220,stock:3,change:.1},
- {name:'神秘奶罐',art:'shield',text:'打开奶罐，请一位奶家神灵来做客。',kind:'spirit'}
+ {name:'神秘奶罐',art:'shield',text:'打开奶罐，请一位奶家神灵来做客。',kind:'spirit'},
+ {name:'奶币物流分红',art:'stocks',text:'奶币物流上涨8%；持有该股票每股分红4奶币，最多120奶币。分红计入非交易收入。',kind:'dividend',target:'stockHolder',stock:3,change:.08,perShare:4,cap:120,negative:false,duration:0},
+ {name:'社区经营节',art:'house',text:'本轮及之后两轮，你的已建成收费设施收入提高15%；不增加公园点券或研究产出。重复触发只刷新期限。',kind:'operations',target:'selfBusinesses',multiplier:1.15,duration:2,negative:false},
+ {name:'设施安全巡检',art:'factory',text:'你最高级的一处收费设施本轮及下一轮暂停收费；同级按地块编号选择。没有收费设施则无影响。',kind:'closure',target:'mostDevelopedBusiness',duration:1,negative:true}
 ];
+
+for(const event of EVENTS){event.negative??=['loss','rest'].includes(event.kind);event.target??='self';event.duration??=0;}
+
+CARDS.insurance.description=`掷骰前生效，含本回合在内${CARDS.insurance.duration}次本人回合结束前，地产收费减免${CARDS.insurance.reduction*100}%；不免旅馆休养，不影响收购。不与同类叠加，免租卡优先。`;
+for(const event of EVENTS){
+ if(event.kind==='operations')event.text=`本轮及之后${event.duration}轮，你的已建成收费设施收入提高${Math.round(((event.multiplier??1)-1)*100)}%；不增加公园点券或研究产出。重复触发只刷新期限。`;
+ if(event.kind==='dividend')event.text=`奶币物流上涨${Math.round((event.change??0)*100)}%；持有该股票每股分红${event.perShare}奶币，最多${event.cap}奶币。分红计入非交易收入。`;
+ if(event.kind==='closure')event.text=`你最高级的一处收费设施本轮及之后${event.duration}轮暂停收费；同级按地块编号选择。没有收费设施则无影响。`;
+}
+export const EVENT_RULES=Object.fromEntries(EVENTS.map(event=>[event.kind,event]));
 
 export const POINT_STOPS=[2,8,14,20,26,32,38,42,46];

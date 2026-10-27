@@ -6,10 +6,11 @@ const fmt=n=>Math.round(n).toLocaleString('zh-CN');
 export function visitQuote(g,id){const o=g.s.ownership[id],p=g.player,type=businessType(o);let exemption,rule;
  if(o.level&&['park','research'].includes(type)){exemption='free';rule='这项设施不收取到访费用，免租效果会保留。';}
  else if(g.s.players[o.player].skip){exemption='rest';rule='业主正在休养，本次暂停收费，免租效果会保留。';}
+ else if(g.businessClosed(id)){exemption='closed';rule='设施正在巡检，本次不收费；免租效果保留。';}
  else if(p.shield){exemption='shield';rule='已备免租效果会抵消这次费用；旅馆也不会安排入住。';}
  const options=exemption?[{amount:0,label:'免费'}]:propertyChargeOptions(g,id).map(c=>({...c,amount:g.payment(c.amount,o.player)}));
  const min=Math.min(...options.map(c=>c.amount)),max=Math.max(...options.map(c=>c.amount));
- rule??=type==='hotel'&&o.level?'随机入住 1—3 回合，按实际天数收费，入住期间暂停行动。':type==='mall'&&o.level?'消费倍率在确认付款后抽签；下方列出所有可能费用。':type==='gas'&&o.level?'按本次实际行进步数与交通工具收费。':'金额已计入当前角色技能、神灵效果与街区联营。';
+ rule??=type==='hotel'&&o.level?'随机入住 1—3 回合，按实际天数收费，入住期间暂停行动。':type==='mall'&&o.level?'消费倍率在确认付款后抽签；下方列出所有可能费用。':type==='gas'&&o.level?'按本次实际行进步数与交通工具收费。':'金额已计入经营加成、保险、角色技能、神灵效果与街区联营。';
  return {min,max,options,exemption,rule,range:min===max?fmt(min):`${fmt(min)}—${fmt(max)}`,random:options.length>1,type};
 }
 export function quotedLandingFee(g,r){const o=g.s.ownership[r.id];if(o?.level&&['hotel','mall'].includes(businessType(o))){const q=visitQuote(g,r.id);return `费用 ${q.range}`;}return `付租 ${r.rent}`;}

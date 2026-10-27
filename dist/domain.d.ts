@@ -3,7 +3,7 @@ export type Phase = 'roll' | 'departure' | 'moving' | 'branch' | 'buy' | 'estate
 export type Difficulty = 'easy' | 'normal' | 'hard';
 export type CharacterId = 'naiwa' | 'naichong' | 'naishu' | 'naigou' | 'naidan' | 'naicha';
 export type BuildingType = 'residence' | 'chain' | 'hotel' | 'mall' | 'gas' | 'research' | 'park';
-export type CardKey = 'dice' | 'shield' | 'recover' | 'turn' | 'slow' | 'block' | 'build' | 'demolish' | 'steal';
+export type CardKey = 'dice' | 'shield' | 'recover' | 'turn' | 'slow' | 'block' | 'build' | 'demolish' | 'steal' | 'ward' | 'swap' | 'insurance';
 export type Spirit = 'fortune' | 'misfortune' | 'guardian';
 export type BankKind = 'deposit' | 'withdraw' | 'borrow' | 'repay';
 export interface StockBook {cost: number | null; realized: number; unpriced: number}
@@ -16,9 +16,10 @@ export interface Player {
  skip: number; forced: number; spirit: Spirit | null; spiritTurns: number; shield: boolean; reverse: boolean;
  businessReady: boolean; talentReady: boolean; departures: number; cardsUsed: number; buildsUsed: number;
  shopUsed: number; slowTurns: number; buildSite: number | null; bankAccess: boolean;
+ eventWard:boolean; insuranceTurns:number; operatingUntilRound:number;
  aiTradeDone?: boolean; aiBankDone?: boolean; mood?: string;
 }
-export interface Ownership {player: number; level: number; buildingType?: BuildingType; researchProgress?: number; researchCard?: CardKey}
+export interface Ownership {player: number; level: number; buildingType?: BuildingType; researchProgress?: number; researchCard?: CardKey; closedUntilRound?:number}
 export type InitialGameState = Omit<GameState,'revision'|'commandSequences'> & Partial<Pick<GameState,'revision'|'commandSequences'>>;
 export type CardTarget = Ownership & {id:number; obstacle?:boolean};
 export interface Market {name: string; price: number; previous: number; change: number; history: number[]; color?: string}
@@ -28,11 +29,11 @@ export interface Preferences {
  music?: boolean; voice?: boolean; musicVolume?: number; effectsVolume?: number; voiceVolume?: number; track?: 'ode' | 'town';
 }
 export interface GameState {
- version: 2; rules: 7; setupSeed?: number; mapVersion: 1 | 2; difficulty: Difficulty; talents: boolean;
+ version: 2; rules: 8; setupSeed?: number; mapVersion: 1 | 2; difficulty: Difficulty; talents: boolean;
  firstPlayer: number; seed: number; round: number; maxRounds: number; current: number; phase: Phase;
  dice: number[]; remaining: number; moveTotal: number; moveSteps: number | null;
  players: Player[]; ownership: Record<number, Ownership|undefined>; blocks: Record<number, number|undefined>; pickups: Record<number, number|undefined>;
- market: Market[]; logs: Array<{round: number; text: string}>; notice: {title: string; text: string; mood: string} | null;
+ market: Market[]; logs: Array<{round: number; text: string}>; notice: {title: string; text: string; mood: string; outcomes?:string[]} | null;
  debt: Debt | null; options: Preferences; winner: number | null; revision: number; commandSequences: number[]; savedAt?: number;
 }
 /** Flat format: schema metadata plus the existing top-level rule fields. */
