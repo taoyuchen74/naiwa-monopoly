@@ -257,7 +257,7 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --no-shell chromium
+      - run: npx playwright install --only-shell chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()
@@ -318,7 +318,6 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     actionTimeout: 15000,
     browserName: 'chromium',
-    channel: 'chromium',
     hasTouch: true,
     isMobile: true,
     deviceScaleFactor: 1,
@@ -402,6 +401,24 @@ export async function boot(page) {
         audioBytes: globalThis.__NAIWA_LAUGH_BYTES__?.byteLength,
         gl: document.querySelector('#scene canvas')?.getContext('webgl2')?.getParameter(7937),
       })),
+    );
+    console.error(
+      'E2E prerequisites:',
+      await page.evaluate(async () => {
+        const settled = (promise) =>
+          Promise.race([
+            promise.then(
+              () => 'ready',
+              (e) => String(e),
+            ),
+            new Promise((resolve) => setTimeout(() => resolve('pending'), 1000)),
+          ]);
+        return {
+          fonts: await settled(document.fonts.ready),
+          images: await Promise.all([...document.images].map((image) => settled(image.decode()))),
+          frame: await settled(new Promise((resolve) => requestAnimationFrame(resolve))),
+        };
+      }),
     );
     throw error;
   }

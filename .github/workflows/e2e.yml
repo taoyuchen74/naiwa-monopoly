@@ -34,7 +34,7 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-chromium-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --no-shell chromium
+      - run: npx playwright install --only-shell chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()

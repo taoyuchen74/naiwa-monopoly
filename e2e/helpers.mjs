@@ -55,6 +55,24 @@ export async function boot(page) {
         gl: document.querySelector('#scene canvas')?.getContext('webgl2')?.getParameter(7937),
       })),
     );
+    console.error(
+      'E2E prerequisites:',
+      await page.evaluate(async () => {
+        const settled = (promise) =>
+          Promise.race([
+            promise.then(
+              () => 'ready',
+              (e) => String(e),
+            ),
+            new Promise((resolve) => setTimeout(() => resolve('pending'), 1000)),
+          ]);
+        return {
+          fonts: await settled(document.fonts.ready),
+          images: await Promise.all([...document.images].map((image) => settled(image.decode()))),
+          frame: await settled(new Promise((resolve) => requestAnimationFrame(resolve))),
+        };
+      }),
+    );
     throw error;
   }
   await expect(page.locator('#app')).not.toHaveAttribute('inert');

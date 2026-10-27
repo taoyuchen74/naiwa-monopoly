@@ -14,7 +14,6 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
     actionTimeout: 15000,
     browserName: 'chromium',
-    channel: 'chromium',
     hasTouch: true,
     isMobile: true,
     deviceScaleFactor: 1,
