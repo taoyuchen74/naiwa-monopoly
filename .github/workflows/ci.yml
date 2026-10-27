@@ -29,6 +29,7 @@ jobs:
       - name: Unit and complete-game tests
         run: npm test
       - name: Install Chromium and system libraries
+        timeout-minutes: 5
         run: npx playwright install --with-deps chromium
       - name: Browser smoke tests
         run: npm run test:browser
