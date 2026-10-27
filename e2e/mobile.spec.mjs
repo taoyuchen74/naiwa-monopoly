@@ -80,8 +80,9 @@ test('four safe edges rotate correctly; focused inputs and confirmation survive 
  for(let i=0;i<2;i++){
   const rect=await page.locator('.game-layout').boundingBox();expect(rect.x).toBeCloseTo(14,0);expect(rect.y).toBeCloseTo(12,0);expect(rect.x+rect.width).toBeCloseTo(viewport.width-30,0);expect(rect.y+rect.height).toBeCloseTo(viewport.height-22,0);
   await reachable(page.locator('#actionBtn'));
-  await page.locator('#settingsBtn').click();await page.locator('[data-select-id=qualitySelect] button').click();const popup=await page.getByRole('listbox').boundingBox();expect(popup.x).toBeGreaterThanOrEqual(14);expect(popup.y).toBeGreaterThanOrEqual(12);expect(popup.x+popup.width).toBeLessThanOrEqual(viewport.width-30);expect(popup.y+popup.height).toBeLessThanOrEqual(viewport.height-22);await page.keyboard.press('Escape');await close(page);
+  await page.locator('#settingsBtn').click();await page.locator('[data-select-id=qualitySelect] button').click();await page.evaluate(()=>{document.querySelector('#sheetBody').dispatchEvent(new Event('scroll'));window.dispatchEvent(new Event('gamelayoutchange'));});await expect(page.getByRole('listbox')).toBeVisible();const popup=await page.getByRole('listbox').boundingBox();expect(popup.x).toBeGreaterThanOrEqual(14);expect(popup.y).toBeGreaterThanOrEqual(12);expect(popup.x+popup.width).toBeLessThanOrEqual(viewport.width-30);expect(popup.y+popup.height).toBeLessThanOrEqual(viewport.height-22);await page.keyboard.press('Escape');await close(page);
   await page.locator('#orientationBtn').click();
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  }
  await page.locator('.dock-tabs [data-panel=bank]').click();await page.locator('#bankAmount').focus();const layout=await page.locator('#app').getAttribute('data-layout');
  await page.setViewportSize({width:viewport.width,height:Math.max(220,Math.floor(viewport.height*.48))});

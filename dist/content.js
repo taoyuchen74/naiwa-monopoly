@@ -25,7 +25,7 @@ export const CARDS={
  block:{name:'奶块路障',icon:'▦',price:20,description:'前方 1—6 格放路障，首名经过者停下；可以截住对手，也能停在心仪地块。',target:'ahead'},
  turn:{name:'奶蛙回头卡',icon:'↶',price:20,description:'本回合沿来路倒退；可以避开高租金，但倒退不领取起点奖励。',target:'self'},
  shield:{name:'快乐免租卡',icon:'⌂',price:35,description:'抵消下一笔租金，保留至触发。可与控骰、回头等卡组合使用。',target:'self'},
- steal:{name:'奶鼠抢地卡',icon:'⚑',price:45,description:'停在对手地产时收购该地产；向业主支付地产成本的 125%，可打断其街区经营。',target:'enemy'},
+ steal:{name:'奶鼠抢地卡',icon:'⚑',price:45,description:'仅在抵达对手地产、付租前收购该地产；向业主支付地产成本的 125%，可打断其街区经营。',target:'enemy'},
  recover:{name:'野生狗奶',icon:'♧',price:20,description:'移除休养与霉运，获得 80 奶币补给。',target:'self'},
  demolish:{name:'奶块拆除卡',icon:'♜',price:25,description:'拆去 8 格范围内一层房屋，或清除路障；不会夺走土地。',target:'enemyBuilt'},
  build:{name:'奶家工程队',icon:'⚒',price:65,description:'为 8 格范围内自己的地产免费加盖一层，不占常规建设次数。',target:'own'},

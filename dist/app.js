@@ -14,7 +14,7 @@ import {disposalPanel} from './disposal-panel.js';
 import {playerPanel} from './player-panel.js';
 import {debtPanel,debtBankDraft} from './debt-panel.js';
 import {talentsPanel} from './talent-panel.js';
-import {resumeCard,exportableState} from './save-menu.js';
+import {resumeCard,exportableState,archiveSummary} from './save-menu.js';
 import {cardTargetPanel} from './card-target-panel.js';
 import {deedsPanel} from './deeds-panel.js';
 import {bankPanel,bankLimit,updateBankPreview} from './bank-panel.js';
@@ -28,7 +28,7 @@ import {landmarkPanel} from './landmark-panel.js';
 import {eventPanel} from './event-panel.js';
 import {ActionPacer} from './pacing.js';
 import {diceWeights} from './strategy.js';
-import {Game,SAVE_KEY} from './engine.js?v=16';
+import {Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup} from './engine.js?v=16';
 import {CHARACTERS,GROUPS,CARDS,SPIRITS,STOCKS,VEHICLES} from './content.js';
 import {IslandScene} from './scene.js';
 import {portrait,portraitBitmap} from './portraits.js';
@@ -69,9 +69,13 @@ document.addEventListener('pointerdown',unlockSound,{once:true,capture:true});
 document.addEventListener('keydown',unlockSound,{once:true,capture:true});
 function sceneSounds(){const s=game.s,n={state:s,positions:s.players.map(p=>p.pos),money:s.players.map(p=>p.money),lots:Object.fromEntries(Object.entries(s.ownership).map(([id,o])=>[id,o.level])),phase:s.phase};const old=soundSnapshot;soundSnapshot=n;if(!started||!old||old.state!==s)return;if(n.positions.some((v,i)=>v!==old.positions[i]))soundtrack.sfx('step');if(Object.entries(n.lots).some(([id,l])=>l>(old.lots[id]??0)))soundtrack.sfx('build');else if(Object.entries(old.lots).some(([id,l])=>l>0&&(n.lots[id]??0)<l))soundtrack.sfx('demolish');else if(n.money.some((v,i)=>v>old.money[i]))soundtrack.sfx('coin');if(n.phase==='moving'&&['roll','departure'].includes(old.phase))soundtrack.sfx('roll');if(n.phase==='finished'&&old.phase!=='finished')soundtrack.sfx('win');}
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2800);}
-function save(){try{writePreferences(localStorage,game.s.options);}catch{}if(!started)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(game.s));saveOk=true;$('saveStatus').textContent='已自动保存在本机';}catch{saveOk=false;$('saveStatus').textContent='存档空间不足，请导出备份';}}
+function save(){try{writePreferences(localStorage,game.s.options);}catch{}if(!started)return;try{storeGame(localStorage,game);saveOk=true;$('saveStatus').textContent='已自动保存在本机';}catch{saveOk=false;$('saveStatus').textContent='存档空间不足，请导出备份';}}
 function commit(ok=true){if(!ok){toast('当前无法执行：请检查余额、数量或使用时机。');return;}save();render();sound();}
-function startFresh(){const count=+$('playerCountSelect').value,error=setupError(advanced,selected,count);if(error){advancedDraft=normalizeSetup(advanced);openPanel('advanced');toast(error);return;}actionPacer.reset();const preferences={...game.s.options};game=Game.create({character:selected,rounds:+$('roundSelect').value,playerCount:count,randomStart:advanced.randomStart,mapVersion:advanced.mapVersion,opponents:Array.from({length:count-1},(_,i)=>advanced.opponents[i]||'random'),seatLevels:advanced.seatLevels,startingCash:advanced.startingCash,startingTickets:advanced.startingTickets,seed:advanced.seed===''?Date.now():+advanced.seed,difficulty:$('difficultySelect').value,talents:$('talentsEnabled').checked});game.s.options=preferences;started=true;blockKey='';dismiss(true);$('startScreen').hidden=true;scene?.home();scene?.followPlayer();commit();}
+let pendingOverwrite=null;
+function startFresh(confirmed=false){const count=+$('playerCountSelect').value,error=setupError(advanced,selected,count);if(error){advancedDraft=normalizeSetup(advanced);openPanel('advanced');toast(error);return;}
+ try{const raw=localStorage.getItem(SAVE_KEY),archive=Game.restore(raw);if(archive){if(confirmed!==true||pendingOverwrite!==raw){pendingOverwrite=raw;activePanel={type:'overwriteSave'};showSheet('开始新旅行并覆盖存档？',archiveSummary(archive),`<p>确认后会先备份这份存档，再开始新局。可在旅行设置中恢复覆盖前存档。</p><div class="row-actions">${btn('取消，保留原局','cancel')}${btn('确认覆盖并开始','overwriteSave','',false,'primary')}</div>`,true);return;}backupStoredGame(localStorage,raw);}}catch{toast('无法备份原存档，新局未开始。请先导出存档。');return;}
+ pendingOverwrite=null;actionPacer.reset();const preferences={...game.s.options};game=Game.create({character:selected,rounds:+$('roundSelect').value,playerCount:count,randomStart:advanced.randomStart,mapVersion:advanced.mapVersion,opponents:Array.from({length:count-1},(_,i)=>advanced.opponents[i]||'random'),seatLevels:advanced.seatLevels,startingCash:advanced.startingCash,startingTickets:advanced.startingTickets,seed:advanced.seed===''?Date.now():+advanced.seed,difficulty:$('difficultySelect').value,talents:$('talentsEnabled').checked});game.s.options=preferences;started=true;blockKey='';dismiss(true);$('startScreen').hidden=true;scene?.home();scene?.followPlayer();commit();}
+function restoreBackup(){try{const restored=restoreStoredBackup(localStorage);if(!restored){toast('没有可恢复的有效备份，当前进度未修改。');return;}saved=restored;resume();toast('已恢复覆盖前存档。');}catch{toast('恢复失败，当前进度未修改。请先导出存档。');}}
 function readAdvancedFields(){if(!advancedDraft)return;advancedDraft.opponents=Array.from(document.querySelectorAll('[data-setup-seat]'),e=>e.value);advancedDraft.seatLevels=Array.from(document.querySelectorAll('[data-setup-level]'),e=>e.value);advancedDraft.startingCash=+$('setupCash').value;advancedDraft.startingTickets=+$('setupTickets').value;advancedDraft.mapVersion=+$('setupMap').value;advancedDraft.randomStart=$('setupInitiative').value==='random';advancedDraft.seed=$('setupSeed').value.trim();const error=setupError(advancedDraft,selected,+$('playerCountSelect').value);$('setupError').textContent=error;$('sheetBody').querySelector('[data-act=applyAdvanced]').disabled=!!error;for(const row of document.querySelectorAll('.opponent-seat')){const id=row.querySelector('[data-setup-seat]').value;row.querySelector('.seat-portrait').innerHTML=id==='random'?'<span class="random-face">⚄</span>':portrait(id);}}
 
 function resume(){if(!saved)return;const preferences={...game.s.options};game=saved;game.s.options=preferences;started=true;blockKey='';$('startScreen').hidden=true;scene?.endPreview();scene?.followPlayer();dismiss(true);commit();}
@@ -150,7 +154,12 @@ function openPanel(type,id){
  }else if(type==='finished'){
   showSheet('奶家发财纪念册','本次旅行结算',resultsPanel(game),true);
  }else if(type==='settings'){
+  let backup=null;try{backup=Game.restore(localStorage.getItem(BACKUP_KEY));}catch{}
   showSheet('旅行设置','按自己的节奏，慢慢玩',`<div class="setting-row"><label for="speedSelect">动画速度</label><select id="speedSelect">${[1,2].map(n=>`<option value="${n}" ${Math.min(2,s.options.speed)===n?'selected':''}>${n===1?'正常 · 完整展示':'轻快 · 保留消息阅读时间'}</option>`).join('')}</select></div><div class="setting-row"><label for="qualitySelect">画面质量</label><select id="qualitySelect"><option value="auto" ${s.options.quality==='auto'?'selected':''}>电影画质 · 精细光影</option><option value="low" ${s.options.quality==='low'?'selected':''}>省电画质</option></select></div><div class="setting-row"><label for="lightingSelect">日照氛围</label><select id="lightingSelect">${Object.entries(LIGHTING).map(([id,p])=>`<option value="${id}" ${lightingMode(s.options.lighting)===id?'selected':''}>${p.label}</option>`).join('')}</select></div><div class="setting-row"><span>声音</span>${btn(s.options.sound?'已开启 · 点击关闭':'已关闭 · 点击开启','sound')}</div>${audioSettings()}<h3>旅行存档</h3><p>${saveOk?'进度自动保存在当前浏览器。':'自动存档失败，请导出备份。'}导出后，可以在另一台设备导入继续。</p><div class="row-actions">${btn('导出存档','export','',!started&&!saved)}${btn('素材与制作说明','panel','data-panel="sources"')}</div><label style="font-size:11px">导入存档<input class="file-input" id="importSave" type="file" accept="application/json,.json"></label><h3>重新出发</h3><p>重新开始会替换本版存档；旧版游戏的存档不会受影响。</p>${btn('选择奶伴重新开始','confirmRestart','','','secondary danger')}<p>设置打开期间，对局暂停。</p>`);
+  $('importSave').parentElement.insertAdjacentHTML('afterend',`<div class="row-actions">${btn('恢复覆盖前存档','confirmRestoreBackup','',!backup)}</div>${backup?`<p>${esc(archiveSummary(backup))}</p>`:''}`);
+ }else if(type==='confirmRestoreBackup'){
+  let backup=null;try{backup=Game.restore(localStorage.getItem(BACKUP_KEY));}catch{}if(!backup){toast('没有可恢复的有效备份。');return;}
+  showSheet('恢复覆盖前存档？',archiveSummary(backup),`<p>会替换当前旅行；这份备份会继续保留。可以先导出当前存档。</p><div class="row-actions">${btn('导出当前存档','export','',!started&&!saved)}${btn('取消恢复','cancel')}${btn('确认恢复','restoreBackup','',false,'primary')}</div>`,true);
  }else if(type==='help'){
   showSheet('奶家发财指南','先掷一颗骰子，再慢慢学会经营',`<ol class="rules"><li><b>出发：</b>选择奶伴后随机决定先手，所有人完整行动一次算一轮。掷骰移动。经过起点领 400 奶币。每位存活奶伴行动一次算一轮。</li><li><b>置业：</b>踩到空地可买入，并选择七种建筑。住宅、旅馆、商场、研究所最高五级；连锁店、加油站、公园只有一级。普通建设须停到自家地块，每次加一层；工程队可远程加盖。只有住宅参与街区联营。旅馆强制入住、商场抽签消费、加油站按行程和交通工具收费、研究所三次出发产卡、公园免费送点券。</li><li><b>用卡：</b>掷骰前打开卡包。手牌可连用，移动卡须在掷骰前使用；点券来自地图拾取和到站奖励。用点券买卡，可控骰、路障、拆层、免费加盖或慢行。抢地卡仅对脚下的对手地产生效，付 125% 成本；拆除和工程队限附近 8 格。</li><li><b>出行：</b>商店购买自行车或小车后，可在掷骰按钮旁选择骰子数量。岔路自行选方向。</li><li><b>经营：</b>经过银行的本回合可办理存取款和贷款；银行周三休息；股票在自己行动前后可交易，周日休市。商店需到店购买。存款每轮赚 0.5%，贷款每轮计息 4%。股票也会因随机事件涨跌。</li><li><b>神灵：</b>财运增加非交易收入，霉运增加支出，守护抵挡一次负面事件。效果互相替换，持续 3 个后续回合。</li><li><b>周转：</b>付款不足可取款、借款、卖股票或变卖地产；也可申请破产退出。</li><li><b>胜利：</b>坚持到最后，或在轮数结束时拥有最多净资产。手机横屏体验更完整。</li></ol><p>各位角色采用同一规则，电脑也遵守点券、用卡和建设限制，并根据公开地块评估路线。浏览器不支持 3D 时可使用简洁地图继续玩。</p>`);
  }else if(type==='news'){
@@ -246,8 +255,11 @@ $('sheetBody').addEventListener('click',e=>{
  else if(act==='testVoice'){unlockSound().then(()=>sound('laugh'));return;}
  else if(act==='export'){exportSave();return;}
  else if(act==='confirmRestart'){openPanel('confirmRestart');return;}
+ else if(act==='overwriteSave'){startFresh(true);return;}
+ else if(act==='confirmRestoreBackup'){openPanel('confirmRestoreBackup');return;}
+ else if(act==='restoreBackup'){restoreBackup();return;}
  else if(act==='newGame'){if(started)saved=Game.restore(game.s);started=false;dismiss(true);$('startScreen').hidden=false;picker();render();return;}
- else if(act==='cancel'){dismiss(true);render();return;}
+ else if(act==='cancel'){pendingOverwrite=null;dismiss(true);render();return;}
  else if(act==='viewBoard'){dismiss(true);blockKey=`finished:${game.s.current}:${game.s.round}:${game.player.pos}`;render();return;}
  else if(act==='import'){if(!pendingImport)return;game=pendingImport;pendingImport=null;started=true;scene?.followPlayer();dismiss(true);blockKey='';$('startScreen').hidden=true;commit();toast('存档已导入。');return;}
  if(ok){if(['construct','upgrade','demolish','sell'].includes(act))scene?.focusLot(id);commit();if(act==='sell'||act==='demolish'){dismiss(true);if(game.s.phase==='debt')render();else openPanel('deeds');return;}if(act==='research'){openPanel('buildHere',id);return;}if(activePanel?.type==='buildHere'&&['upgrade','construct'].includes(act))dismiss(true);if(activePanel&&!['buy','estate','event','branch','finished','debt','confirmBankrupt'].includes(activePanel.type))refreshPanel();else if(activePanel?.type==='debt')openPanel('debt');}else commit(false);

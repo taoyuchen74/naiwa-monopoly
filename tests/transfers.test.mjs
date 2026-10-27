@@ -22,7 +22,7 @@ test('shielded visits, free facilities, rested landlords, public fees and unpaid
 
 test('liquidation receipts contain only recovered money and takeover receipts identify the real seller',()=>{
  const g=site();g.player.money=20;g.player.deposit=10;g.s.ownership={};g.s.debt={amount:800,to:1,label:'rent'};g.s.phase='debt';g.bankrupt();assert.equal(g.transfers.items[0].amount,30);assert.equal(g.transfers.items[0].kind,'liquidation');assert.equal(g.s.players[1].money,3230);
- const buy=site();buy.player.cards=['steal'];buy.s.phase='roll';const price=buy.takeoverPrice(1);assert.equal(buy.card(0,1),true);assert.equal(buy.transfers.items[0].amount,price);assert.equal(buy.transfers.items[0].kind,'takeover');assert.equal(buy.transfers.items[0].to,1);assert.equal(buy.s.ownership[1].player,0);
+ const buy=site();buy.player.cards=['steal'];buy.land();assert.equal(buy.s.phase,'estate');const price=buy.takeoverPrice(1);assert.equal(buy.card(0,1),true);assert.equal(buy.transfers.items[0].amount,price);assert.equal(buy.transfers.items[0].kind,'takeover');assert.equal(buy.transfers.items[0].to,1);assert.equal(buy.s.ownership[1].player,0);
 });
 
 test('redraws and imported history never replay receipts, and long simulations retain a bounded runtime buffer',()=>{
