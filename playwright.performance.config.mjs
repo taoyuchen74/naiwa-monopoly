@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./e2e-performance',workers:1,timeout:180000,expect:{timeout:20000},reporter:'list',outputDir:'test-results/performance',use:{browserName:'chromium',serviceWorkers:'block',trace:'retain-on-failure',launchOptions:{args:['--enable-gpu','--enable-unsafe-swiftshader']}},projects:[{name:'desktop',use:{viewport:{width:1280,height:720},deviceScaleFactor:1}},{name:'mobile',use:{viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:true,hasTouch:true}}]});

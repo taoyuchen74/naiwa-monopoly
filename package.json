@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "benchmark": "node tools/benchmark.mjs",
+    "test:performance": "playwright test --config=playwright.performance.config.mjs",
     "test:a11y": "playwright test --config=playwright.mobile.config.mjs e2e/a11y.spec.mjs",
     "test:mobile": "playwright test --config=playwright.mobile.config.mjs",
     "dev": "python -m http.server 4173 --directory dist",
