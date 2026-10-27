@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {Game,SAVE_KEY,BACKUP_KEY} from '../dist/engine.js';
+import {EVENTS,EVENT_RULES} from '../dist/content.js';
 import {slotKey} from '../dist/save-repository.js';
 const fixture=(seed=53,round=7)=>{const g=Game.create({seed,character:'naicha',playerCount:6,mapVersion:1,talents:false});g.s.round=round;g.player.money=4100;g.s.ownership[1]={player:0,level:2,buildingType:'residence'};g.s.savedAt=1767139200000;return g.s;};
 async function boot(page,state=fixture()){
@@ -64,4 +65,29 @@ test('real dice selection and bank buttons advance command revisions and per-pla
  await expect.poll(async()=>(await saved()).revision).toBe(2);expect((await saved()).players[0].money).toBe(3800);expect((await saved()).players[0].deposit).toBe(900);
  await page.locator('[data-act=bankKind][data-kind=withdraw]').click();await page.locator('#bankAmount').fill('200');await page.locator('#bankConfirm').click();
  await expect.poll(async()=>(await saved()).revision).toBe(3);expect((await saved()).players[0].money).toBe(4000);expect((await saved()).players[0].deposit).toBe(700);expect((await saved()).commandSequences).toEqual([3,0,0,0,0,0]);
+});
+
+test('new protection and swap cards use real controls, legal targets and effect-preserving slot restore',async({page})=>{
+ const state=fixture();state.players[0].cards=['ward','insurance','swap'];state.players[1].pos=10;
+ await boot(page,state);await page.locator('#continueBtn').click();
+ for(const name of ['奶伴护盾卡','安心租金保险']){
+  await page.locator('.dock-tabs [data-panel=cards]').click();
+  await page.locator('.bag-card').filter({hasText:name}).locator('[data-act=card]').click();
+ }
+ await page.locator('.dock-tabs [data-panel=cards]').click();await page.locator('.bag-card').filter({hasText:'奶伴换位卡'}).locator('[data-act=card]').click();
+ await expect(page.locator('[data-act=useCard]')).toHaveCount(1);await page.locator('[data-act=useCard]').click();
+ const current=await decoded(page,'auto');expect(current.players[0].pos).toBe(10);expect(current.players[1].pos).toBe(0);expect(current.players[0].money).toBe(4100);expect(current.players[0].eventWard).toBe(true);expect(current.players[0].insuranceTurns).toBe(3);expect(current.players[0].cards).toEqual([]);expect(current.phase).toBe('roll');expect(current.seed).toBe(state.seed);expect(current.revision).toBe(3);
+ await slots(page);await action(page,'manual1','Save');await action(page,'manual1','Load');await confirm(page);expect((await decoded(page,'auto')).players[0].insuranceTurns).toBe(3);expect((await decoded(page,'auto')).players[0].eventWard).toBe(true);
+});
+
+for(const kind of ['dividend','operations','closure'])test('new event '+kind+' resolves through movement, shows actual outcomes and acknowledges',async({page})=>{
+ const index=EVENTS.findIndex(e=>e.kind===kind);let state;
+ for(let seed=1;seed<1000;seed++){const candidate=fixture(seed);if(Game.restore(candidate).int(EVENTS.length)===index){state=candidate;break;}}
+ expect(state).toBeTruthy();state.phase='moving';state.remaining=0;state.moveSteps=3;state.moveTotal=3;state.players[0].pos=3;state.players[0].stocks[3]=10;state.players[0].stockBook[3].cost=1500;
+ await boot(page,state);await page.locator('#continueBtn').click();await expect(page.locator('#sheetTitle')).toContainText(EVENT_RULES[kind].name);
+ const current=await decoded(page,'auto');expect(current.notice.outcomes.length).toBeGreaterThan(0);for(const outcome of current.notice.outcomes)await expect(page.locator('.event-outcomes')).toContainText(outcome);
+ if(kind==='dividend'){expect(current.players[0].money).toBe(4140);expect(current.market[3].price).toBe(162);}
+ if(kind==='operations')expect(current.players[0].operatingUntilRound).toBe(current.round+2);
+ if(kind==='closure')expect(current.ownership[1].closedUntilRound).toBe(current.round+1);
+ await page.locator('[data-act=ack]').click();expect((await decoded(page,'auto')).phase).toBe('end');
 });

@@ -6,6 +6,7 @@ import {eventPoseBitmap} from './portrait-renderer.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function eventPresentation(g){
  const n=g.s.notice||{},p=g.player,t=g.tiles[p.pos],e=EVENTS.find(e=>e.name===n.title),outcomes=[];let icon='theater',label='旅途消息',text=n.text||'继续旅程吧。';
+ if(n.outcomes)return {character:p.character,name:g.char(p).name,mood:n.mood==='happy'?'happy':n.mood==='sad'?'sad':'idle',icon:e?.art||'theater',label:e?'随机事件':'旅途消息',text,outcomes:[...n.outcomes]};
  const income=n=>Math.round(n*(p.spirit==='fortune'?1.25:1));
  if(e){
   label='随机事件';icon=e.art||({gain:'stocks',loss:'demolish',rest:'recover',recover:'recover',card:'dice',spirit:'shield'})[e.kind];

@@ -2,7 +2,7 @@
 import {mapTiles} from './maps.js';
 import {migratePortfolio} from './portfolio.js';
 import {BUSINESSES,businessType,buildingLimit,researchChoices} from './businesses.js';
-import {CHARACTERS,CARDS,SPIRITS,VEHICLES,POINT_STOPS} from './content.js';
+import {CHARACTERS,CARDS,EVENT_RULES,SPIRITS,VEHICLES,POINT_STOPS} from './content.js';
 import {RULES,MAX_BUILDING_LEVEL,ROUND_OPTIONS} from './rules-config.js';
 export {MAX_BUILDING_LEVEL,ROUND_OPTIONS};
 export const SCHEMA_VERSION=1;
@@ -44,8 +44,8 @@ export function migrateSave(raw){
    ![p.money,p.deposit,p.loan,...p.stocks].every(n=>Number.isSafeInteger(n)&&n>=0)||
    p.stocks.length!==4||
    !Array.isArray(p.cards)||
-   p.cards.length>15||
-   p.cards.some(c=>!CARDS[c])||
+   p.cards.length>RULES.handLimit||
+   p.cards.some(c=>!Object.hasOwn(CARDS,c))||
    !Array.isArray(p.history)||
    p.history.length>80||
    p.history.some(i=>!Number.isInteger(i)||
@@ -65,7 +65,9 @@ export function migrateSave(raw){
    p.spiritTurns>4||
    p.spirit&&!SPIRITS[p.spirit])return null;
   }
-  for(const [id,o] of Object.entries(s.ownership)){if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
+  for(const [id,o] of Object.entries(s.ownership)){
+   if(o.closedUntilRound!==undefined&&(!Number.isInteger(o.closedUntilRound)||o.closedUntilRound<0||o.closedUntilRound>s.maxRounds+(EVENT_RULES.closure.duration??0)))return null;
+if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
    o.level>buildingLimit(o)||
    o.researchProgress!==undefined&&(!Number.isInteger(o.researchProgress)||
    o.researchProgress<0||
@@ -94,8 +96,13 @@ export function migrateSave(raw){
   if(!s.pickups||typeof s.pickups!=='object'||Object.entries(s.pickups).some(([id,owner])=>!POINT_STOPS.includes(+id)||!Number.isInteger(owner)||!s.players[owner]))return null;
   if(s.talents===undefined)s.talents=false;
   if(typeof s.talents!=='boolean')return null;
-  s.rules=7;
-  for(const p of s.players){for(const [key,value]of Object.entries({tickets:60,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0})){if(p[key]===undefined)p[key]=value;
+  s.rules=8;
+  for(const p of s.players){
+   if(p.eventWard===undefined)p.eventWard=false;
+   if(p.insuranceTurns===undefined)p.insuranceTurns=0;
+   if(p.operatingUntilRound===undefined)p.operatingUntilRound=0;
+   if(typeof p.eventWard!=='boolean'||!Number.isInteger(p.insuranceTurns)||p.insuranceTurns<0||p.insuranceTurns>CARDS.insurance.duration||!Number.isInteger(p.operatingUntilRound)||p.operatingUntilRound<0||p.operatingUntilRound>s.maxRounds+(EVENT_RULES.operations.duration??0))return null;
+   for(const [key,value]of Object.entries({tickets:60,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0})){if(p[key]===undefined)p[key]=value;
     if(!Number.isInteger(p[key])||p[key]<0||p[key]>(key==='tickets'?RULES.couponCap:key==='slowTurns'?3:key==='shopUsed'?2:key==='cardsUsed'?32:1))return null;
    }
    if(p.difficulty===undefined)p.difficulty=s.difficulty;
@@ -109,6 +116,7 @@ export function migrateSave(raw){
    if(p.bankAccess===undefined)p.bankAccess=false;
    if(p.buildSite!==null&&(!Number.isInteger(p.buildSite)||!TILES[p.buildSite])||typeof p.bankAccess!=='boolean')return null;
   }
+  if(s.notice?.outcomes!==undefined&&(!Array.isArray(s.notice.outcomes)||s.notice.outcomes.length>6||s.notice.outcomes.some(x=>typeof x!=='string')))return null;
   return s;
  }catch{
   return null;

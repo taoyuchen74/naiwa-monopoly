@@ -5,6 +5,7 @@ import {portrait} from './portraits.js';
 import {vehicleModel} from './vehicles.js';
 const cache=new Map();let renderer;
 export function art(key){
+ key=({ward:'shield',swap:'turn',insurance:'bank'})[key]||key;
  const shapes={
  car:'<path d="M22 58h116v26H22Z" fill="#eab949" stroke="#a17d35" stroke-width="3"/><path d="M45 58l11-30h54l18 30Z" fill="#f0dfb3" stroke="#a17d35" stroke-width="3"/><path d="M61 34h17v19H54ZM84 34h22l11 19H84Z" fill="#72a8b5"/><circle cx="47" cy="83" r="15" fill="#38545c"/><circle cx="118" cy="83" r="15" fill="#38545c"/><circle cx="47" cy="83" r="7" fill="#e7d5ae"/><circle cx="118" cy="83" r="7" fill="#e7d5ae"/><rect x="132" y="61" width="7" height="10" rx="2" fill="#fff3b8"/>',
  tea:'<path d="M53 34h56l-7 61H61Z" fill="#edcf97" stroke="#ae8e58" stroke-width="3"/><ellipse cx="81" cy="34" rx="30" ry="8" fill="#f9eac0"/><path d="M86 16l-5 54" stroke="#6aaa9c" stroke-width="7"/><path d="M62 62h38v25H62Z" fill="#f5e4bc"/><g fill="#7c634a"><circle cx="71" cy="84" r="4"/><circle cx="83" cy="87" r="4"/><circle cx="92" cy="81" r="4"/></g>',
