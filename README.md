@@ -30,6 +30,7 @@
 
 ```sh
 npm ci
+npm run typecheck
 npm test
 npm run build
 ```
@@ -39,6 +40,8 @@ npm run build
 构建输出为 `out/` 完整网页和 `artifacts/奶蛙大富翁.html` 离线文件。发布使用 `out/` 全部内容；GitHub的 `gh-pages` 分支为网页成品，`main` 保留源码与 `play/` 离线成品。
 
 运行时模块合并为一个带内容指纹的脚本；当前模块数、下载体积、gzip及字体尺寸以构建生成的 `out/build-info.json` 为准。几何与纹理在运行时生成，下载体积不代表显存占用。新增界面文字后运行 `python tools/subset-font.py` 更新字体子集；字体工具需要 `fonttools brotli`。
+
+状态、命令及存档类型采用JSDoc和独立声明渐进检查；经济结算、UI推进和迁移模块的职责及修复清单见 [类型与模块说明](docs/TYPES-AND-MODULES.md)。类型检查不生成运行时代码。
 
 ## 验证与边界
 

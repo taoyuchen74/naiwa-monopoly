@@ -38,7 +38,7 @@ Date固定不冻结定时器；测试等待实际界面/存档状态，不按猜
 失败截图、trace.zip、error-context及测试存档位于test-results/browser，HTML报告位于playwright-report/browser。
 报告和临时成品均被Git忽略。CI保留浏览器报告与失败证据7天，单元或浏览器失败不会被忽略。
 
-CI在push main、pull_request及手动触发时运行：安装锁定依赖→单元/完整对局测试→
+CI在push main、pull_request及手动触发时运行：安装锁定依赖→JavaScript类型检查→单元/完整对局测试→
 安装Chromium→轻量浏览器套件→网页与离线单文件构建。CI使用Linux无头Chromium，绘图后端由浏览器与runner决定，
 不把它的执行时间当作图形性能基准。
 

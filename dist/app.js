@@ -1,3 +1,4 @@
+import {advanceSession} from './ui-session.js';
 import {RULES} from './rules-config.js';
 import {estatePanel,branchPanel,quotedLandingFee} from './arrival-panels.js';
 import {TransferFeed,pulseTransferCards} from './transfers.js';
@@ -302,12 +303,17 @@ $('sheetBody').addEventListener('click',e=>{
 
  if(ok){if(['construct','upgrade','demolish','sell'].includes(act))scene?.focusLot(id);commit();if(act==='sell'||act==='demolish'){dismiss(true);if(game.s.phase==='debt')render();else openPanel('deeds');return;}if(act==='research'){openPanel('buildHere',id);return;}if(activePanel?.type==='buildHere'&&['upgrade','construct'].includes(act))dismiss(true);if(activePanel&&!['buy','estate','event','branch','finished','debt','confirmBankrupt'].includes(activePanel.type))refreshPanel();else if(activePanel?.type==='debt')openPanel('debt');}else commit(false);
 });
-function tick(){clearTimeout(timer);timer=setTimeout(tick,90);if(!started||document.hidden||gamePaused||scene?.studio||game.s.phase==='finished')return;
- if(activePanel)return;
- const s=game.s,phase=s.phase,beforeHead=s.logs[0],beforePlayer=s.current;
- const visuals=scene&&!scene.contextLost;if(!actionPacer.ready({news:newsFeed.busy,moving:!!visuals&&scene.isMoving(),effects:!!visuals&&!!scene.fx.items.length}))return;
- let changed=false;if(!game.player.alive&&phase==='end')changed=game.command('end');else if(!game.player.human)changed=game.command('aiTurn');else if(phase==='departure')changed=game.command('roll');else if(phase==='moving')changed=game.command('step');
- changed=changed||s.phase!==phase||s.logs[0]!==beforeHead||s.current!==beforePlayer;if(changed){actionPacer.after(phase,s.options.speed);save();render();}
+function tick(){
+ clearTimeout(timer);
+ timer=setTimeout(tick,90);
+ const step=advanceSession(game,{
+  started,hidden:document.hidden,paused:gamePaused,studio:!!scene?.studio,panelOpen:!!activePanel,
+  ready:()=>{
+   const visuals=scene&&!scene.contextLost;
+   return actionPacer.ready({news:newsFeed.busy,moving:!!visuals&&scene.isMoving(),effects:!!visuals&&!!scene.fx.items.length});
+  }
+ });
+ if(step){actionPacer.after(step.phase,step.speed);save();render();}
 }
 
 document.addEventListener('visibilitychange',()=>{syncNewsPause();soundtrack.visibility(document.hidden||gamePaused);if(document.hidden)save();else render();});window.addEventListener('pagehide',save);
