@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "types": [],
+    "skipLibCheck": false
+  },
+  "include": [
+    "dist/domain.d.ts",
+    "dist/query-modules.d.ts",
+    "dist/engine.js",
+    "dist/commands.js",
+    "dist/save-schema.js",
+    "dist/save-repository.js",
+    "dist/economy.js",
+    "dist/ui-session.js",
+    "tests/types/**/*.js"
+  ],
+  "exclude": ["dist/vendor", "node_modules", "out", "artifacts"]
+}

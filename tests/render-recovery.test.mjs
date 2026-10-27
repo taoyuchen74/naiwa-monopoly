@@ -1,3 +1,4 @@
+import {advanceSession} from '../dist/ui-session.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -10,7 +11,7 @@ const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8'),tick
 test('every open information panel holds automatic movement until the player closes it',()=>{
  for(const type of ['tile','deeds','cards','stocks','news','settings','talents']){
   const game=Game.create({seed:46});game.s.phase='moving';game.s.remaining=2;const before=JSON.stringify(game.s);
-  const context={game,started:true,gamePaused:false,activePanel:{type},document:{hidden:false},scene:{contextLost:true},timer:null,setTimeout(){return 1;},clearTimeout(){},actionPacer:{ready(){throw Error('A panel must hold the turn before pacing');}}};
+  const context={advanceSession,game,started:true,gamePaused:false,activePanel:{type},document:{hidden:false},scene:{contextLost:true},timer:null,setTimeout(){return 1;},clearTimeout(){},actionPacer:{ready(){throw Error('A panel must hold the turn before pacing');}}};
   runInNewContext(tick+';tick()',context);assert.equal(JSON.stringify(game.s),before);
  }
 });
@@ -24,7 +25,7 @@ test('sheet visibility, app pause and document visibility all hold the message t
 test('fallback turns advance without waiting for stopped 3D movement or effects, while user pause remains respected',()=>{
  for(const [lost,paused,expected]of [[true,false,1],[false,false,0],[true,true,0]]){
   const game=Game.create({mapVersion:1,talents:false,randomStart:false});game.s.current=0;game.s.phase='moving';game.s.remaining=2;
-  const context={game,started:true,gamePaused:paused,activePanel:null,document:{hidden:false},scene:{contextLost:lost,isMoving:()=>true,fx:{items:[{}]}},newsFeed:{busy:false},actionPacer:{ready:({news,moving,effects})=>!news&&!moving&&!effects,after(){}},timer:null,setTimeout(){return 1;},clearTimeout(){},save(){},render(){}};
+  const context={advanceSession,game,started:true,gamePaused:paused,activePanel:null,document:{hidden:false},scene:{contextLost:lost,isMoving:()=>true,fx:{items:[{}]}},newsFeed:{busy:false},actionPacer:{ready:({news,moving,effects})=>!news&&!moving&&!effects,after(){}},timer:null,setTimeout(){return 1;},clearTimeout(){},save(){},render(){}};
   runInNewContext(tick+';tick()',context);assert.equal(game.player.pos,expected);
  }
 });

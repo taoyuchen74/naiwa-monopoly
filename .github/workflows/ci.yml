@@ -26,6 +26,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Check JavaScript contracts
+        run: npm run typecheck
       - name: Unit and complete-game tests
         run: npm test
       - name: Install Chromium and system libraries
