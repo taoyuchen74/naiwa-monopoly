@@ -76,11 +76,11 @@ export class Game {
  coupons(p,amount){p.tickets=Math.min(150,p.tickets+amount);}
  income(p,n,label){const amount=round(n*(p.spirit==='fortune'?1.25:1));p.money+=amount;this.log(`${this.char(p).name} ${label} +${amount}`);return amount;}
  canBank(){return this.manageable()&&this.s.round%7!==3&&(this.player.bankAccess||this.tiles[this.player.pos].kind==='bank');}
- canUseCard(key){return this.player.alive&&(this.s.phase==='roll'||this.s.phase==='end'&&!['dice','turn','slow','block'].includes(key)||this.s.phase==='estate'&&key==='steal');}
+ canUseCard(key){if(key==='steal')return this.player.alive&&this.s.phase==='estate';return this.player.alive&&(this.s.phase==='roll'||this.s.phase==='end'&&!['dice','turn','slow','block'].includes(key));}
  blockTargets(){const p=this.player;let at=p.pos;return Array.from({length:6},(_,i)=>{at=this.tiles[at].next[0];return {id:at,steps:i+1,reason:this.s.blocks[at]!==undefined?'这里已有路障':this.s.players.some(q=>q.alive&&q.pos===at)?'这里有角色停靠':''};});}
  cardHint(key){
   const p=this.player;if(!CARDS[key]||!p.cards.includes(key))return '卡片不在当前卡包中';
-  if(!this.canUseCard(key))return this.s.phase==='end'&&['dice','turn','slow','block'].includes(key)?'移动卡须在掷骰前使用':'等待自己的行动时机';
+  if(!this.canUseCard(key))return key==='steal'?'仅抵达对手地产、付租前可使用':this.s.phase==='end'&&['dice','turn','slow','block'].includes(key)?'移动卡须在掷骰前使用':'等待自己的行动时机';
   if(key==='dice'&&p.forced)return `本次已指定 ${p.forced} 步`;
   if(key==='turn'&&p.reverse)return '本次已选择倒退';
   if(key==='shield'&&p.shield)return '免租保护已生效，触发后再补充';
@@ -147,7 +147,7 @@ export class Game {
   if(key==='turn'){if(p.reverse)return false;p.reverse=true;}
   if(key==='shield'){if(p.shield)return false;p.shield=true;}
   if(key==='recover'){p.skip=0;if(p.spirit==='misfortune'){p.spirit=null;p.spiritTurns=0;}this.income(p,80,'喝下野生狗奶');}
-  if(key==='steal'){const t=this.tiles[target],o=this.s.ownership[target];if(!this.cardTargets(key).some(x=>x.id===target))return false;const price=this.takeoverPrice(target);if(p.money<price)return false;p.money-=price;this.s.players[o.player].money+=price;this.recordTransfer(o.player,price,'takeover');o.player=p.id;detail=`收购「${t.name}」−${price}`;}
+  if(key==='steal'){const t=this.tiles[target],o=this.s.ownership[target];if(!this.cardTargets(key).some(x=>x.id===target))return false;const price=this.takeoverPrice(target);if(p.money<price)return false;p.money-=price;this.s.players[o.player].money+=price;this.recordTransfer(o.player,price,'takeover');o.player=p.id;p.buildSite=target;this.s.phase='end';detail=`收购「${t.name}」−${price}`;}
   if(key==='demolish'||key==='build'){if(!this.cardTargets(key).some(x=>x.id===target))return false;if(key==='demolish'&&this.s.blocks[target]!==undefined){delete this.s.blocks[target];detail=`清理「${this.tiles[target].name}」路障`;}else{const o=this.s.ownership[target];if(key==='build'&&o.level===0)o.buildingType='residence';o.level+=key==='build'?1:-1;repairBuilding(o);detail=`${key==='build'?'加盖':'拆除'}「${this.tiles[target].name}」一层`;}}
   if(key==='slow'){if(p.slowTurns||p.forced)return false;p.slowTurns=3;}
   p.cards.splice(index,1);p.cardsUsed++;this.log(`${this.char().name}使用「${CARDS[key].name}」${detail}`);return true;

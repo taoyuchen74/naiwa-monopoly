@@ -25,7 +25,7 @@ test('roadblock placement pictures follow forward main-road targets and disabled
 });
 test('before-after construction, demolition and takeover pictures match real levels, types, ownership and cash',()=>{
  for(const key of ['build','demolish','steal'])for(const type of Object.keys(BUSINESSES))for(const level of [0,1]){
-  const g=Game.create({seed:51,talents:false});const id=1;g.player.pos=key==='steal'?id:0;g.player.money=8000;g.player.cards=[key];g.s.ownership[id]={player:key==='build'?0:1,level,buildingType:type};g.s.blocks[2]=1;const state=JSON.stringify(g.s);
+  const g=Game.create({seed:51,talents:false});const id=1;g.player.pos=key==='steal'?id:0;g.player.money=8000;g.player.cards=[key];g.s.ownership[id]={player:key==='build'?0:1,level,buildingType:type};g.s.blocks[2]=1;if(key==='steal')g.s.phase='estate';const state=JSON.stringify(g.s);
   for(const o of cardTargetOptions(g,0)){const copy=clone(g),before=copy.player.money,builds=copy.player.buildsUsed;assert.equal(copy.card(0,o.target),true);if(o.obstacle)assert.equal(copy.s.blocks[o.id],undefined);else{const result=copy.s.ownership[o.id];assert.equal(result.level,o.afterLevel);assert.equal(businessType(result),o.afterType);assert.equal(result.player,o.afterOwner);assert.equal(before-copy.player.money,o.price);}if(key==='build')assert.equal(copy.player.buildsUsed,builds);}
   cardTargetPanel(g,0,r=>String(r.id));assert.equal(JSON.stringify(g.s),state);
  }
