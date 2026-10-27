@@ -299,7 +299,16 @@ html,body{width:100%;height:100%;position:fixed;overflow:hidden;overscroll-behav
 #app[data-keyboard=true] .sheet-body{scroll-padding-bottom:100px}
 #app[data-keyboard=true] .sheet :is(.illustrated-guide,.bank-account,.shop-wallet){display:none}
 #app.is-menu :is(.control-dock,.sidebar,.map-tools){display:none}
-#app:has(.sheet.is-collapsed) .sheet-backdrop{pointer-events:none;background:transparent}
+#app:has(.sheet.is-collapsed) .sheet-backdrop{pointer-events:auto;background:transparent}
+
+/* Modal keyboard targets remain visible on paper and coloured controls. */
+summary:focus-visible,[tabindex]:focus-visible,[contenteditable]:focus-visible{outline:3px solid #85391f;outline-offset:-3px}
+.result-entry summary{min-height:44px}
+.loss{color:#286244!important}
+.bank-projection span,.bank-projection small{color:#70502e}
+.bank-projection b{color:#365b31}
+.portfolio-total small{color:#604528}
+button.player:focus-visible{outline-color:#85391f}
 #app[data-layout] .welcome-panel{display:flex;flex-direction:column;overflow:hidden}
 #app[data-layout] .welcome-content{flex:1;min-height:0;overflow-y:auto;padding-bottom:12px}
 #app[data-layout] .welcome-actions{position:static;flex-shrink:0;padding:12px 0 0}
