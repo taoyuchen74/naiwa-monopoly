@@ -11,6 +11,6 @@ export const hasTalent=(g,p,id=p.character)=>g.s.talents===true&&p.character===i
 export function departureTalent(g){const p=g.player;if(!g.s.talents||p.talentReady)return false;p.talentReady=true;p.departures=(p.departures||0)+1;const id=p.character;
  if(id==='naichong')g.income(p,60,'【细水长流】');
  if(id==='naigou'){if(g.int(2)===0)g.income(p,240,'【傻狗有傻福】捡到钱包');else{const loss=Math.min(40,p.money);p.money-=loss;g.log(`奶狗【傻狗有傻福】摔丢 ${loss} 奶币，拍拍肚子继续走。`);}}
- if(id==='naidan'){g.income(p,75,'【躺着也能赢】');const own=p.departures%4===0&&g.owned(p).filter(o=>o.level<g.buildingLimit(o)).sort((a,b)=>a.level-b.level||a.tile.id-b.tile.id)[0];if(own){const o=g.s.ownership[own.tile.id];if(o.level===0)o.buildingType='residence';o.level++;g.log(`奶蛋【躺着也能赢】「${own.tile.name}」免费加盖至 ${own.level+1} 级。`);}}
+ if(id==='naidan'){g.income(p,75,'【躺着也能赢】');const own=p.departures%4===0&&g.owned(p).filter(o=>o.level<g.buildingLimit(o)).sort((a,b)=>a.level-b.level||a.tile.id-b.tile.id)[0];if(own){const o=g.s.ownership[own.tile.id];if(o.level===0)o.buildingType='residence';o.level++;g.log(`奶蛋【躺着也能赢】「${own.tile.name}」免费加盖至 ${o.level} 级。`);}}
  if(id==='naicha'&&p.departures%3===0){const before=p.tickets;g.coupons(p,20);g.log(`奶茶【暖心补给】获得 ${p.tickets-before} 点券${p.tickets-before<20?'（已达上限）':''}。`);g.giveCard(p,'recover');}return true;
 }
