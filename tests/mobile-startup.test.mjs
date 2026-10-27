@@ -8,7 +8,19 @@ import {logicalRect,choicePlacement,nextEnabled} from '../dist/game-selects.js';
 test('home readiness waits for decoded images, the real font and audio bytes',async()=>{
  let fontReady,imageReady,done=false;const font=new Promise(r=>fontReady=r),image=new Promise(r=>imageReady=r),bytes=new ArrayBuffer(9),doc={fonts:{load:()=>font,ready:Promise.resolve()},images:[{decode:()=>image}]};
  const ready=prepareStartupAssets(doc,async()=>({ok:true,arrayBuffer:async()=>bytes})).then(()=>done=true);await Promise.resolve();assert.equal(done,false);fontReady();await Promise.resolve();assert.equal(done,false);imageReady();await ready;assert.equal(done,true);assert.equal(globalThis.__NAIWA_LAUGH_BYTES__,bytes);delete globalThis.__NAIWA_LAUGH_BYTES__;
- await assert.rejects(prepareStartupAssets({images:[]},async()=>({ok:false})),/Audio unavailable/);
+});
+
+test('optional audio HTTP, network and byte-read failures do not block silent startup',async()=>{
+ for(const fetchAsset of [async()=>({ok:false}),async()=>{throw Error('network');},()=>{throw Error('sync fetch');},async()=>({ok:true,arrayBuffer:async()=>{throw Error('bytes');}})]){
+  globalThis.__NAIWA_LAUGH_BYTES__=new ArrayBuffer(1);await prepareStartupAssets({images:[]},fetchAsset);assert.equal(globalThis.__NAIWA_LAUGH_BYTES__,null);
+ }
+ delete globalThis.__NAIWA_LAUGH_BYTES__;
+});
+test('required image and font failures still reject startup',async()=>{
+ const fetchAsset=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(1)});
+ await assert.rejects(prepareStartupAssets({images:[{decode:async()=>{throw Error('image');}}]},fetchAsset),/image/);
+ await assert.rejects(prepareStartupAssets({images:[],fonts:{load:async()=>{throw Error('font');}}},fetchAsset),/font/);
+ delete globalThis.__NAIWA_LAUGH_BYTES__;
 });
 
 test('nonblocking styles are applied before the scene is constructed',async()=>{
