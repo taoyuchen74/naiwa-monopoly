@@ -3,6 +3,7 @@ import {MAPS} from './maps.js';
 import {portrait} from './portraits.js';
 
 export function exportableState(game,started,saved){return started?game?.s||null:saved?.s||null;}
+export function archiveSummary(saved){const s=saved.s,time=s.savedAt;return `第 ${s.round} / ${s.maxRounds} 轮 · ${s.players.length} 人 · 最近保存时间：${typeof time==='number'&&Number.isFinite(time)&&time>0&&time<=8640000000000000?new Date(time).toLocaleString('zh-CN',{hour12:false}):'未知（旧存档）'}`;}
 export function resumeInfo(saved){
  if(!saved)return null;const s=saved.s,p=s.players[0],c=CHARACTERS.find(c=>c.id===p.character);
  return {character:c.id,name:c.name,action:s.phase==='finished'?'查看排名':p.alive?'继续':'继续观战',map:MAPS[s.mapVersion].name,round:s.round,maxRounds:s.maxRounds,players:s.players.length};
