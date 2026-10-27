@@ -9,6 +9,22 @@ import {CHARACTERS,TILES,STOCKS,CARDS,EVENTS,SPIRITS,VEHICLES,POINT_STOPS} from 
 export const MAX_BUILDING_LEVEL=5;
 export const ROUND_OPTIONS=[20,30,50,80];
 export const SAVE_KEY='naiwa-monopoly-v2';
+export const BACKUP_KEY=SAVE_KEY+'-backup';
+/** @param {Storage} storage @param {Game} game @param {number} [now] */
+export function storeGame(storage,game,now=Date.now()){
+ const state={...game.s,savedAt:now};storage.setItem(SAVE_KEY,JSON.stringify(state));Object.assign(game.s,{savedAt:now});
+}
+/** Keep the exact archive, including legacy fields, before allowing replacement.
+ * @param {Storage} storage @param {string} raw */
+export function backupStoredGame(storage,raw){
+ if(!Game.restore(raw)||storage.getItem(SAVE_KEY)!==raw)throw Error('Archive changed');
+ storage.setItem(BACKUP_KEY,raw);
+}
+/** @param {Storage} storage @returns {Game|null} */
+export function restoreStoredBackup(storage){
+ const raw=storage.getItem(BACKUP_KEY),restored=Game.restore(raw);if(!restored)return null;
+ storage.setItem(SAVE_KEY,raw);return restored;
+}
 const copy=x=>JSON.parse(JSON.stringify(x));
 const round=n=>Math.round(n);
 function mixedSeed(seed){let x=(seed>>>0)^0x9e3779b9;x=Math.imul(x^(x>>>16),0x85ebca6b);x=Math.imul(x^(x>>>13),0xc2b2ae35);return ((x^(x>>>16))>>>0)||1;}
