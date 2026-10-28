@@ -24,9 +24,9 @@ async function makePair(browser,testInfo,nameB='奶蛙乙'){
 const state=page=>page.evaluate(()=>window.net.received.filter(x=>x.op==='state').at(-1));
 async function start(pair){const {a,b}=pair;await a.locator('#readyRoom').click();await expect.poll(async()=> (await state(b)).seats[0].ready).toBe(true);await b.locator('#readyRoom').click();await expect(a.locator('#startRoom')).toBeEnabled();await a.locator('#startRoom').click();await expect(a.locator('#onlineGame')).toBeVisible();await expect(b.locator('#onlineGame')).toBeVisible();}
 async function packet(page,changes={}){
- return page.evaluate(changes=>{const s=window.net.received.filter(x=>x.op==='state').at(-1),m={op:'command',roomId:s.roomId,playerId:s.playerId,sequence:s.nextSequence,expectedRevision:s.revision,type:'setDiceCount',payload:{count:1},...changes};window.net.sockets.at(-1).send(JSON.stringify(m));return m;},changes);
+ return page.evaluate(changes=>{window.net.beforeError=window.net.received.filter(x=>x.op==='result').length;const s=window.net.received.filter(x=>x.op==='state').at(-1),m={op:'command',roomId:s.roomId,playerId:s.playerId,sequence:s.nextSequence,expectedRevision:s.revision,type:'setDiceCount',payload:{count:1},...changes};window.net.sockets.at(-1).send(JSON.stringify(m));return m;},changes);
 }
-async function error(page,code){await expect(page.locator('#commandStatus')).toHaveAttribute('data-error',code);}
+async function error(page,code){await expect.poll(()=>page.evaluate(code=>{const results=window.net.received.filter(x=>x.op==='result');return results.length>(window.net.beforeError||0)&&results.at(-1).error===code;},code)).toBe(true);await expect(page.locator('#commandStatus')).toHaveAttribute('data-error',code);}
 async function reachable(locator){await locator.scrollIntoViewIfNeeded();expect((await locator.boundingBox()).height).toBeGreaterThanOrEqual(44);expect(await locator.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));})).toBe(true);}
 
 test('two browsers create/join, ready/start and complete a real buy/build/end slice on the server',async({browser},testInfo)=>{
@@ -46,7 +46,7 @@ test('two browsers create/join, ready/start and complete a real buy/build/end sl
 
 test('duplicate, out-of-order, stale revision, forged identity, cash and local snapshot inputs are rejected by two live clients',async({browser},testInfo)=>{
  const pair=await makePair(browser,testInfo);try{await start(pair);const {a,b}=pair;
- const valid=await packet(a);await expect(a.locator('#commandStatus')).toHaveAttribute('data-accepted','true');const baseline=await state(a);
+ const valid=await packet(a);await expect.poll(async()=> (await state(a)).nextSequence).toBe(valid.sequence+1);const baseline=await state(a);
  await a.evaluate(m=>window.net.sockets.at(-1).send(JSON.stringify(m)),valid);await error(a,'DUPLICATE');
  await packet(a,{sequence:baseline.nextSequence+1});await error(a,'OUT_OF_ORDER');
  await packet(a,{expectedRevision:baseline.revision-1});await error(a,'STALE_REVISION');
