@@ -4,7 +4,7 @@
 
 ## 信任边界与威胁模型
 
-浏览器、localStorage、房间邀请码、命令内容和客户端时钟均不可信。服务端crypto生成随机种子、6位数字邀请码和每席32字节恢复令牌，服务端独立Game.create；禁止上传/导入客户端GameState。邀请码仅用于加入未开始房间，不是身份。令牌是高熵持有者凭证，首次响应交给该席，刷新保存在独立sessionStorage键，不放URL或日志；盗取令牌可冒充该席，本站XSS/设备控制不在此最小凭证模型能防御的范围。
+浏览器、localStorage、房间邀请码、命令内容和客户端时钟均不可信。服务端crypto生成随机种子、6位数字邀请码和每席32字节恢复令牌，服务端独立Game.create；禁止上传/导入客户端GameState。邀请码仅用于加入未开始房间，不是身份。令牌是高熵持有者凭证，由GET /api/online/session设置为HttpOnly、SameSite=Strict Cookie（HTTPS时Secure），不交给网页JS、不放URL或日志；sessionStorage仅保存房间号和席位号。Cookie丢失无法找回，设备控制仍能冒充；XSS虽不能读取Cookie，仍可能在同源发起操作。
 
 WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入/恢复，绑定身份后禁止改绑；恢复会替换同席旧连接，旧连接不能继续下命令。服务端逐命令验证连接身份、roomId/playerId、序号、revision、阶段、当前行动者、所有权/余额/目标。16KiB消息上限，连接/房间/每IP握手及消息速率限制，禁压缩、心跳回收、过大待发送队列关闭。公网运行须可信HTTPS/WSS反向代理及显式PUBLIC_ORIGIN；默认仅监听本机。未实现跨进程协调、账号找回、永久数据库、防刷验证码或抗分布式拒绝服务。
 
@@ -17,10 +17,10 @@ WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入
 ```json
 {"op":"create","protocol":1,"name":"奶伴"}
 {"op":"join","protocol":1,"roomId":"123456","name":"奶伴"}
-{"op":"resume","protocol":1,"roomId":"123456","playerId":0,"token":"高熵恢复令牌"}
+{"op":"resume","protocol":1,"roomId":"123456","playerId":0}
 ```
 
-首次成功返回credentials（仅本连接，含roomId、playerId、token），随后state。错误不带其他席私有内容。大厅最多6席，房主为0，至少2席且全部在线已准备才可开始；开始后不允许新玩家加入，原席可恢复。角色按加入顺序分配六个不同角色，固定20轮/标准难度，房主不指定种子或初始资产。
+先GET /api/online/session建立服务端会话，再连接/api/online/ws；WS握手使用HttpOnly Cookie绑定会话。首次成功返回credentials（仅含非敏感roomId、playerId），随后state。错误不带其他席私有内容。大厅最多6席，房主为0，至少2席且全部在线已准备才可开始；开始后不允许新玩家加入，原席可恢复。角色按加入顺序分配六个不同角色，固定20轮/标准难度，房主不指定种子或初始资产。
 
 ```json
 {"op":"command","roomId":"123456","playerId":0,"sequence":1,"expectedRevision":2,"type":"roll","payload":{}}
@@ -41,7 +41,7 @@ WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入
 
 每席控制独立；自动动作和客户端命令串行。房间保存于服务进程内存，进程存活期间可重连；服务重启或房间过期明确报ROOM_NOT_FOUND，不从客户端存档恢复。大厅/已结束/空闲房间30分钟过期，全部断线的进行中房间保留30分钟（不因AI动作无限保留）；房间数上限100。
 
-单机localStorage键完全不读写；在线仅sessionStorage恢复凭证，与单机存档隔离。本版不支持在线持久存档或跨服务器恢复，UI明确提示。
+单机localStorage键完全不读写；在线仅sessionStorage保存非敏感房间/席位提示，恢复身份来自HttpOnly Cookie，与单机存档隔离。本版不支持在线持久存档或跨服务器恢复，UI明确提示。
 
 ## 验证计划
 
