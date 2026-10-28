@@ -17,8 +17,8 @@ export function lockSession(g){
  return isHotseat(g.s)&&g.player.human&&g.player.alive&&!g.s.handoff&&g.s.phase!=='finished'?g.command('lockTurn'):false;
 }
 /** Redact imported old logs as well as newly generated messages. @param {import('./domain.js').GameState} state @param {string} text */
-export function publicLog(state,text){
- if(!isHotseat(state))return text;
+export function publicLog(state,text,force=false){
+ if(!force&&!isHotseat(state))return text;
  return text.replace(/获得「[^」]+」/g,'获得一张道具卡').replace(/购买「[^」]+」[^。]*/g,'购买了道具卡')
   .replace(/(买入|卖出)\d+股「[^」]+」/g,'进行了股票交易')
   .replace(/：存款利息[^。]*/g,'：银行利息已结算').replace(/(存入|取出|借入|偿还) \d+ 奶币/g,'办理了银行业务');
