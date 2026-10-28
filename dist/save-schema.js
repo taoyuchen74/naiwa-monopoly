@@ -86,7 +86,9 @@ if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
   if('track'in s.options&&!['ode','town'].includes(s.options.track))return null;
   if(s.options.lighting===undefined)s.options.lighting='day';
   if(!['day','golden','night'].includes(s.options.lighting))return null;
-  if(typeof s.options.sound!=='boolean'||![1,2,4].includes(s.options.speed)||!['auto','low'].includes(s.options.quality)||s.logs.some(l=>typeof l.text!=='string'||!Number.isInteger(l.round)))return null;
+  if(s.options.speed===4)s.options.speed=3;
+  if(s.options.aiFast!==undefined&&typeof s.options.aiFast!=='boolean')return null;
+  if(typeof s.options.sound!=='boolean'||![1,2,3].includes(s.options.speed)||!['auto','low'].includes(s.options.quality)||s.logs.some(l=>typeof l.text!=='string'||!Number.isInteger(l.round)))return null;
   if(Object.entries(s.blocks).some(([id,owner])=>!TILES[id]||!Number.isInteger(owner)||owner<0||owner>=s.players.length))return null;
   if(s.phase==='estate'&&(!s.ownership[s.players[s.current].pos]||s.ownership[s.players[s.current].pos].player===s.current))return null;
   if(s.phase==='branch'&&(TILES[s.players[s.current].pos].next.length!==2||s.remaining<=0))return null;

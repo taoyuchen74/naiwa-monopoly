@@ -4,7 +4,7 @@
  * One synchronous UI tick. DOM, timers, rendering and audio stay in app.js.
  * @param {Game} game
  * @param {{started:boolean,hidden:boolean,paused:boolean,studio:boolean,panelOpen:boolean,ready:()=>boolean}} gates
- * @returns {{phase:import('./domain.js').Phase,speed:1|2|4}|null}
+ * @returns {{phase:import('./domain.js').Phase,speed:1|2|3}|null}
  */
 export function advanceSession(game,gates){
  if(!gates.started||gates.hidden||gates.paused||gates.studio||game.s.phase==='finished'||gates.panelOpen||game.s.handoff)return null;

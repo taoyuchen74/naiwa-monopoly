@@ -11,6 +11,7 @@ export class EffectSystem{
  constructor(parent,{reduced=false,onDiceState=()=>{}}={}){this.parent=parent;this.reduced=reduced;this.onDiceState=onDiceState;this.items=[];this.clock=0;}
  transfer(from,to,amount,done){if(this.reduced||!amount||from.distanceTo(to)<.01)return false;const transfer=new MoneyTransfer(from,to,amount);this.parent.add(transfer.group);this.items.push({kind:'transfer',group:transfer.group,transfer,particles:[],age:0,duration:TRANSFER_DURATION,done});return true;}
  anchorDice(camera,portrait){for(const e of this.items)if(e.dice)e.dice.anchor(camera,portrait);}
+ get busy(){return this.items.some(e=>e.kind!=='dust');}
  get diceRolling(){return this.items.some(e=>e.kind==='dice'&&e.age<DICE_SETTLE);}
  rollDice(values,position,color){this.clearDice();if(this.reduced)return;const dice=new DiceRoll(values,position,color);this.parent.add(dice.group);this.items.push({kind:'dice',group:dice.group,dice,particles:[],age:0,duration:DICE_DURATION,impacted:false});this.onDiceState(true,false,true);}
  clearDice(){for(const e of [...this.items])if(e.dice){this.items.splice(this.items.indexOf(e),1);this.parent.remove(e.group);e.dice.dispose();}this.onDiceState(false,false,false);}
@@ -25,7 +26,7 @@ export class EffectSystem{
   const crane=new THREE.Group();crane.position.set(w+.12,0,-d);group.add(crane);box(crane,steel,[0,height*.6,0],[.08,height*1.2,.08]);const boom=new THREE.Group();boom.position.y=height*1.2;crane.add(boom);box(boom,steel,[-w*.65,0,0],[w*1.9,.06,.08]);box(boom,wood,[.28,-.08,0],[.33,.2,.25]);const hook=new THREE.Group();hook.position.x=-w*1.2;boom.add(hook);tube(hook,steel,[[0,0,0],[0,-height*.35,0],[.08,-height*.38,0]],.013);const load=box(hook,wood,[0,-height*.4,0],[.34,.12,.3]);group.position.copy(base);this.parent.add(group);this.items.push({kind:'scaffold',group,particles:[],materials:[steel,wood,safety],hook,boom,load,age:0,duration:1.9,height});}
 
  money(position,amount){if(this.reduced||!amount)return;const c=document.createElement('canvas');c.width=256;c.height=80;const x=c.getContext('2d');x.font='bold 40px "Microsoft YaHei",sans-serif';x.textAlign='center';x.fillStyle=amount>0?'#fce49c':'#ffcab5';x.strokeStyle='#385664';x.lineWidth=5;x.strokeText(`${amount>0?'+':''}${amount}`,128,53);x.fillText(`${amount>0?'+':''}${amount}`,128,53);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}),group=new THREE.Group(),sprite=new THREE.Sprite(m);sprite.scale.set(2.2,.7,1);group.add(sprite);group.position.copy(position);group.position.y+=2;this.parent.add(group);this.items.push({kind:'float',group,mat:m,age:0,duration:1.3,particles:[]});}
- update(dt){this.clock+=dt;for(let i=this.items.length-1;i>=0;i--){const e=this.items[i];e.age+=dt;const p=Math.min(1,e.age/e.duration);
+ update(dt){this.clock+=dt;const frame=[...this.items];for(let i=frame.length-1;i>=0;i--){const e=frame[i];if(!this.items.includes(e))continue;e.age+=dt;const p=Math.min(1,e.age/e.duration);
    if(e.kind==='transfer'){e.transfer.update(e.age);}
    else if(e.kind==='dice'){e.dice.update(e.age);if(!e.impacted&&e.age>=DICE_SETTLE){e.impacted=true;this.onDiceState(false,true,true);}}
    else if(e.kind==='float'){e.group.position.y+=dt*.85;e.mat.opacity=1-p*p;}
@@ -34,8 +35,13 @@ export class EffectSystem{
    else if(e.kind==='grow'){const ease=1-Math.pow(1-p,1.3);e.reveal.set(THREE.MathUtils.lerp(e.from,e.to,ease));}
    else if(e.kind==='remove'){e.reveal.set(THREE.MathUtils.lerp(e.from,e.to,p*p));e.object.rotation.z=e.baseRotation.z+Math.sin(p*Math.PI*8)*(1-p)*.012;if(p-e.lastBurst>.23&&p<.85){e.lastBurst=p;const b=e.reveal.bounds,at=b.getCenter(new THREE.Vector3());at.y=e.reveal.plane.constant;this.spawn('demolish',at,'#cbb38c',.6);}}
 
-   if(p===1){if(e.group){this.parent.remove(e.group);if(e.dice){this.onDiceState(false,false,false);e.dice.dispose();}else if(e.transfer)e.transfer.dispose();else release(e.group);}else{e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);}this.items.splice(i,1);e.done?.();}
+   if(p===1)this.complete(e);
   }}
- finish(object){for(const e of [...this.items])if(e.object===object){this.items.splice(this.items.indexOf(e),1);e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);e.done?.();}}
- clear(){this.onDiceState(false,false,false);for(const e of this.items){if(e.group){this.parent.remove(e.group);if(e.dice){this.onDiceState(false,false,false);e.dice.dispose();}else if(e.transfer)e.transfer.dispose();else release(e.group);}else{e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);}e.done?.();}this.items=[];}
+ complete(e){const index=this.items.indexOf(e);if(index<0)return false;this.items.splice(index,1);
+  if(e.group){this.parent.remove(e.group);if(e.dice){e.dice.update(DICE_DURATION);this.onDiceState(false,false,false);e.dice.dispose();}else if(e.transfer){e.transfer.update(e.duration);e.transfer.dispose();}else release(e.group);}
+  else{e.reveal?.restore();e.object.scale.copy(e.baseScale);e.object.position.y=e.baseY;e.object.rotation.copy(e.baseRotation);}
+  e.done?.();return true;
+ }
+ finish(object){for(const e of [...this.items])if(e.object===object)this.complete(e);}
+ clear(){const dice=this.items.some(e=>e.dice);for(const e of [...this.items])this.complete(e);if(!dice&&!this.items.some(e=>e.dice))this.onDiceState(false,false,false);}
 }

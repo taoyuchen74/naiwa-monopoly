@@ -21,7 +21,7 @@ export function modeConfig({id='standard',rounds=50,cash=3200,tickets=60,date=lo
  * @param {unknown} raw @returns {raw is import('./domain.js').ModeConfig}
  */
 export function validMode(raw){
- const m=/** @type {import('./domain.js').ModeConfig} */(raw);if(!m||m.configVersion!==1||!Object.hasOwn(MODE_NAMES,m.id)||!ROUND_OPTIONS.includes(m.rounds)||![1,2].includes(m.speed))return false;
+ const m=/** @type {import('./domain.js').ModeConfig} */(raw);if(!m||m.configVersion!==1||!Object.hasOwn(MODE_NAMES,m.id)||!ROUND_OPTIONS.includes(m.rounds)||![1,2,3].includes(m.speed))return false;
  const a=m.initial;if(!a||!Number.isSafeInteger(a.cash)||a.cash<0||a.cash>100000||!Number.isSafeInteger(a.tickets)||a.tickets<0||a.tickets>RULES.couponCap||!Number.isSafeInteger(a.loan)||a.loan<0||a.loan>RULES.loanLimit||!Number.isInteger(a.propertiesPerPlayer)||a.propertiesPerPlayer<0||a.propertiesPerPlayer>2||!Number.isInteger(a.buildingLevel)||a.buildingLevel<0||a.buildingLevel>5)return false;
  if(!Array.isArray(m.allowedCards)||!m.allowedCards.length||new Set(m.allowedCards).size!==m.allowedCards.length||m.allowedCards.some(k=>!Object.hasOwn(CARDS,k)))return false;
  if(!m.goal||!['ranking','netWorth'].includes(m.goal.type)||!Number.isSafeInteger(m.goal.target)||(m.goal.type==='netWorth'?m.goal.target<=0||m.goal.target>1000000:m.goal.target!==0))return false;

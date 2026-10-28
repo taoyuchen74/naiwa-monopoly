@@ -342,3 +342,7 @@ button.player:focus-visible{outline-color:#85391f}
 #app .sheet-body>.tutorial-tip{grid-column:1/-1;min-width:0;width:100%}
 
 .tutorial-target:focus-visible{outline-style:double!important;box-shadow:0 0 0 3px #fff5d9,0 0 0 6px #4b321d}
+
+#app .map-tools :is(#skipShowBtn,#speedBtn,#aiPaceBtn){font-size:14px;min-width:44px;min-height:44px;flex-shrink:0}
+#app .news-critical:not(.news-event){font-size:16px;line-height:1.5;overflow-wrap:anywhere;max-height:40%;overflow:auto}
+@media(prefers-reduced-motion:reduce){.news-enter,.money-in,.money-out,.dice-display.rolling{animation:none!important;transition:none!important}}
