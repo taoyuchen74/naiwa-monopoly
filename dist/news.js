@@ -1,3 +1,4 @@
+import {isHotseat,publicLog} from './hotseat.js';
 import {animationSpeed} from './pacing.js';
 import {portrait} from './portraits.js';
 import {eventPresentation,eventActor} from './event-panel.js';
@@ -15,9 +16,9 @@ export class NewsFeed{
   const turn=`${game.s.round}:${game.s.current}`;if(turn!==this.turn){this.turn=turn;this.push(`第 ${game.s.round} 轮 · ${game.char().name}的回合`);}
   // The illustrated receipt replaces duplicate banners, never the permanent journal.
   if(event&&game.s.notice!==this.lastNotice){this.pushEvent(game);this.head=game.s.logs[0];return;}
-  const index=game.s.logs.indexOf(this.head);if(index!==0){const fresh=(index<0?game.s.logs.slice(0,1):game.s.logs.slice(0,index)).reverse();this.head=game.s.logs[0];for(const log of fresh){const text=shortNews(log.text);if(text)this.push(text);}}
+  const index=game.s.logs.indexOf(this.head);if(index!==0){const fresh=(index<0?game.s.logs.slice(0,1):game.s.logs.slice(0,index)).reverse();this.head=game.s.logs[0];for(const log of fresh){const text=shortNews(publicLog(game.s,log.text));if(text)this.push(text);}}
  }
- pushEvent(game){this.lastNotice=game.s.notice;this.push({title:game.s.notice.title,event:eventPresentation(game)});}
+ pushEvent(game){this.lastNotice=game.s.notice;if(isHotseat(game.s)){this.push(game.char().name+'处理了旅途事件');return;}this.push({title:game.s.notice.title,event:eventPresentation(game)});}
  reset(){clearTimeout(this.timer);this.timer=null;this.queue=[];this.game=null;this.lastNotice=null;this.root.hidden=true;this.root.classList.remove('news-event','news-happy','news-sad');}
  push(entry){this.queue.push(entry);if(!this.timer&&!this.paused)this.next();}
  next(){

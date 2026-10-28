@@ -31,7 +31,7 @@ async function rollOne(page){
 }
 
 test('new game → real dice → purchase → construction → end turn in both phone orientations',async({page})=>{
- await boot(page);await page.locator('[data-select-id=playerCountSelect] button').click();await page.getByRole('option',{name:'6 人 · 你 + 5 位电脑',exact:true}).click();await start(page);
+ await boot(page);await page.locator('[data-select-id=playerCountSelect] button').click();await page.getByRole('option',{name:'6 席 · 类型可配置',exact:true}).click();await start(page);
  expect((await state(page)).players).toHaveLength(6);
  if(realWebGL){await expect(page.locator('#scene > canvas')).toHaveCount(1);expect(await page.locator('#scene > canvas').evaluate(el=>!!el.getContext('webgl2'))).toBe(true);}else await expect(page.locator('#fallback')).toBeVisible();
  await rollOne(page);await click(page,'[data-act=buy]');

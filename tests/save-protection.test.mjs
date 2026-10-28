@@ -1,3 +1,4 @@
+import {lockSession} from '../dist/hotseat.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -12,6 +13,7 @@ function harness(raw=null){
  const data=new Map(raw?[[SAVE_KEY,raw]]:[]),writes=[],nodes={playerCountSelect:{value:'3'},roundSelect:{value:'20'},difficultySelect:{value:'normal'},talentsEnabled:{checked:true},startScreen:{hidden:false},saveStatus:{}};
  const localStorage={getItem:key=>data.get(key)??null,setItem(key,value){writes.push(key);data.set(key,String(value));}};
  const context={repository:createSaveRepository(localStorage),Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup,archiveSummary,normalizeSetup,setupError,localStorage,game:Game.create({seed:7481}),saved:null,started:false,selected:'naiwa',advanced:normalizeSetup(),advancedDraft:null,scene:null,activePanel:null,blockKey:'',actionPacer:{reset(){}},$:id=>nodes[id],writePreferences(){},readPreferences:(_storage,options)=>options,btn:(text,act)=>`<button data-act="${act}">${text}</button>`,showSheet(...args){context.dialog=args;},toast(text){context.message=text;},dismiss(){context.dialog=null;},render(){},sound(){}};
+ context.relockSession=()=>lockSession(context.game);
  context.commit=()=>runInNewContext('save()',context);
  runInNewContext(source.slice(source.indexOf('function save()'),source.indexOf('function commit(')),context);
  runInNewContext(source.slice(source.indexOf('let pendingOverwrite='),source.indexOf('function readAdvancedFields(')),context);

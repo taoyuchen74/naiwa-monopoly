@@ -1,3 +1,4 @@
+import {accountPlayer} from './hotseat.js';
 import {RULES,bankClosed,stockClosed} from './rules-config.js';
 import {art,landmarkImage} from './illustrations.js';
 import {hasTalent} from './talents.js?v=16';
@@ -5,7 +6,7 @@ import {hasTalent} from './talents.js?v=16';
 const theme={start:['起点','#a18a3c'],bank:['银行','#477eb5'],stock:['证券所','#7b65b0'],shop:['补给站','#cf8342'],hospital:['疗养院','#cc615d'],tax:['清洁站','#558e88'],rest:['小窝','#5b8b55'],spirit:['神殿','#af8535'],event:['事件广场','#ae6686']};
 const rule=(icon,title,text)=>({icon,title,text});
 export function landmarkInfo(g,t){
- const p=g.s.players[0],mine=g.player.id===p.id&&p.human&&g.manageable(),income=n=>Math.round(n*(p.spirit==='fortune'?1.25:1)),fee=n=>g.payment(n,null,p),[type,accent]=theme[t.kind];
+ const p=(accountPlayer(g)||g.player),mine=g.player.id===p.id&&p.human&&g.manageable(),income=n=>Math.round(n*(p.spirit==='fortune'?1.25:1)),fee=n=>g.payment(n,null,p),[type,accent]=theme[t.kind];
  let value,unit,summary,rules,status={tone:'neutral',text:'公共地点不可购买；移动到这里时按规则触发。'},action=null;
  if(t.kind==='start'){
   value='+'+income(RULES.startIncome+(hasTalent(g,p,'naiwa')?RULES.startTalentBonus:0));unit='奶币 · 正向经过奖励';summary='绕岛经营一圈，再带着补给出发。';

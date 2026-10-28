@@ -25,10 +25,11 @@ const hash = game.stateHash();         // sha256-v1:<64位十六进制摘要>
 
 `type`、`payload`、`playerId`、`sequence`必填。`revision`是可选的预期版本；提交时必须等于当前版本。sequence为每个玩家独立的连续正整数，只有接受后才消费。每接受一次命令，revision加1、该玩家sequence加1；重复、跳号、过期版本、错误玩家/阶段/参数和规则不允许的动作均拒绝，不消费计数、不改变状态、随机数及付款记录。规则处理异常会回滚状态和运行时付款记录。计数达到安全整数边界后拒绝继续，避免精度丢失。
 
-`game.command(type,payload,playerId)`为本机便利入口，自动填写下一sequence和当前revision，返回布尔值。UI操作固定使用真人playerId=0；自动推进使用当前玩家。它不会缓存旧事件来重发；需要去重的调用方应保留原命令并调用dispatch，不能给每次重试生成新sequence。
+`game.command(type,payload,playerId)`为本机便利入口，自动填写下一sequence和当前revision，返回布尔值。UI操作使用已确认当前真人的playerId，单人旧流程通常为0；自动推进使用当前玩家。它不会缓存旧事件来重发；需要去重的调用方应保留原命令并调用dispatch，不能给每次重试生成新sequence。
 
 | type | payload | 阶段 |
 | --- | --- | --- |
+| acceptTurn、lockTurn | `{}` | 未结算的当前真人阶段；仅热座交接使用 |
 | roll | `{}` | roll、departure |
 | step | `{choice?}` | moving、branch；branch必须选择合法路线 |
 | setDiceCount | `{count}` | roll；不超过当前交通工具上限 |
@@ -61,3 +62,5 @@ const hash = game.stateHash();         // sha256-v1:<64位十六进制摘要>
 `dist/rules-config.js`是共享经济常量来源：起点400、奶蛙额外80、起点点券25、点券上限、贷款1800、七轮周期的银行周三/股市周日休息、存贷款利率、变卖比率和连锁租金上限。引擎、AI估值和相关面板共用。AI中现金保留1800等数字是独立策略阈值，不是贷款上限，保持原值。
 
 本次没有服务器、联网传输、身份认证、权限服务或前端框架更换。此接口为后续回放与联机提供边界，不构成联网实现。
+
+规则9新增待交接状态。交接中其他规则命令返回HANDOFF_REQUIRED；确认只解锁，不改变原规则阶段。席位、UI查看者、AI误操作阻止及读档重锁见 [热座说明](HOTSEAT.md)。
