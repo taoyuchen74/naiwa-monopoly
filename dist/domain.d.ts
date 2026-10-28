@@ -1,5 +1,5 @@
 /** Shared contracts only: this file is never imported at runtime. */
-export type Phase = 'roll' | 'departure' | 'moving' | 'branch' | 'buy' | 'estate' | 'event' | 'end' | 'debt' | 'finished';
+export type Phase = 'roll' | 'departure' | 'moving' | 'branch' | 'buy' | 'estate' | 'event' | 'end' | 'debt' | 'finished' | 'auction' | 'negotiation';
 export type Difficulty = 'easy' | 'normal' | 'hard';
 export type CharacterId = 'naiwa' | 'naichong' | 'naishu' | 'naigou' | 'naidan' | 'naicha';
 export type BuildingType = 'residence' | 'chain' | 'hotel' | 'mall' | 'gas' | 'research' | 'park';
@@ -19,7 +19,7 @@ export interface Player {
  eventWard:boolean; insuranceTurns:number; operatingUntilRound:number;
  aiTradeDone?: boolean; aiBankDone?: boolean; mood?: string;
 }
-export interface Ownership {player: number; level: number; buildingType?: BuildingType; researchProgress?: number; researchCard?: CardKey; closedUntilRound?:number}
+export interface Ownership {player: number; level: number; buildingType?: BuildingType; researchProgress?: number; researchCard?: CardKey; closedUntilRound?:number; mortgaged?:boolean; mortgage?:number}
 export type InitialGameState = Omit<GameState,'revision'|'commandSequences'|'handoff'|'mode'> & Partial<Pick<GameState,'revision'|'commandSequences'|'handoff'|'mode'>>;
 export type CardTarget = Ownership & {id:number; obstacle?:boolean};
 export interface Market {name: string; price: number; previous: number; change: number; history: number[]; color?: string}
@@ -34,16 +34,20 @@ export interface ModeConfig {
  allowedCards:CardKey[]; goal:{type:'ranking'|'netWorth';target:number}; dailyDate:string|null; fixedSeed:number|null;
 }
 export interface GameState {
- version: 2; rules: 10; mode:ModeConfig; setupSeed?: number; mapVersion: 1 | 2; difficulty: Difficulty; talents: boolean;
+ version: 2; rules: 11; mode:ModeConfig; setupSeed?: number; mapVersion: 1 | 2; difficulty: Difficulty; talents: boolean;
  firstPlayer: number; seed: number; round: number; maxRounds: number; current: number; phase: Phase;
  dice: number[]; remaining: number; moveTotal: number; moveSteps: number | null;
  players: Player[]; ownership: Record<number, Ownership|undefined>; blocks: Record<number, number|undefined>; pickups: Record<number, number|undefined>;
  market: Market[]; logs: Array<{round: number; text: string}>; notice: {title: string; text: string; mood: string; outcomes?:string[]} | null;
- handoff: {playerId:number}|null; debt: Debt | null; options: Preferences; winner: number | null; revision: number; commandSequences: number[]; savedAt?: number;
+ handoff: {playerId:number}|null; debt: Debt | null; options: Preferences; winner: number | null; revision: number; commandSequences: number[]; savedAt?: number; auction?: Auction|null; negotiation?: Negotiation|null;
 }
 /** Flat format: schema metadata plus the existing top-level rule fields. */
 export type SaveEnvelope = Omit<GameState, 'savedAt'> & {schemaVersion: 1; savedAt: number};
+export interface AssetBundle {cash:number; properties:number[]; cards:number[]}
+export interface Auction {tile:number; actor:number; eligible:number[]; passed:number[]; bid:number; leader:number|null}
+export interface Negotiation {to:number; give:AssetBundle; receive:AssetBundle; resume:'roll'|'end'}
 export interface CommandPayloads {
+ auctionBid:{amount:number}; auctionPass:Record<string,never>; proposeOffer:{to:number;give:AssetBundle;receive:AssetBundle}; resolveOffer:{cancel:boolean};
  acceptTurn:Record<string,never>; lockTurn:Record<string,never>;
  roll: Record<string, never>; step: {choice?: number}; setDiceCount: {count: number}; buy: {yes: boolean};
  resolveEstate: {buy: boolean}; acknowledge: Record<string, never>; end: Record<string, never>;

@@ -7,6 +7,10 @@ const none=()=>true;
 /** @typedef {import('./engine.js').Game} Game */
 /** @type {{[K in import('./domain.js').CommandType]: {phases:import('./domain.js').Phase[],fields:string[],valid:(payload:Record<string,unknown>,game:Game)=>boolean,run:(game:Game,payload:import('./domain.js').CommandPayloads[K])=>boolean}}} */
 const definitions={
+ auctionBid:{phases:['auction'],fields:['amount'],valid:p=>integer(p.amount),run:(g,p)=>g.auctionBid(p.amount)},
+ auctionPass:{phases:['auction'],fields:[],valid:none,run:g=>g.auctionPass()},
+ proposeOffer:{phases:['roll','end'],fields:['to','give','receive'],valid:p=>integer(p.to),run:(g,p)=>g.proposeOffer(p.to,p.give,p.receive)},
+ resolveOffer:{phases:['negotiation'],fields:['cancel'],valid:p=>typeof p.cancel==='boolean',run:(g,p)=>g.resolveOffer(p.cancel)},
  acceptTurn:{phases:['roll','departure','moving','branch','buy','estate','event','end','debt'],fields:[],valid:(_p,g)=>g.player.human,run:g=>g.acceptTurn()},
  lockTurn:{phases:['roll','departure','moving','branch','buy','estate','event','end','debt'],fields:[],valid:(_p,g)=>g.player.human,run:g=>g.lockTurn()},
  roll:{phases:['roll','departure'],fields:[],valid:none,run:g=>g.roll()},
@@ -31,7 +35,7 @@ const definitions={
  card:{phases:['roll','end','estate'],fields:['index','target'],valid:p=>integer(p.index)&&(p.target===undefined||integer(p.target)),run:(g,p)=>g.card(p.index,p.target)},
  settle:{phases:['debt'],fields:[],valid:none,run:g=>g.settle()},
  bankrupt:{phases:['debt'],fields:[],valid:none,run:g=>g.bankrupt()},
- aiTurn:{phases:['roll','departure','moving','branch','buy','estate','event','end','debt'],fields:[],valid:(_p,g)=>!g.player.human,run:g=>g.takeAiAction()}
+ aiTurn:{phases:['roll','departure','moving','branch','buy','estate','event','end','debt','auction'],fields:[],valid:(_p,g)=>g.s.phase==='auction'?!g.s.players[g.s.auction?.actor??-1]?.human:!g.player.human,run:g=>g.takeAiAction()}
 };
 /** @param {unknown} x @returns {x is Record<string,unknown>} */
 const plain=x=>x!==null&&typeof x==='object'&&!Array.isArray(x)&&(Object.getPrototypeOf(x)===null||Object.getPrototypeOf(Object.getPrototypeOf(x))===null);
@@ -44,7 +48,7 @@ const plain=x=>x!==null&&typeof x==='object'&&!Array.isArray(x)&&(Object.getProt
  * @param {number} [playerId]
  * @returns {import('./domain.js').Command<K>}
  */
-export function nextCommand(game,type,payload=/** @type {import('./domain.js').CommandPayloads[K]} */({}),playerId=game.s.current){return /** @type {import('./domain.js').Command<K>} */({type,payload,playerId,sequence:game.s.commandSequences[playerId]+1,revision:game.s.revision});}
+export function nextCommand(game,type,payload=/** @type {import('./domain.js').CommandPayloads[K]} */({}),playerId=game.s.phase==='auction'?game.s.auction?.actor??game.s.current:game.s.current){return /** @type {import('./domain.js').Command<K>} */({type,payload,playerId,sequence:game.s.commandSequences[playerId]+1,revision:game.s.revision});}
 /** @param {import('./engine.js').Game} game @param {unknown} command @returns {import('./domain.js').CommandResult} */
 export function dispatch(game,command){
  const s=game.s;
@@ -58,10 +62,10 @@ export function dispatch(game,command){
  if(sequence<=s.commandSequences[playerId])return reply(false,'DUPLICATE');
  if(sequence!==s.commandSequences[playerId]+1)return reply(false,'OUT_OF_ORDER');
  if(revision!==undefined&&(!integer(revision)||revision!==s.revision))return reply(false,'STALE_REVISION');
- if(playerId!==s.current)return reply(false,'NOT_CURRENT_PLAYER');
+ if(playerId!==(s.phase==='auction'?s.auction?.actor:s.current))return reply(false,'NOT_CURRENT_PLAYER');
  if(s.handoff&&!['acceptTurn','lockTurn'].includes(command.type))return reply(false,'HANDOFF_REQUIRED');
  if(!def.phases.includes(s.phase))return reply(false,'INVALID_PHASE');
- if(!game.player.alive&&!(s.phase==='end'&&['end','aiTurn'].includes(command.type)))return reply(false,'INACTIVE_PLAYER');
+ if(!s.players[playerId].alive&&!(s.phase==='end'&&['end','aiTurn'].includes(command.type)))return reply(false,'INACTIVE_PLAYER');
  if(Object.keys(payload).some(key=>!def.fields.includes(key))||!def.valid(payload,game))return reply(false,'INVALID_PAYLOAD');
  if(s.revision===Number.MAX_SAFE_INTEGER||sequence===Number.MAX_SAFE_INTEGER)return reply(false,'COUNTER_EXHAUSTED');
  const before=JSON.stringify(s),receipts={sequence:game.transfers.sequence,items:[...game.transfers.items]};

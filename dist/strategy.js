@@ -82,7 +82,8 @@ function shopChoice(g){
  }
  return null;
 }
-function takeTurn(g){const p=g.player,cfg=difficulty(g);if(p.human||g.s.phase==='finished')return false;
+function takeTurn(g){const p=g.player,cfg=difficulty(g);if((p.human&&g.s.phase!=='auction')||g.s.phase==='finished')return false;
+ if(g.s.phase==='auction')return g.aiAuction();
  if(g.s.phase==='departure')return g.roll();
  if(g.s.phase==='roll'){
   if(p.money<500&&p.deposit&&g.bank('withdraw',Math.min(p.deposit,900)))return true;

@@ -1,4 +1,5 @@
 // @ts-check
+import {validCommerce} from './commerce.js';
 import {modeConfig,validMode} from './modes.js';
 import {mapTiles} from './maps.js';
 import {migratePortfolio} from './portfolio.js';
@@ -24,7 +25,7 @@ export function migrateSave(raw){
   }const TILES=mapTiles(s?.mapVersion??1);
   if(s&&s.mapVersion===undefined)s.mapVersion=1;
   if(s&&s.difficulty===undefined)s.difficulty='normal';
-  if(!s||![1,2].includes(s.mapVersion)||!['easy','normal','hard'].includes(s.difficulty)||s.version!==2||!Array.isArray(s.players)||![2,3,4,5,6].includes(s.players.length)||!['roll','departure','moving','branch','buy','estate','event','end','debt','finished'].includes(s.phase))return null;
+  if(!s||![1,2].includes(s.mapVersion)||!['easy','normal','hard'].includes(s.difficulty)||s.version!==2||!Array.isArray(s.players)||![2,3,4,5,6].includes(s.players.length)||!['roll','departure','moving','branch','buy','estate','event','end','debt','finished','auction','negotiation'].includes(s.phase))return null;
   if(!Number.isInteger(s.current)||s.current<0||s.current>=s.players.length||!Number.isInteger(s.round)||s.round<1||!ROUND_OPTIONS.includes(s.maxRounds)||s.round>s.maxRounds||!Number.isInteger(s.seed)||!Number.isInteger(s.remaining)||s.remaining<0||s.remaining>18)return null;
   if(s.revision===undefined&&s.commandSequences===undefined){s.revision=0;
    s.commandSequences=s.players.map(()=>0);
@@ -99,7 +100,7 @@ if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
   if(!s.pickups||typeof s.pickups!=='object'||Object.entries(s.pickups).some(([id,owner])=>!POINT_STOPS.includes(+id)||!Number.isInteger(owner)||!s.players[owner]))return null;
   if(s.talents===undefined)s.talents=false;
   if(typeof s.talents!=='boolean')return null;
-  s.rules=10;
+  s.rules=11;
   for(const p of s.players){
    if(p.eventWard===undefined)p.eventWard=false;
    if(p.insuranceTurns===undefined)p.insuranceTurns=0;
@@ -124,6 +125,7 @@ if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
   if(s.handoff!==null&&(!s.handoff||!Number.isInteger(s.handoff.playerId)||s.handoff.playerId!==s.current||!s.players[s.current].human||!s.players[s.current].alive||s.phase==='finished'||s.players.filter(p=>p.human).length<2))return null;
   if(s.mode===undefined)s.mode=modeConfig({rounds:s.maxRounds});
   if(!validMode(s.mode)||s.mode.rounds!==s.maxRounds||s.players.some(p=>p.cards.some(k=>!s.mode.allowedCards.includes(k))))return null;
+  if(!validCommerce(s))return null;
   return s;
  }catch{
   return null;
