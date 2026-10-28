@@ -1,4 +1,5 @@
 // @ts-check
+import {startAuction,auctionAction,aiAuction,proposeOffer,resolveOffer} from './commerce.js';
 import {modeConfig,validMode,applyMode,modeProgress} from './modes.js';
 import {isHotseat} from './hotseat.js';
 import {TransferLog} from './transfers.js';
@@ -65,11 +66,16 @@ export class Game {
   * @returns {boolean}
   */
  /** @param {import('./domain.js').CommandType} type @param {import('./domain.js').CommandPayloads[import('./domain.js').CommandType]} [payload] @param {number} [playerId] */
- command(type,payload={},playerId=this.s.current){return this.dispatch(nextCommand(this,type,payload,playerId)).ok;}
+ command(type,payload={},playerId=this.s.phase==='auction'?this.s.auction?.actor??this.s.current:this.s.current){return this.dispatch(nextCommand(this,type,payload,playerId)).ok;}
  prepareHandoff(){this.s.handoff=isHotseat(this.s)&&this.player.human&&this.player.alive?{playerId:this.s.current}:null;}
  acceptTurn(){if(!this.s.handoff||this.s.handoff.playerId!==this.s.current||!this.player.human)return false;this.s.handoff=null;return true;}
  lockTurn(){if(!isHotseat(this.s)||!this.player.human||!this.player.alive||this.s.handoff)return false;this.prepareHandoff();return true;}
  stateHash(){return stateHash(this.s);}
+ auctionBid(amount){return auctionAction(this,amount);}
+ auctionPass(){return auctionAction(this);}
+ aiAuction(){return aiAuction(this);}
+ proposeOffer(to,give,receive){return proposeOffer(this,to,give,receive);}
+ resolveOffer(cancel){return resolveOffer(this,cancel);}
  setDiceCount(count){if(this.s.phase!=='roll'||!this.player.alive||!Number.isInteger(count)||count<1||count>VEHICLES[this.player.vehicle].dice)return false;this.player.diceCount=count;return true;}
  markAiAction(kind){if(this.player.human||!['trade','bank'].includes(kind))return false;this.player[kind==='trade'?'aiTradeDone':'aiBankDone']=true;return true;}
  /** @param {import('./domain.js').CreateGameOptions} [options] @returns {Game} */
@@ -79,7 +85,7 @@ export class Game {
   if(seatTypes.some(type=>!['human','ai'].includes(type)))throw new RangeError('Invalid seat types');
   if(character==='dounai')character='naicha';opponents=opponents?.map(id=>id==='dounai'?'naicha':id);if(!CHARACTERS.some(c=>c.id===character))character='naiwa';
   const count=[2,3,4,5,6].includes(+playerCount)?+playerCount:3;const chars=rosterFor(character,count,opponents,seed);
-  const game=new Game({version:2,rules:10,mode:mode?JSON.parse(JSON.stringify(mode)):modeConfig({rounds, cash:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60}),setupSeed:seed>>>0,mapVersion:mapVersion===1?1:2,difficulty:['easy','normal','hard'].includes(difficulty)?difficulty:'normal',talents:!!talents,firstPlayer:0,seed:mixedSeed(seed),round:1,maxRounds:ROUND_OPTIONS.includes(+rounds)?+rounds:50,current:0,phase:'roll',dice:[1],remaining:0,moveTotal:0,moveSteps:0,players:chars.map((c,id)=>({id,character:c,human:(seatTypes[id]||(id?'ai':'human'))==='human',difficulty:seatDifficulty(id?seatLevels[id-1]:primaryLevel,seatDifficulty(difficulty,'normal')),money:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60,businessReady:false,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0,buildSite:null,bankAccess:false,talentReady:false,departures:0,deposit:0,loan:0,stocks:[0,0,0,0],stockBook:emptyBook(),stockLegacy:false,stockTrades:[],cards:['dice','shield','recover'],vehicle:0,diceCount:1,pos:0,history:[],alive:true,eventWard:false,insuranceTurns:0,operatingUntilRound:0,skip:0,spirit:null,spiritTurns:0,shield:false,reverse:false,forced:0})),ownership:{},blocks:{},pickups:{},market:STOCKS.map(t=>({...t,history:[t.price],change:0,previous:t.price})),logs:[{round:1,text:'奶家发财岛开张！每位奶伴带着 '+([2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200)+' 奶币出发。'}],notice:null,debt:null,options:{sound:true,speed:1,quality:'auto',lighting:'day'},winner:null});applyMode(game);if(randomStart){game.s.current=game.int(count);game.s.firstPlayer=game.s.current;game.log(`随机先手：${game.char().name}先出发，每人行动一次算一轮。`);}game.prepareHandoff();return game;
+  const game=new Game({version:2,rules:11,mode:mode?JSON.parse(JSON.stringify(mode)):modeConfig({rounds, cash:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60}),setupSeed:seed>>>0,mapVersion:mapVersion===1?1:2,difficulty:['easy','normal','hard'].includes(difficulty)?difficulty:'normal',talents:!!talents,firstPlayer:0,seed:mixedSeed(seed),round:1,maxRounds:ROUND_OPTIONS.includes(+rounds)?+rounds:50,current:0,phase:'roll',dice:[1],remaining:0,moveTotal:0,moveSteps:0,players:chars.map((c,id)=>({id,character:c,human:(seatTypes[id]||(id?'ai':'human'))==='human',difficulty:seatDifficulty(id?seatLevels[id-1]:primaryLevel,seatDifficulty(difficulty,'normal')),money:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60,businessReady:false,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0,buildSite:null,bankAccess:false,talentReady:false,departures:0,deposit:0,loan:0,stocks:[0,0,0,0],stockBook:emptyBook(),stockLegacy:false,stockTrades:[],cards:['dice','shield','recover'],vehicle:0,diceCount:1,pos:0,history:[],alive:true,eventWard:false,insuranceTurns:0,operatingUntilRound:0,skip:0,spirit:null,spiritTurns:0,shield:false,reverse:false,forced:0})),ownership:{},blocks:{},pickups:{},market:STOCKS.map(t=>({...t,history:[t.price],change:0,previous:t.price})),logs:[{round:1,text:'奶家发财岛开张！每位奶伴带着 '+([2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200)+' 奶币出发。'}],notice:null,debt:null,options:{sound:true,speed:1,quality:'auto',lighting:'day'},winner:null});applyMode(game);if(randomStart){game.s.current=game.int(count);game.s.firstPlayer=game.s.current;game.log(`随机先手：${game.char().name}先出发，每人行动一次算一轮。`);}game.prepareHandoff();return game;
  }
  /** @param {unknown} raw @returns {Game|null} */
  static restore(raw){const state=migrateSave(raw);return state?new Game(state):null;}
@@ -195,7 +201,7 @@ export class Game {
  /** @param {string} title @param {string} text @param {string} [mood] @param {string[]} [outcomes] */
  notice(title,text,mood='idle',outcomes){this.s.notice={title,text,mood};if(outcomes)this.s.notice.outcomes=outcomes;this.s.phase='event';}
  acknowledge(){if(this.s.phase!=='event')return false;this.s.notice=null;this.s.phase='end';return true;}
- buy(yes){if(this.s.phase!=='buy')return false;const p=this.player,t=this.tiles[p.pos];if(yes){if(this.s.ownership[t.id]||p.money<t.price)return false;p.money-=t.price;this.s.ownership[t.id]={player:p.id,level:0,buildingType:'residence'};p.buildSite=t.id;this.log(`${this.char().name}买下「${t.name}」−${t.price}`);}else this.log(`${this.char().name}暂时放弃「${t.name}」。`);this.s.phase='end';return true;}
+ buy(yes){if(this.s.phase!=='buy')return false;const p=this.player,t=this.tiles[p.pos];if(t.kind!=='property'||this.s.ownership[t.id])return false;if(yes){if(this.s.ownership[t.id]||p.money<t.price)return false;p.money-=t.price;this.s.ownership[t.id]={player:p.id,level:0,buildingType:'residence'};p.buildSite=t.id;this.log(`${this.char().name}买下「${t.name}」−${t.price}`);}else {this.log(`${this.char().name}暂时放弃「${t.name}」。`);if(startAuction(this))return true;}this.s.phase='end';return true;}
  upgrade(id){if(this.s.ownership[id]?.level===0)return this.construct(id,'residence');if(!this.canUpgrade(id))return false;const p=this.player,t=this.tiles[id],o=this.s.ownership[id],cost=this.buildPrice(t);if(!o)return false;p.money-=cost;p.buildsUsed++;o.level++;this.log(`${this.char().name}将「${t.name}」升级为 ${o.level} 级 −${cost}`);return true;}
  demolish(id){if(!this.manageable()||this.s.phase==='debt')return false;const t=this.tiles[id],o=this.s.ownership[id];if(!t||!o||this.s.phase!=='end'||this.player.pos!==id||this.player.buildSite!==id||o.player!==this.player.id||o.level===0)return false;const refund=Math.floor((this.cost(t,o.level,businessType(o))-t.price)*.25);o.level=0;repairBuilding(o);this.player.money+=refund;this.log(`${this.char().name}拆除「${t.name}」房屋，保留土地，回收材料 +${refund}`);return true;}
  sell(id){if(!this.manageable())return false;const t=this.tiles[id],o=this.s.ownership[id];if(!o||o.player!==this.player.id)return false;const amount=round(this.cost(t,o.level,businessType(o))*RULES.propertySaleRatio);this.player.money+=amount;delete this.s.ownership[id];this.log(`${this.char().name}变卖「${t.name}」+${amount}`);return true;}
@@ -271,5 +277,5 @@ export class Game {
  leaders(){const ranked=this.ranking(),first=ranked[0];return ranked.filter(p=>p.alive===first.alive&&this.worth(p)===this.worth(first));}
  ranking(){return [...this.s.players].sort((a,b)=>Number(b.alive)-Number(a.alive)||this.worth(b)-this.worth(a)||a.id-b.id);}
  takeAiAction(){const phase=this.s.phase,ok=takeAiTurn(this);return ok||phase==='moving'&&this.s.phase==='branch';}
- ai(){return this.command('aiTurn');}
+ ai(){return this.command('aiTurn',{},this.s.phase==='auction'?this.s.auction?.actor:this.s.current);}
 }

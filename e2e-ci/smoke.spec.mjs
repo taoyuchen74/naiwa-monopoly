@@ -45,7 +45,7 @@ test('new game → real dice → purchase → construction → end turn in both 
 test('failed audio download and unavailable audio device still permit a silent playable start',async({page})=>{
  let failed=0;await page.route('**/assets/laugh.*.mp3',route=>{failed++;return route.abort('failed');});await boot(page,{audioFailure:true});expect(failed).toBeGreaterThan(0);
  await start(page);await click(page,'#settingsBtn');await expect(page.locator('#audioStatus')).toHaveText('音频不可用');await page.keyboard.press('Escape');
- await rollOne(page);await click(page,'[data-act=pass]');await expect.poll(async()=>(await state(page)).phase).toBe('end');
+ await rollOne(page);await click(page,'[data-act=pass]');await expect(page.locator('#sheet')).toHaveAttribute('data-panel','auction');await click(page,'[data-act=auctionPass]');await expect.poll(async()=>(await state(page)).phase).toBe('end');
 });
 
 test('existing archive survives first load and cancelled new game; confirmed overwrite backs up and restores',async({page})=>{

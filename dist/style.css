@@ -350,3 +350,5 @@ button.player:focus-visible{outline-color:#85391f}
 #resultCopy{width:100%;min-height:160px;font-size:16px;line-height:1.6}#replayView{white-space:pre-wrap;font-size:15px;line-height:1.7}
 
 .replay-map{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.replay-tile{min-height:64px;padding:6px;border:1px solid #b18b50;border-radius:5px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}.replay-tile[aria-current=location]{border:3px double #6c4126;background:#fff4c8}
+
+.commerce-choice{display:flex;align-items:center;gap:12px;min-height:44px;font-size:15px;line-height:1.5}.commerce-choice input{width:24px;height:24px;flex:none}#sheetBody fieldset{min-width:0;margin:14px 0;padding:12px;border:1px solid #756b57;border-radius:12px}#sheetBody fieldset legend{font-size:17px;font-weight:bold}#sheetBody input[type=number]{min-height:44px;font-size:16px;max-width:100%}

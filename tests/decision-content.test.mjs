@@ -77,7 +77,7 @@ test('facility bonuses do not boost free park coupons, research output, vacant l
 });
 test('old saves initialize new effects without asset/RNG loss; malformed effects and notice outcomes refuse restore',()=>{
  const g=make(),old=structuredClone(g.s);old.rules=7;for(const p of old.players){delete p.eventWard;delete p.insuranceTurns;delete p.operatingUntilRound;}
- const raw=JSON.stringify(old),h=Game.restore(raw);assert.ok(h);assert.equal(h.s.rules,10);assert.equal(h.player.money,g.player.money);assert.equal(h.s.seed,g.s.seed);assert.equal(h.player.eventWard,false);assert.equal(h.player.insuranceTurns,0);assert.equal(JSON.stringify(old),raw);
+ const raw=JSON.stringify(old),h=Game.restore(raw);assert.ok(h);assert.equal(h.s.rules,11);assert.equal(h.player.money,g.player.money);assert.equal(h.s.seed,g.s.seed);assert.equal(h.player.eventWard,false);assert.equal(h.player.insuranceTurns,0);assert.equal(JSON.stringify(old),raw);
  for(const [key,value]of [['eventWard',1],['insuranceTurns',-1],['insuranceTurns',4],['operatingUntilRound',999]]){const state=structuredClone(g.s);state.players[0][key]=value;assert.equal(Game.restore(state),null);}
  const bad=structuredClone(g.s);bad.ownership[1]={player:0,level:1,closedUntilRound:-1};assert.equal(Game.restore(bad),null);bad.ownership={};bad.notice={title:'x',text:'x',mood:'idle',outcomes:[{}]};assert.equal(Game.restore(bad),null);
 });

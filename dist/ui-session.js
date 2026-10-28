@@ -12,6 +12,7 @@ export function advanceSession(game,gates){
  if(!gates.ready())return null;
  let changed=false;
  if(!game.player.alive&&phase==='end')changed=game.command('end');
+ else if(phase==='auction'){const actor=s.auction?.actor;if(actor!==undefined&&!s.players[actor].human)changed=game.command('aiTurn',{},actor);}
  else if(!game.player.human)changed=game.command('aiTurn');
  else if(phase==='departure')changed=game.command('roll');
  else if(phase==='moving')changed=game.command('step');
