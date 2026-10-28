@@ -1,3 +1,4 @@
+import {accountPlayer} from './hotseat.js';
 import {TALENTS} from './talents.js?v=16';
 import {CHARACTERS} from './content.js';
 import {portrait} from './portraits.js';
@@ -5,7 +6,7 @@ import {eventPoseBitmap} from './portrait-renderer.js';
 import {art} from './illustrations.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const motifs={naiwa:'house',naichong:'bank',naishu:'steal',naigou:'recover',naidan:'build',naicha:'tea'};
-export function talentStatus(g,p=g.s.players[0]){
+export function talentStatus(g,p=(accountPlayer(g)||g.player)){
  const enabled=g.s.talents===true,active=enabled&&p.alive&&g.s.phase!=='finished',count=p.departures||0,cycle=p.character==='naidan'?4:p.character==='naicha'?3:0,progress=cycle?count%cycle:0,remaining=active&&cycle?cycle-progress:null,income=n=>Math.round(n*(p.spirit==='fortune'?1.25:1));
  let label=!enabled?'本局未开启天赋':!p.alive?'已退出，不再触发天赋':g.s.phase==='finished'?'本局旅行已结束':cycle?`再出发 ${remaining} 次，触发${p.character==='naidan'?'免费加盖':'周期补给'}`:'符合条件时自动生效',notes=[],target=null;
  if(active){
@@ -21,6 +22,6 @@ export function talentStatus(g,p=g.s.players[0]){
  return {enabled,active,count,cycle,progress,remaining,label,notes,target,phaseNote,recent};
 }
 export function talentsPanel(g){
- const p=g.s.players[0],c=g.char(p),t=TALENTS[c.id],s=talentStatus(g,p),pose=eventPoseBitmap(c.id,'idle'),meter=s.active&&s.cycle?`<div class="talent-cycle"><div><span>本周期进度</span><b>${s.progress}/${s.cycle}</b></div><div class="talent-meter" role="progressbar" aria-label="${esc(s.label)}" aria-valuemin="0" aria-valuemax="${s.cycle}" aria-valuenow="${s.progress}">${Array.from({length:s.cycle},(_,i)=>`<i class="${i<s.progress?'filled':''}"></i>`).join('')}</div></div>`:'';
+ const p=(accountPlayer(g)||g.player),c=g.char(p),t=TALENTS[c.id],s=talentStatus(g,p),pose=eventPoseBitmap(c.id,'idle'),meter=s.active&&s.cycle?`<div class="talent-cycle"><div><span>本周期进度</span><b>${s.progress}/${s.cycle}</b></div><div class="talent-meter" role="progressbar" aria-label="${esc(s.label)}" aria-valuemin="0" aria-valuemax="${s.cycle}" aria-valuenow="${s.progress}">${Array.from({length:s.cycle},(_,i)=>`<i class="${i<s.progress?'filled':''}"></i>`).join('')}</div></div>`:'';
  return `<section class="talent-hero ${s.active?'':'inactive'}" style="--talent-color:${c.estateColor}"><div class="talent-model">${pose?`<img src="${pose}" alt="${c.name}形象">`:portrait(c.id)}<span>${art(motifs[c.id])}</span></div><div class="talent-copy"><small>我的奶伴 · ${c.name}</small><h3>${t.name}</h3><p>${t.text}</p>${s.active?`<span class="badge">已实际出发 ${s.count} 次</span>`:''}</div><div class="talent-live"><strong>${s.label}</strong><small>${s.phaseNote}</small>${meter}${s.notes.length?`<ul>${s.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}</div></section>${s.recent?`<div class="talent-recent"><small>近期触发记录</small><p>${esc(s.recent)}</p></div>`:''}<p class="talent-explain">预览按当前资产、卡包和神灵状态计算，实际效果在触发时重新结算。休养不会消耗周期进度。</p><h3 class="other-talents-title">其他奶伴的天赋</h3>${CHARACTERS.filter(o=>o.id!==c.id).map(o=>{const player=g.s.players.find(p=>p.character===o.id),status=player?talentStatus(g,player):null;return `<div class="talent-row"><span class="talent-face">${portrait(o.id)}</span><div><h3>${o.name} · ${TALENTS[o.id].name}</h3><p>${TALENTS[o.id].text}</p><span class="badge">${player?(player.alive?'本局参赛':'已退出'):'未参赛'}</span>${status?.active&&status.cycle?`<small class="talent-rival-cycle">已出发 ${status.count} 次 · ${status.label}</small>`:''}</div></div>`;}).join('')}`;
 }

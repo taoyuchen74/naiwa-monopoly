@@ -7,7 +7,7 @@
  * @returns {{phase:import('./domain.js').Phase,speed:1|2|4}|null}
  */
 export function advanceSession(game,gates){
- if(!gates.started||gates.hidden||gates.paused||gates.studio||game.s.phase==='finished'||gates.panelOpen)return null;
+ if(!gates.started||gates.hidden||gates.paused||gates.studio||game.s.phase==='finished'||gates.panelOpen||game.s.handoff)return null;
  const s=game.s,phase=s.phase,beforeHead=s.logs[0],beforePlayer=s.current;
  if(!gates.ready())return null;
  let changed=false;

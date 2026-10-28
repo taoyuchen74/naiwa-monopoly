@@ -6,6 +6,8 @@ const none=()=>true;
 /** @typedef {import('./engine.js').Game} Game */
 /** @type {{[K in import('./domain.js').CommandType]: {phases:import('./domain.js').Phase[],fields:string[],valid:(payload:Record<string,unknown>,game:Game)=>boolean,run:(game:Game,payload:import('./domain.js').CommandPayloads[K])=>boolean}}} */
 const definitions={
+ acceptTurn:{phases:['roll','departure','moving','branch','buy','estate','event','end','debt'],fields:[],valid:(_p,g)=>g.player.human,run:g=>g.acceptTurn()},
+ lockTurn:{phases:['roll','departure','moving','branch','buy','estate','event','end','debt'],fields:[],valid:(_p,g)=>g.player.human,run:g=>g.lockTurn()},
  roll:{phases:['roll','departure'],fields:[],valid:none,run:g=>g.roll()},
  step:{phases:['moving','branch'],fields:['choice'],valid:(p,g)=>{
   if(p.choice===undefined)return g.s.phase!=='branch';
@@ -56,6 +58,7 @@ export function dispatch(game,command){
  if(sequence!==s.commandSequences[playerId]+1)return reply(false,'OUT_OF_ORDER');
  if(revision!==undefined&&(!integer(revision)||revision!==s.revision))return reply(false,'STALE_REVISION');
  if(playerId!==s.current)return reply(false,'NOT_CURRENT_PLAYER');
+ if(s.handoff&&!['acceptTurn','lockTurn'].includes(command.type))return reply(false,'HANDOFF_REQUIRED');
  if(!def.phases.includes(s.phase))return reply(false,'INVALID_PHASE');
  if(!game.player.alive&&!(s.phase==='end'&&['end','aiTurn'].includes(command.type)))return reply(false,'INACTIVE_PLAYER');
  if(Object.keys(payload).some(key=>!def.fields.includes(key))||!def.valid(payload,game))return reply(false,'INVALID_PAYLOAD');
