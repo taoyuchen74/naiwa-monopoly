@@ -25,11 +25,11 @@ export type CardTarget = Ownership & {id:number; obstacle?:boolean};
 export interface Market {name: string; price: number; previous: number; change: number; history: number[]; color?: string}
 export interface Debt {amount: number; to: number | null; label: string}
 export interface Preferences {
- sound: boolean; speed: 1 | 2 | 4; quality: 'auto' | 'low'; lighting: 'day' | 'golden' | 'night';
+ sound: boolean; speed: 1 | 2 | 3; aiFast?:boolean; quality: 'auto' | 'low'; lighting: 'day' | 'golden' | 'night';
  music?: boolean; voice?: boolean; musicVolume?: number; effectsVolume?: number; voiceVolume?: number; track?: 'ode' | 'town';
 }
 export interface ModeConfig {
- configVersion:1; id:'standard'|'short'|'business'|'daily'; rounds:number; speed:1|2;
+ configVersion:1; id:'standard'|'short'|'business'|'daily'; rounds:number; speed:1|2|3;
  initial:{cash:number;tickets:number;loan:number;propertiesPerPlayer:number;buildingLevel:number};
  allowedCards:CardKey[]; goal:{type:'ranking'|'netWorth';target:number}; dailyDate:string|null; fixedSeed:number|null;
 }
