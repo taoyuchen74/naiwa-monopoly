@@ -1,4 +1,5 @@
 // @ts-check
+import {recordCommand} from './replay-log.js';
 import {CARDS} from './content.js';
 /** @param {unknown} value @returns {value is number} */
 const integer=value=>typeof value==='number'&&Number.isSafeInteger(value);
@@ -71,5 +72,5 @@ export function dispatch(game,command){
  let code='RULE_REJECTED';
  try{ok=execute(game,payload)===true;}catch{code='EXECUTION_FAILED';}
  if(!ok){if(JSON.stringify(s)!==before){const restored=JSON.parse(before);for(const key of Object.keys(s))delete s[key];Object.assign(s,restored);}Object.assign(game.transfers,receipts);return reply(false,code);}
- s.revision++;s.commandSequences[playerId]=sequence;return reply(true,'OK');
+ s.revision++;s.commandSequences[playerId]=sequence;recordCommand(game,command,before);return reply(true,'OK');
 }
