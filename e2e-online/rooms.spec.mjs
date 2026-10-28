@@ -75,12 +75,12 @@ test('refresh preserves identity and sequence; actual offline reconnect resumes 
 });
 
 test('server timeout hands the whole turn to AI and cannot be postponed by refresh or an expired roll',async({browser},testInfo)=>{
- const pair=await makePair(browser,testInfo);try{await start(pair);const {a,b}=pair,deadline=(await state(a)).deadline;
+ const pair=await makePair(browser,testInfo);try{await start(pair);const {a,b}=pair,deadline=(await state(a)).deadline;await b.evaluate(()=>{window.connectionChanges=0;new MutationObserver(()=>window.connectionChanges++).observe(document.querySelector('#connection'),{childList:true,subtree:true,characterData:true});});
  await a.reload();await expect(a.locator('#onlineGame')).toBeVisible();expect((await state(a)).deadline).toBe(deadline);
  await expect.poll(async()=> (await state(b)).seats[0].ai,{timeout:26000}).toBe(true);
  await expect.poll(async()=> (await state(b)).game.current,{timeout:15000}).toBe(1);
  await a.locator('#controlRoom').click();await expect.poll(async()=> (await state(b)).seats[0].ai).toBe(false);await expect(a.locator('#controlRoom')).toHaveText('交给AI托管');await expect(a.locator('#controlRoom')).toBeEnabled();
- await packet(a,{type:'roll',payload:{}});await error(a,'NOT_CURRENT_PLAYER');
+ await packet(a,{type:'roll',payload:{}});await error(a,'NOT_CURRENT_PLAYER');expect(await b.evaluate(()=>window.connectionChanges)).toBe(0);
  }finally{await pair.close();}
 });
 

@@ -35,7 +35,7 @@ function render(){
  if(marketKey!==JSON.stringify(g.market)){marketKey=JSON.stringify(g.market);const old=$('onlineStock').value;$('onlineStock').replaceChildren(...g.market.map((m,i)=>{const o=text('option',m.name+' · '+m.price);o.value=String(i);return o;}));if(old)$('onlineStock').value=old;}
 }
 client.addEventListener('change',render);
-client.addEventListener('status',e=>{$('connection').textContent=e.detail;});
+client.addEventListener('status',e=>{if($('connection').textContent!==e.detail)$('connection').textContent=e.detail;});
 client.addEventListener('result',e=>{const r=e.detail;$('commandStatus').textContent=r.accepted?'命令已确认 · revision '+r.revision:(errors[r.error]||r.error);$('commandStatus').dataset.error=r.error||'';$('commandStatus').dataset.accepted=String(r.accepted);});
 $('createRoom').addEventListener('click',()=>client.connect({op:'create',protocol:1,name:$('onlineName').value}));
 $('joinRoom').addEventListener('click',()=>{if(!/^\d{6}$/.test($('roomCode').value)){$('commandStatus').textContent='请输入6位数字邀请码。';return;}client.connect({op:'join',protocol:1,roomId:$('roomCode').value,name:$('onlineName').value});});
