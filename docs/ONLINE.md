@@ -48,3 +48,15 @@ WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入
 - 单元：2—6人、满房、错误邀请码、准备与房主权限、种子不由客户端决定、投影不泄密、重复/跳号/过期revision、冒充席位/房间、非法阶段/资产/快照、原子拒绝、超时/断线托管/接回、房间过期、旧连接替换。
 - 两个独立真实浏览器上下文：创建/加入、准备/开始、双方同步、对局命令、重复/乱序/过期revision、伪造资产/身份/种子、刷新重连、单机JSON不成为权威状态、断线与超时托管、移动尺寸主要按钮。
 - 服务端HTTP/WebSocket：Origin拒绝、认证超时、非法JSON/超大消息、消息限流、静态服务只读公开资源；CI同时跑原单机回归、联机测试与构建，不虚构公网或真机验证。
+
+## 运行与模块
+
+`npm run start:online` 构建公共文件并启动server/start.mjs；默认127.0.0.1:4182，首页入口跳转online.html。公共目录只含构建产物；不向HTTP开放server/、dist/或包文件。生产模式必须设置PUBLIC_ORIGIN并在受信反向代理启用HTTPS/WSS，HOST/PORT可配置；本次不自动部署。
+
+server/rooms.mjs管理身份绑定、房间时钟、外部命令序号、HMAC承诺和私有投影；server/controls.mjs根据权威Game生成可用按钮；server/http.mjs提供HttpOnly会话、Origin校验、WebSocket、限流与心跳。dist/online-client.js只管理连接、确认与重连；dist/online.js仅显示投影和提交命令，不导入Game、不读写单机localStorage。
+
+大厅成员中途不换席/离房，直到房间过期或服务重启；同一浏览器Cookie表示一个席位，后连接替换先连接。房间号/席位提示不是恢复凭证。没有Cookie时不能凭邀请码夺回开始后的席位。跨服务器和跨设备恢复不在本切片范围内。
+
+构建同时输出独立online.html与联机脚本，单机页面仍只加载自己的一个脚本。service worker绕过联机页面及/api/online/，不缓存会话响应。离线单文件点击入口明确提示不支持，静态站联机页明确提示服务不可用。WebSocket使用固定版本[ws官方实现](https://github.com/websockets/ws)，客户端使用浏览器原生WebSocket。
+
+资源上限是单进程的安全边界，不是已验证的100房并发容量承诺。固定32位规则RNG仍有可预测性风险；权威命令、私有投影与HMAC状态承诺阻止直接上传/修改权威状态，不构成竞技认证或对可控客户端的绝对防作弊保证。

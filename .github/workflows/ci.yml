@@ -35,6 +35,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser smoke tests
         run: npm run test:browser
+      - name: Two-client online browser tests
+        run: npm run test:online
       - name: Build site and portable game
         run: npm run build
       - name: Upload browser report and failure evidence

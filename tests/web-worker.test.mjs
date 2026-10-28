@@ -25,3 +25,5 @@ test('without a complete cached document, navigation preserves the real network 
  const w=worker();w.setFetch(async()=>new Response('unavailable',{status:503}));assert.equal((await w.get('./')).status,503);
  w.setFetch(async()=>{throw Error('offline');});assert.equal((await w.get('./')).type,'error');
 });
+
+test('online page and session APIs always bypass the offline navigation fallback and response cache',async()=>{const w=worker();await w.install();let fetched=0;w.setFetch(async()=>{fetched++;return new Response('must be handled by browser network');});assert.equal(await w.get('./online.html'),undefined);assert.equal(await w.get('/api/online/session','cors'),undefined);assert.equal(await w.get('/api/online/ws','cors'),undefined);assert.equal(fetched,0);assert.match(await(await w.get('./')).text(),/original/);});
