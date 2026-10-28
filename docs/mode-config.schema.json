@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Naiwa ModeConfig v1",
+  "type": "object",
+  "required": [
+    "configVersion",
+    "id",
+    "rounds",
+    "speed",
+    "initial",
+    "allowedCards",
+    "goal",
+    "dailyDate",
+    "fixedSeed"
+  ],
+  "properties": {
+    "configVersion": {
+      "const": 1
+    },
+    "id": {
+      "enum": [
+        "standard",
+        "short",
+        "business",
+        "daily"
+      ]
+    },
+    "rounds": {
+      "enum": [
+        20,
+        30,
+        50,
+        80
+      ]
+    },
+    "speed": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "initial": {
+      "type": "object",
+      "required": [
+        "cash",
+        "tickets",
+        "loan",
+        "propertiesPerPlayer",
+        "buildingLevel"
+      ],
+      "properties": {
+        "cash": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "tickets": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 150
+        },
+        "loan": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1800
+        },
+        "propertiesPerPlayer": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "buildingLevel": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        }
+      }
+    },
+    "allowedCards": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "dice",
+          "block",
+          "turn",
+          "shield",
+          "steal",
+          "recover",
+          "demolish",
+          "build",
+          "ward",
+          "swap",
+          "insurance",
+          "slow"
+        ]
+      }
+    },
+    "goal": {
+      "type": "object",
+      "required": [
+        "type",
+        "target"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "ranking",
+            "netWorth"
+          ]
+        },
+        "target": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ranking"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "target": {
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "dailyDate": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "fixedSeed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 4294967295
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "id": {
+            "const": "daily"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "dailyDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fixedSeed": {
+            "type": "integer"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "dailyDate": {
+            "type": "null"
+          },
+          "fixedSeed": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "$comment": "Runtime also verifies Gregorian date, fixedSeed == FNV1a('naiwa-daily-v1:'+dailyDate) with zero mapped to 1, maxRounds equals rounds, and held cards belong to allowedCards. No signed or anti-cheat guarantees."
+}

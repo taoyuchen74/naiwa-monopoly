@@ -1,0 +1,88 @@
+{
+  "method": "3 normal AI seats, map2, random initiative, seeds1..N; daily dates2026-10-01 onward; original rules/AI; target thresholds evaluated on identical business end states; no human balance claim",
+  "rows": [
+    {
+      "id": "standard",
+      "games": 40,
+      "players": 3,
+      "difficulty": "normal",
+      "mapVersion": 2,
+      "meanRounds": 50,
+      "rankingWins": [
+        6,
+        32,
+        2
+      ],
+      "bankruptcyRate": 0,
+      "netWorth": {
+        "p10": 5667,
+        "p50": 7974,
+        "p90": 10853
+      }
+    },
+    {
+      "id": "short",
+      "games": 40,
+      "players": 3,
+      "difficulty": "normal",
+      "mapVersion": 2,
+      "meanRounds": 20,
+      "rankingWins": [
+        7,
+        33,
+        0
+      ],
+      "bankruptcyRate": 0,
+      "netWorth": {
+        "p10": 3719,
+        "p50": 4637,
+        "p90": 5949
+      }
+    },
+    {
+      "id": "business",
+      "games": 40,
+      "players": 3,
+      "difficulty": "normal",
+      "mapVersion": 2,
+      "meanRounds": 20,
+      "rankingWins": [
+        5,
+        30,
+        5
+      ],
+      "bankruptcyRate": 0,
+      "netWorth": {
+        "p10": 2917,
+        "p50": 4104,
+        "p90": 5314
+      },
+      "seatSuccessRate": 0.15833333333333333,
+      "anySuccessRate": 0.475,
+      "postHocThresholdRates": {
+        "4500": 0.325,
+        "5000": 0.15833333333333333,
+        "5500": 0.08333333333333333
+      }
+    },
+    {
+      "id": "daily",
+      "games": 40,
+      "players": 3,
+      "difficulty": "normal",
+      "mapVersion": 2,
+      "meanRounds": 30,
+      "rankingWins": [
+        4,
+        36,
+        0
+      ],
+      "bankruptcyRate": 0,
+      "netWorth": {
+        "p10": 4348,
+        "p50": 5619,
+        "p90": 8014
+      }
+    }
+  ]
+}

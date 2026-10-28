@@ -41,7 +41,7 @@ test('pending handoff survives every slot and JSON roundtrip; UI entry relocks c
  g.command('acceptTurn');g.s.phase='debt';g.s.debt={amount:350,to:1,label:'租金'};g.player.cards=['insurance'];const restored=Game.restore(g.s),revision=restored.s.revision;assert.equal(restored.stateHash(),g.stateHash());assert.ok(lockSession(restored));assert.equal(restored.s.phase,'debt');assert.equal(restored.s.revision,revision+1);assert.equal(restored.command('settle'),false);assert.ok(restored.command('acceptTurn'));assert.deepEqual(restored.player.cards,['insurance']);
 });
 test('old single-human saves migrate and malformed handoff targets refuse restore',()=>{
- const old=Game.create({seed:17}).s;old.rules=8;delete old.handoff;const g=Game.restore(old);assert.ok(g);assert.equal(g.s.handoff,null);assert.equal(g.s.rules,9);
+ const old=Game.create({seed:17}).s;old.rules=8;delete old.handoff;const g=Game.restore(old);assert.ok(g);assert.equal(g.s.handoff,null);assert.equal(g.s.rules,10);
  const h=make();for(const handoff of [{playerId:1},{playerId:99},{playerId:'0'},false])assert.equal(Game.restore({...h.s,handoff}),null);
  h.s.players[0].alive=false;assert.equal(Game.restore(h.s),null);h.s.handoff=null;h.s.phase='end';assert.ok(h.command('end'));assert.equal(h.s.current,1);assert.equal(h.s.handoff,null);
 });

@@ -7,7 +7,7 @@ const fmt=n=>Math.round(n).toLocaleString('zh-CN');
 export function shopInfo(g){
  const p=accountPlayer(g);if(!p)return {p:null,reason:'等待真人接手',vehicles:[],cards:[],remaining:0,space:0};const reason=!p.alive?'你已退出本局':g.s.phase==='finished'?'本局旅行已结束':g.player.id!==p.id?'电脑回合，先浏览你的补给清单':!g.canShop()?'停在地图上的补给商店后才能购买':'';
  const vehicles=VEHICLES.slice(1).map(v=>{const owned=p.vehicle>=v.id,why=owned?(p.vehicle===v.id?'当前装备':'已拥有更高等级工具'):reason|| (p.money<v.price?'现金不足，还差 '+fmt(v.price-p.money):'');return {...v,owned,cashAfter:p.money-v.price,reason:why,allowed:!why};});
- const cards=Object.entries(CARDS).map(([key,c])=>{const price=g.cardPrice(key,p),count=p.cards.filter(k=>k===key).length,why=reason||(p.cards.length>=RULES.handLimit?'卡包已满，先用掉一些卡片':p.shopUsed>=2?'本回合已购卡 2 张':p.tickets<price?'点券不足，还差 '+fmt(price-p.tickets):'');return {key,...c,price,count,ticketsAfter:p.tickets-price,reason:why,allowed:!why};});
+ const cards=Object.entries(CARDS).filter(([key])=>g.s.mode.allowedCards.includes(key)).map(([key,c])=>{const price=g.cardPrice(key,p),count=p.cards.filter(k=>k===key).length,why=reason||(p.cards.length>=RULES.handLimit?'卡包已满，先用掉一些卡片':p.shopUsed>=2?'本回合已购卡 2 张':p.tickets<price?'点券不足，还差 '+fmt(price-p.tickets):'');return {key,...c,price,count,ticketsAfter:p.tickets-price,reason:why,allowed:!why};});
  return {p,reason,vehicles,cards,remaining:Math.max(0,2-p.shopUsed),space:RULES.handLimit-p.cards.length};
 }
 export function shopPanel(g){const q=shopInfo(g),p=q.p;if(!p)return privateNotice();const c=g.char(p);

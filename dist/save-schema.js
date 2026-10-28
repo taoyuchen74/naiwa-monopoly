@@ -1,4 +1,5 @@
 // @ts-check
+import {modeConfig,validMode} from './modes.js';
 import {mapTiles} from './maps.js';
 import {migratePortfolio} from './portfolio.js';
 import {BUSINESSES,businessType,buildingLimit,researchChoices} from './businesses.js';
@@ -96,7 +97,7 @@ if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
   if(!s.pickups||typeof s.pickups!=='object'||Object.entries(s.pickups).some(([id,owner])=>!POINT_STOPS.includes(+id)||!Number.isInteger(owner)||!s.players[owner]))return null;
   if(s.talents===undefined)s.talents=false;
   if(typeof s.talents!=='boolean')return null;
-  s.rules=9;
+  s.rules=10;
   for(const p of s.players){
    if(p.eventWard===undefined)p.eventWard=false;
    if(p.insuranceTurns===undefined)p.insuranceTurns=0;
@@ -119,6 +120,8 @@ if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
   if(s.notice?.outcomes!==undefined&&(!Array.isArray(s.notice.outcomes)||s.notice.outcomes.length>6||s.notice.outcomes.some(x=>typeof x!=='string')))return null;
   if(s.handoff===undefined)s.handoff=s.players.filter(p=>p.human).length>1&&s.players[s.current].human&&s.phase!=='finished'?{playerId:s.current}:null;
   if(s.handoff!==null&&(!s.handoff||!Number.isInteger(s.handoff.playerId)||s.handoff.playerId!==s.current||!s.players[s.current].human||!s.players[s.current].alive||s.phase==='finished'||s.players.filter(p=>p.human).length<2))return null;
+  if(s.mode===undefined)s.mode=modeConfig({rounds:s.maxRounds});
+  if(!validMode(s.mode)||s.mode.rounds!==s.maxRounds||s.players.some(p=>p.cards.some(k=>!s.mode.allowedCards.includes(k))))return null;
   return s;
  }catch{
   return null;

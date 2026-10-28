@@ -20,7 +20,7 @@ export interface Player {
  aiTradeDone?: boolean; aiBankDone?: boolean; mood?: string;
 }
 export interface Ownership {player: number; level: number; buildingType?: BuildingType; researchProgress?: number; researchCard?: CardKey; closedUntilRound?:number}
-export type InitialGameState = Omit<GameState,'revision'|'commandSequences'|'handoff'> & Partial<Pick<GameState,'revision'|'commandSequences'|'handoff'>>;
+export type InitialGameState = Omit<GameState,'revision'|'commandSequences'|'handoff'|'mode'> & Partial<Pick<GameState,'revision'|'commandSequences'|'handoff'|'mode'>>;
 export type CardTarget = Ownership & {id:number; obstacle?:boolean};
 export interface Market {name: string; price: number; previous: number; change: number; history: number[]; color?: string}
 export interface Debt {amount: number; to: number | null; label: string}
@@ -28,8 +28,13 @@ export interface Preferences {
  sound: boolean; speed: 1 | 2 | 4; quality: 'auto' | 'low'; lighting: 'day' | 'golden' | 'night';
  music?: boolean; voice?: boolean; musicVolume?: number; effectsVolume?: number; voiceVolume?: number; track?: 'ode' | 'town';
 }
+export interface ModeConfig {
+ configVersion:1; id:'standard'|'short'|'business'|'daily'; rounds:number; speed:1|2;
+ initial:{cash:number;tickets:number;loan:number;propertiesPerPlayer:number;buildingLevel:number};
+ allowedCards:CardKey[]; goal:{type:'ranking'|'netWorth';target:number}; dailyDate:string|null; fixedSeed:number|null;
+}
 export interface GameState {
- version: 2; rules: 9; setupSeed?: number; mapVersion: 1 | 2; difficulty: Difficulty; talents: boolean;
+ version: 2; rules: 10; mode:ModeConfig; setupSeed?: number; mapVersion: 1 | 2; difficulty: Difficulty; talents: boolean;
  firstPlayer: number; seed: number; round: number; maxRounds: number; current: number; phase: Phase;
  dice: number[]; remaining: number; moveTotal: number; moveSteps: number | null;
  players: Player[]; ownership: Record<number, Ownership|undefined>; blocks: Record<number, number|undefined>; pickups: Record<number, number|undefined>;
@@ -61,6 +66,7 @@ export type SlotRecord =
  | {id:SlotId; status:'corrupt'|'future'; raw:string; state:null; updatedAt:null};
 export interface SaveOptions {expectedRaw?:string|null; now?:number}
 export interface CreateGameOptions {
+ mode?:ModeConfig;
  seatTypes?:Array<'human'|'ai'>; primaryLevel?:Difficulty|'inherit';
  character?:CharacterId|'dounai'; rounds?:number; playerCount?:2|3|4|5|6; randomStart?:boolean; talents?:boolean;
  mapVersion?:1|2; difficulty?:Difficulty; opponents?:Array<CharacterId|'dounai'|'random'>; seatLevels?:Array<Difficulty|'inherit'>;

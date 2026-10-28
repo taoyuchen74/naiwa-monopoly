@@ -1,3 +1,4 @@
+import {modeConfig} from '../dist/modes.js';
 import {lockSession} from '../dist/hotseat.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +13,7 @@ const archive=()=>{const g=Game.create({character:'naicha',playerCount:6,seed:53
 function harness(raw=null){
  const data=new Map(raw?[[SAVE_KEY,raw]]:[]),writes=[],nodes={playerCountSelect:{value:'3'},roundSelect:{value:'20'},difficultySelect:{value:'normal'},talentsEnabled:{checked:true},startScreen:{hidden:false},saveStatus:{}};
  const localStorage={getItem:key=>data.get(key)??null,setItem(key,value){writes.push(key);data.set(key,String(value));}};
- const context={repository:createSaveRepository(localStorage),Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup,archiveSummary,normalizeSetup,setupError,localStorage,game:Game.create({seed:7481}),saved:null,started:false,selected:'naiwa',advanced:normalizeSetup(),advancedDraft:null,scene:null,activePanel:null,blockKey:'',actionPacer:{reset(){}},$:id=>nodes[id],writePreferences(){},readPreferences:(_storage,options)=>options,btn:(text,act)=>`<button data-act="${act}">${text}</button>`,showSheet(...args){context.dialog=args;},toast(text){context.message=text;},dismiss(){context.dialog=null;},render(){},sound(){}};
+ const context={repository:createSaveRepository(localStorage),modeConfig,Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup,archiveSummary,normalizeSetup,setupError,localStorage,game:Game.create({seed:7481}),saved:null,started:false,selected:'naiwa',advanced:normalizeSetup(),advancedDraft:null,scene:null,activePanel:null,blockKey:'',actionPacer:{reset(){}},$:id=>nodes[id],writePreferences(){},readPreferences:(_storage,options)=>options,btn:(text,act)=>`<button data-act="${act}">${text}</button>`,showSheet(...args){context.dialog=args;},toast(text){context.message=text;},dismiss(){context.dialog=null;},render(){},sound(){}};
  context.relockSession=()=>lockSession(context.game);
  context.commit=()=>runInNewContext('save()',context);
  runInNewContext(source.slice(source.indexOf('function save()'),source.indexOf('function commit(')),context);
@@ -63,3 +64,5 @@ test('legacy archives without timestamps keep migration and JSON round trips',()
 test('failed restore write does not replace the active game or discard the backup',()=>{
  const h=harness(),current=h.context.game,raw=JSON.stringify(archive().s);h.data.set(BACKUP_KEY,raw);h.context.localStorage.setItem=()=>{throw Error('quota');};h.run('restoreBackup()');assert.equal(h.context.game,current);assert.equal(h.context.started,false);assert.equal(h.data.get(BACKUP_KEY),raw);assert.match(h.context.message,/恢复失败/);
 });
+
+test('classic preserves chosen animation speed while mode presets choose their quick default',()=>{const h=harness();h.context.game.s.options.speed=2;h.run('startFresh()');assert.equal(h.context.game.s.options.speed,2);const quick=harness();quick.context.advanced.modeId='short';quick.run('startFresh()');assert.equal(quick.context.game.s.options.speed,2);assert.equal(quick.context.game.s.maxRounds,20);});

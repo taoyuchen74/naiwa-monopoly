@@ -11,7 +11,7 @@
 | 手动2 | `naiwa-monopoly-v2-manual2` |
 | 手动3 | `naiwa-monopoly-v2-manual3` |
 
-记录保留原来的扁平JSON结构：`{schemaVersion:1,savedAt:毫秒时间戳,...原规则状态}`。`schemaVersion`描述存储格式；原有`version:2`、`rules:9`继续表达游戏规则版本，地图、玩家、阶段、随机状态等字段含义不变。恢复后的规则状态不包含`schemaVersion`。
+记录保留原来的扁平JSON结构：`{schemaVersion:1,savedAt:毫秒时间戳,...原规则状态}`。`schemaVersion`描述存储格式；原有`version:2`、`rules:10`继续表达游戏规则版本，地图、玩家、阶段、随机状态等字段含义不变。恢复后的规则状态不包含`schemaVersion`。
 
 命令层增加`revision`和逐玩家`commandSequences`，存取档及JSON往返均保留，旧快照缺少两者时只读迁移为0。格式1仍兼容迁移前数据；计数损坏或部分缺失会拒绝恢复。接口、去重范围与状态哈希见 [命令层说明](COMMANDS.md)。
 
@@ -36,3 +36,5 @@
 `tests/save-repository.test.mjs`覆盖独立键、只读迁移、版本拒绝、精确往返、覆盖冲突、删除范围和存储失败，并在两张地图、四场六人高手AI完整对局的每一步保存/读取，与不经存档的基线逐字段对比。
 
 `e2e-ci/save-slots.spec.mjs`在390×844和844×390执行真实按钮、文件上传和下载：三个手动槽、覆盖/删除取消、读取与备份、旧JSON迁移及跨槽导入导出、损坏/未来版本拒绝、确认期间修改和配额不足。浏览器使用桌面Chromium移动仿真；未宣称真实手机验收。
+
+规则版本10新增mode配置（configVersion=1）。旧档补经典配置并沿用原轮数；恢复不重发初始资产、不重算每日日期。未知配置或轮数/卡池不一致拒绝恢复。结构见 [模式配置](MODES.md)。

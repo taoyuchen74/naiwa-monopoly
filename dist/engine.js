@@ -1,4 +1,5 @@
 // @ts-check
+import {modeConfig,validMode,applyMode,modeProgress} from './modes.js';
 import {isHotseat} from './hotseat.js';
 import {TransferLog} from './transfers.js';
 import {rosterFor} from './setup.js';
@@ -38,6 +39,7 @@ export class Game {
  /** @param {import('./domain.js').InitialGameState} state */
  constructor(state){
   state.handoff??=null;
+  state.mode??=modeConfig({rounds:state.maxRounds});
   state.revision??=0;
   state.commandSequences??=state.players.map(()=>0);
   /** @type {import('./domain.js').GameState} */
@@ -71,11 +73,13 @@ export class Game {
  setDiceCount(count){if(this.s.phase!=='roll'||!this.player.alive||!Number.isInteger(count)||count<1||count>VEHICLES[this.player.vehicle].dice)return false;this.player.diceCount=count;return true;}
  markAiAction(kind){if(this.player.human||!['trade','bank'].includes(kind))return false;this.player[kind==='trade'?'aiTradeDone':'aiBankDone']=true;return true;}
  /** @param {import('./domain.js').CreateGameOptions} [options] @returns {Game} */
- static create({seatTypes=[],primaryLevel='inherit',character='naiwa',rounds=50,playerCount=3,randomStart=false,talents=true,mapVersion=2,difficulty='normal',opponents,seatLevels=[],startingCash=3200,startingTickets=60,seed=Date.now()}={}){
+ static create({mode,seatTypes=[],primaryLevel='inherit',character='naiwa',rounds=50,playerCount=3,randomStart=false,talents=true,mapVersion=2,difficulty='normal',opponents,seatLevels=[],startingCash=3200,startingTickets=60,seed=Date.now()}={}){
+  if(mode&&!validMode(mode))throw new RangeError('Invalid mode configuration');
+  if(mode?.fixedSeed!==null&&mode?.fixedSeed!==undefined)seed=mode.fixedSeed;
   if(seatTypes.some(type=>!['human','ai'].includes(type)))throw new RangeError('Invalid seat types');
   if(character==='dounai')character='naicha';opponents=opponents?.map(id=>id==='dounai'?'naicha':id);if(!CHARACTERS.some(c=>c.id===character))character='naiwa';
   const count=[2,3,4,5,6].includes(+playerCount)?+playerCount:3;const chars=rosterFor(character,count,opponents,seed);
-  const game=new Game({version:2,rules:9,setupSeed:seed>>>0,mapVersion:mapVersion===1?1:2,difficulty:['easy','normal','hard'].includes(difficulty)?difficulty:'normal',talents:!!talents,firstPlayer:0,seed:mixedSeed(seed),round:1,maxRounds:ROUND_OPTIONS.includes(+rounds)?+rounds:50,current:0,phase:'roll',dice:[1],remaining:0,moveTotal:0,moveSteps:0,players:chars.map((c,id)=>({id,character:c,human:(seatTypes[id]||(id?'ai':'human'))==='human',difficulty:seatDifficulty(id?seatLevels[id-1]:primaryLevel,seatDifficulty(difficulty,'normal')),money:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60,businessReady:false,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0,buildSite:null,bankAccess:false,talentReady:false,departures:0,deposit:0,loan:0,stocks:[0,0,0,0],stockBook:emptyBook(),stockLegacy:false,stockTrades:[],cards:['dice','shield','recover'],vehicle:0,diceCount:1,pos:0,history:[],alive:true,eventWard:false,insuranceTurns:0,operatingUntilRound:0,skip:0,spirit:null,spiritTurns:0,shield:false,reverse:false,forced:0})),ownership:{},blocks:{},pickups:{},market:STOCKS.map(t=>({...t,history:[t.price],change:0,previous:t.price})),logs:[{round:1,text:'奶家发财岛开张！每位奶伴带着 '+([2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200)+' 奶币出发。'}],notice:null,debt:null,options:{sound:true,speed:1,quality:'auto',lighting:'day'},winner:null});if(randomStart){game.s.current=game.int(count);game.s.firstPlayer=game.s.current;game.log(`随机先手：${game.char().name}先出发，每人行动一次算一轮。`);}game.prepareHandoff();return game;
+  const game=new Game({version:2,rules:10,mode:mode?JSON.parse(JSON.stringify(mode)):modeConfig({rounds, cash:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60}),setupSeed:seed>>>0,mapVersion:mapVersion===1?1:2,difficulty:['easy','normal','hard'].includes(difficulty)?difficulty:'normal',talents:!!talents,firstPlayer:0,seed:mixedSeed(seed),round:1,maxRounds:ROUND_OPTIONS.includes(+rounds)?+rounds:50,current:0,phase:'roll',dice:[1],remaining:0,moveTotal:0,moveSteps:0,players:chars.map((c,id)=>({id,character:c,human:(seatTypes[id]||(id?'ai':'human'))==='human',difficulty:seatDifficulty(id?seatLevels[id-1]:primaryLevel,seatDifficulty(difficulty,'normal')),money:[2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200,tickets:[0,60,120].includes(+startingTickets)?+startingTickets:60,businessReady:false,cardsUsed:0,buildsUsed:0,shopUsed:0,slowTurns:0,buildSite:null,bankAccess:false,talentReady:false,departures:0,deposit:0,loan:0,stocks:[0,0,0,0],stockBook:emptyBook(),stockLegacy:false,stockTrades:[],cards:['dice','shield','recover'],vehicle:0,diceCount:1,pos:0,history:[],alive:true,eventWard:false,insuranceTurns:0,operatingUntilRound:0,skip:0,spirit:null,spiritTurns:0,shield:false,reverse:false,forced:0})),ownership:{},blocks:{},pickups:{},market:STOCKS.map(t=>({...t,history:[t.price],change:0,previous:t.price})),logs:[{round:1,text:'奶家发财岛开张！每位奶伴带着 '+([2000,3200,5000,8000].includes(+startingCash)?+startingCash:3200)+' 奶币出发。'}],notice:null,debt:null,options:{sound:true,speed:1,quality:'auto',lighting:'day'},winner:null});applyMode(game);if(randomStart){game.s.current=game.int(count);game.s.firstPlayer=game.s.current;game.log(`随机先手：${game.char().name}先出发，每人行动一次算一轮。`);}game.prepareHandoff();return game;
  }
  /** @param {unknown} raw @returns {Game|null} */
  static restore(raw){const state=migrateSave(raw);return state?new Game(state):null;}
@@ -108,7 +112,7 @@ export class Game {
  canBuild(id){return Object.keys(BUSINESSES).some(type=>this.canConstruct(id,type));}
  /** @param {number} id @param {import('./domain.js').BuildingType} type */
  construct(id,type){if(!this.canConstruct(id,type))return false;const o=this.s.ownership[id],cost=this.buildPrice(this.tiles[id],type);if(!o)return false;this.player.money-=cost;this.player.buildsUsed++;o.buildingType=type;o.level=1;if(type==='research'){o.researchProgress=0;o.researchCard='dice';}this.log(`${this.char().name}在「${this.tiles[id].name}」建成${BUSINESSES[type].name} −${cost}`);return true;}
- setResearch(id,key){const o=this.s.ownership[id];if(!o||o.player!==this.player.id||businessType(o)!=='research'||!o.level||this.s.phase!=='end'||this.player.pos!==id||this.player.buildSite!==id||!researchChoices(o.level).includes(key))return false;o.researchCard=key;o.researchProgress=0;this.log(`${this.char().name}调整研究所项目。`);return true;}
+ setResearch(id,key){const o=this.s.ownership[id];if(!o||o.player!==this.player.id||businessType(o)!=='research'||!o.level||this.s.phase!=='end'||this.player.pos!==id||this.player.buildSite!==id||(!researchChoices(o.level).includes(key)||!this.s.mode.allowedCards.includes(key)))return false;o.researchCard=key;o.researchProgress=0;this.log(`${this.char().name}调整研究所项目。`);return true;}
  cardPrice(key,p=this.player){return Math.ceil(CARDS[key].price*(hasTalent(this,p,'naichong')?.8:1));}
  /** @param {number} amount @param {number|null} [to] @param {import('./domain.js').Player} [p] */
  payment(amount,to=null,p=this.player){return round(amount*(p.spirit==='misfortune'?1.25:1)*(to!==null&&p.insuranceTurns>0?1-CARDS.insurance.reduction:1)*(hasTalent(this,p,'naishu')&&to!==null?.8:hasTalent(this,p,'naicha')&&to===null?.5:1));}
@@ -141,10 +145,10 @@ export class Game {
  coupons(p,amount){p.tickets=Math.min(RULES.couponCap,p.tickets+amount);}
  income(p,n,label){const amount=round(n*(p.spirit==='fortune'?1.25:1));p.money+=amount;this.log(`${this.char(p).name} ${label} +${amount}`);return amount;}
  canBank(){return this.manageable()&&!bankClosed(this.s.round)&&(this.player.bankAccess||this.tiles[this.player.pos].kind==='bank');}
- canUseCard(key){return !!(Object.hasOwn(CARDS,key)&&this.player.alive&&CARD_TIMINGS[CARDS[key].timing].phases.includes(this.s.phase));}
+ canUseCard(key){return !!(this.s.mode.allowedCards.includes(key)&&Object.hasOwn(CARDS,key)&&this.player.alive&&CARD_TIMINGS[CARDS[key].timing].phases.includes(this.s.phase));}
  blockTargets(){const p=this.player;let at=p.pos;return Array.from({length:6},(_,i)=>{at=this.tiles[at].next[0];return {id:at,steps:i+1,reason:this.s.blocks[at]!==undefined?'这里已有路障':this.s.players.some(q=>q.alive&&q.pos===at)?'这里有角色停靠':''};});}
  cardHint(key){
-  const p=this.player;if(!Object.hasOwn(CARDS,key)||!p.cards.includes(key))return '卡片不在当前卡包中';
+  const p=this.player;if(!this.s.mode.allowedCards.includes(key))return '当前模式未开放此卡';if(!Object.hasOwn(CARDS,key)||!p.cards.includes(key))return '卡片不在当前卡包中';
   if(!this.canUseCard(key))return key==='steal'?'仅抵达对手地产、付租前可使用':this.s.phase==='end'&&CARD_TIMINGS[CARDS[key].timing].label==='出发前'?'移动卡须在掷骰前使用':'等待自己的行动时机';
   if(key==='dice'&&p.forced)return `本次已指定 ${p.forced} 步`;
   if(key==='turn'&&p.reverse)return '本次已选择倒退';
@@ -199,8 +203,8 @@ export class Game {
  bank(kind,amount){return bank(this,kind,amount);}
  /** @param {number} stock @param {number|string} qty */
  trade(stock,qty){return trade(this,stock,qty);}
- giveCard(p,key){key||=Object.keys(CARDS)[this.int(Object.keys(CARDS).length)];if(p.cards.length>=RULES.handLimit){this.income(p,RULES.cardOverflowCash,'卡包已满，补偿');return;}p.cards.push(key);this.log(`${this.char(p).name}获得「${CARDS[key].name}」。`);}
- shop(key){if(!this.canShop())return false;const c=CARDS[key],p=this.player;if(!c||p.cards.length>=15||p.tickets<this.cardPrice(key)||p.shopUsed>=2)return false;p.tickets-=this.cardPrice(key);p.shopUsed++;p.cards.push(key);this.log(`${this.char().name}购买「${c.name}」−${this.cardPrice(key)} 点券`);return true;}
+ giveCard(p,key){const pool=this.s.mode.allowedCards;if(key&&!pool.includes(key)){this.income(p,RULES.cardOverflowCash,'模式禁用卡，补偿');return;}key||=pool[this.int(pool.length)];if(p.cards.length>=RULES.handLimit){this.income(p,RULES.cardOverflowCash,'卡包已满，补偿');return;}p.cards.push(key);this.log(`${this.char(p).name}获得「${CARDS[key].name}」。`);}
+ shop(key){if(!this.canShop())return false;const c=CARDS[key],p=this.player;if(!c||!this.s.mode.allowedCards.includes(key)||p.cards.length>=15||p.tickets<this.cardPrice(key)||p.shopUsed>=2)return false;p.tickets-=this.cardPrice(key);p.shopUsed++;p.cards.push(key);this.log(`${this.char().name}购买「${c.name}」−${this.cardPrice(key)} 点券`);return true;}
  vehicle(id){if(!this.canShop())return false;const p=this.player,v=VEHICLES[id];if(!v||id<=p.vehicle||p.money<v.price)return false;p.money-=v.price;p.vehicle=id;p.diceCount=v.dice;this.log(`${this.char().name}购入${v.name}，现在可选择 1—${v.dice} 颗骰子。`);return true;}
  card(index,target){const p=this.player,key=p.cards[index];if(this.cardHint(key))return false;let detail='';
   if(key==='dice'){if(!Number.isInteger(target)||target<1||target>6||p.forced)return false;p.forced=target;detail=`指定本次 ${target} 步`;}
@@ -263,7 +267,7 @@ export class Game {
   this.s.current=next;this.player.businessReady=false;this.player.talentReady=false;this.player.cardsUsed=0;this.player.buildsUsed=0;this.player.shopUsed=0;this.player.buildSite=null;this.player.bankAccess=false;this.player.aiTradeDone=false;this.player.aiBankDone=false;this.s.phase='roll';this.prepareHandoff();return true;
  }
  marketTick(){return marketTick(this);}
- finish(){this.s.handoff=null;this.s.phase='finished';const leaders=this.leaders();this.s.winner=leaders[0]?.id??0;this.log(`本局结束！${leaders.map(p=>this.char(p).name).join('、')}${leaders.length>1?'并列':''}成为奶家大富翁。`);}
+ finish(){this.s.handoff=null;this.s.phase='finished';const leaders=this.leaders();this.s.winner=this.s.mode.goal.type==='netWorth'?(leaders.find(p=>modeProgress(this).find(r=>r.playerId===p.id)?.success)?.id??null):(leaders[0]?.id??0);if(this.s.mode.goal.type==='netWorth'){this.log(`经营挑战结算：${modeProgress(this).filter(r=>r.success).length} 席达成目标，资产排名已生成。`);return;}this.log(`本局结束！${leaders.map(p=>this.char(p).name).join('、')}${leaders.length>1?'并列':''}成为奶家大富翁。`);}
  leaders(){const ranked=this.ranking(),first=ranked[0];return ranked.filter(p=>p.alive===first.alive&&this.worth(p)===this.worth(first));}
  ranking(){return [...this.s.players].sort((a,b)=>Number(b.alive)-Number(a.alive)||this.worth(b)-this.worth(a)||a.id-b.id);}
  takeAiAction(){const phase=this.s.phase,ok=takeAiTurn(this);return ok||phase==='moving'&&this.s.phase==='branch';}
