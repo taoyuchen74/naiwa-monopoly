@@ -21,6 +21,7 @@
     "dist/save-repository.js",
     "dist/economy.js",
     "dist/ui-session.js",
+    "dist/modes.js",
     "dist/hotseat.js",
     "tests/types/**/*.js"
   ],
