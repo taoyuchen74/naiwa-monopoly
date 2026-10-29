@@ -1,0 +1,23 @@
+{
+  "description": "Informational sizes only, per user instruction. No hard build-size limits.",
+  "script": {
+    "bytes": {
+      "baseline": 950305,
+      "limit": null
+    },
+    "gzipBytes": {
+      "baseline": 271295,
+      "limit": null
+    }
+  },
+  "portable": {
+    "bytes": {
+      "baseline": 1226579,
+      "limit": null
+    },
+    "gzipBytes": {
+      "baseline": 411524,
+      "limit": null
+    }
+  }
+}

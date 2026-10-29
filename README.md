@@ -1,5 +1,9 @@
 # 奶蛙大富翁
 
+[![CI](https://github.com/taoyuchen74/naiwa-monopoly/actions/workflows/ci.yml/badge.svg)](https://github.com/taoyuchen74/naiwa-monopoly/actions/workflows/ci.yml)
+
+开发检查、逐模块覆盖率、增量规范与夜间种子模拟见 [工程化说明](docs/ENGINEERING.md) 和 [贡献指南](CONTRIBUTING.md)。构建体积仅报告，不设硬上限。原创代码与文档采用 [MIT](LICENSE)，第三方角色、商标、视频、录音及依赖遵循各自授权边界。
+
 以奶家角色为主角的浏览器3D经营游戏，支持手机横竖屏、2—6席（每席可选真人或电脑）、本机存档与离线游玩。非官方粉丝作品，玩法参考历代《大富翁》，地图、模型、界面和技能由本项目实现。
 
 - [直接试玩 · GitHub Pages](https://taoyuchen74.github.io/naiwa-monopoly/)

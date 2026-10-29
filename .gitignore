@@ -4,6 +4,7 @@ artifacts/
 node_modules/
 .cache/
 out/
+coverage/
 test-results/
 playwright-report/
 
