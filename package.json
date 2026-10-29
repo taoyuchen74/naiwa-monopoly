@@ -19,6 +19,7 @@
     "test:cloud": "playwright test --config=playwright.cloud.config.mjs",
     "start:online": "npm run build:site && node server/start.mjs",
     "test:online": "playwright test --config=playwright.online.config.mjs",
+    "test:online:3d": "node tools/qa-online-3d.mjs",
     "test:browser:3d": "node tools/qa-browser-3d.mjs",
     "benchmark": "node tools/benchmark.mjs",
     "test:performance": "playwright test --config=playwright.performance.config.mjs",

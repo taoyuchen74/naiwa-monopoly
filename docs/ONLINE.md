@@ -1,6 +1,6 @@
 # 最小联机协议、威胁模型与状态机（协议1，规则11）
 
-此文档先于实现提交。垂直切片为单进程 Node.js 房间服务＋独立在线网页，复用原生ES Modules规则引擎，不更换框架。静态/离线版继续原单机入口；在线入口必须连接同源房间服务，静态托管不支持时明确提示。无账号，不部署公网服务、不声称竞技防作弊。
+此文档先于实现提交。垂直切片为单进程 Node.js 房间服务＋统一游戏界面，复用原生ES Modules规则引擎，不更换框架。静态/离线版继续原单机入口；在线入口必须连接同源房间服务，静态托管不支持时明确提示。无账号，不部署公网服务、不声称竞技防作弊。
 
 ## 信任边界与威胁模型
 
@@ -20,7 +20,7 @@ WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入
 {"op":"resume","protocol":1,"roomId":"123456","playerId":0}
 ```
 
-先GET /api/online/session建立服务端会话，再连接/api/online/ws；WS握手使用HttpOnly Cookie绑定会话。首次成功返回credentials（仅含非敏感roomId、playerId），随后state。错误不带其他席私有内容。大厅最多6席，房主为0，至少2席且全部在线已准备才可开始；开始后不允许新玩家加入，原席可恢复。角色按加入顺序分配六个不同角色，固定20轮/标准难度，房主不指定种子或初始资产。
+先GET /api/online/session建立服务端会话，再连接/api/online/ws；WS握手使用HttpOnly Cookie绑定会话。首次成功返回credentials（仅含非敏感roomId、playerId），随后state。错误不带其他席私有内容。大厅最多6席，房主为0，至少2席且全部在线已准备才可开始；开始后不允许新玩家加入，原席可恢复。角色初始按加入顺序分配，玩家可选择未被占用的角色；房主可设置两张内置地图、20/30/50/80轮、托管难度与天赋开关，改变设置后全部重新准备。房主不能指定种子或初始资产。
 
 ```json
 {"op":"command","roomId":"123456","playerId":0,"sequence":1,"expectedRevision":2,"type":"roll","payload":{}}
@@ -29,7 +29,7 @@ WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入
 
 每席外部sequence从1开始，仅接受成功后加1。重复返回DUPLICATE，跳号OUT_OF_ORDER，旧expectedRevision返回STALE_REVISION，不推进序号或资产；客户端收到state中的nextSequence后重试，不乐观修改规则状态。身份错误先拒绝，不能用命令playerId替换绑定身份。所有结果（含错误）包含accepted/revision/stateHash/events/error，state另含完整当前可见投影，重连无需依赖丢失增量。
 
-大厅命令ready {ready:boolean}、房主start {}。对局允许原统一规则命令的白名单：roll、step（仅待选岔路）、setDiceCount、buy、resolveEstate、acknowledge、end、construct、setResearch、upgrade、demolish、sell、bank、trade（股票）、shop、vehicle、card、settle、bankrupt、auctionBid/auctionPass；禁止客户端aiTurn、handoff、任意state/options/seed写入。control {ai:boolean}可交出/接回自己的控制。当前在线切片不开放玩家组合交易、存档/回放导入导出、开局模式/角色自选，UI明确说明，不能通过未知命令绕过。
+大厅命令ready {ready:boolean}、房主start {}，以及configure {character}（本人角色，必须唯一）、settings {mapVersion,rounds,difficulty,talents}（仅房主、固定白名单范围）。角色改变重置本人准备，房间设置改变重置全部准备。设置与角色纳入房间哈希。对局允许原统一规则命令的白名单：roll、step（仅待选岔路）、setDiceCount、buy、resolveEstate、acknowledge、end、construct、setResearch、upgrade、demolish、sell、bank、trade（股票）、shop、vehicle、card、settle、bankrupt、auctionBid/auctionPass；禁止客户端aiTurn、handoff、任意state/options/seed写入。control {ai:boolean}可交出/接回自己的控制。当前在线切片不开放玩家组合交易、存档/回放导入导出、自定义模式/地图导入，UI明确说明，不能通过未知命令绕过。
 
 外部房间revision与引擎revision独立：准备、开始、控制变更、成功规则命令及服务端自动步骤递增房间revision；外部sequence不受自动步骤消耗。引擎命令仍使用自己的nextCommand和dispatch。服务端同一事件循环同步执行，不在校验与提交之间await。拒绝不修改权威规则状态。
 
@@ -41,7 +41,7 @@ WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入
 
 每席控制独立；自动动作和客户端命令串行。房间保存于服务进程内存，进程存活期间可重连；服务重启或房间过期明确报ROOM_NOT_FOUND，不从客户端存档恢复。大厅/已结束/空闲房间30分钟过期，全部断线的进行中房间保留30分钟（不因AI动作无限保留）；房间数上限100。
 
-单机localStorage键完全不读写；在线仅sessionStorage保存非敏感房间/席位提示，恢复身份来自HttpOnly Cookie，与单机存档隔离。本版不支持在线持久存档或跨服务器恢复，UI明确提示。
+单机存档localStorage键完全不读写；在线仅sessionStorage保存非敏感房间/席位提示，恢复身份来自HttpOnly Cookie，与单机存档隔离。本版不支持在线持久存档或跨服务器恢复，UI明确提示。
 
 ## 验证计划
 
@@ -51,12 +51,20 @@ WebSocket升级严格核对Origin和路径，连接5秒内须完成创建/加入
 
 ## 运行与模块
 
-`npm run start:online` 构建公共文件并启动server/start.mjs；默认127.0.0.1:4182，首页入口跳转online.html。公共目录只含构建产物；不向HTTP开放server/、dist/或包文件。生产模式必须设置PUBLIC_ORIGIN并在受信反向代理启用HTTPS/WSS，HOST/PORT可配置；本次不自动部署。
+`npm run start:online` 构建公共文件并启动server/start.mjs；默认127.0.0.1:4182，首页选择联机后进入同一 index.html?online=1；旧 online.html 自动跳转统一入口。公共目录只含构建产物；不向HTTP开放server/、dist/或包文件。生产模式必须设置PUBLIC_ORIGIN并在受信反向代理启用HTTPS/WSS，HOST/PORT可配置；本次不自动部署。
 
-server/rooms.mjs管理身份绑定、房间时钟、外部命令序号、HMAC承诺和私有投影；server/controls.mjs根据权威Game生成可用按钮；server/http.mjs提供HttpOnly会话、Origin校验、WebSocket、限流与心跳。dist/online-client.js只管理连接、确认与重连；dist/online.js仅显示投影和提交命令，不导入Game、不读写单机localStorage。
+server/rooms.mjs管理身份绑定、房间时钟、外部命令序号、HMAC承诺和私有投影；server/controls.mjs根据权威Game生成可用按钮；server/http.mjs提供HttpOnly会话、Origin校验、WebSocket、限流与心跳。dist/online-client.js只管理连接、确认与重连；dist/online.js仅兼容旧地址跳转。dist/online-session.js 复用 IslandScene、MiniMap、ModalFocus、GameOrientation 和底部操作栏，只显示服务器投影并提交命令；dist/online-view.js 是只供绘制的适配对象，没有本地规则执行、随机数、存档或 stateHash 接口，不补造缺失的私有账户。仅自己的手牌和持股在面板展示，其他账户不会成为本地 Game。音画偏好沿用本机设置，与存档分离。
 
 大厅成员中途不换席/离房，直到房间过期或服务重启；同一浏览器Cookie表示一个席位，后连接替换先连接。房间号/席位提示不是恢复凭证。没有Cookie时不能凭邀请码夺回开始后的席位。跨服务器和跨设备恢复不在本切片范围内。
 
-构建同时输出独立online.html与联机脚本，单机页面仍只加载自己的一个脚本。service worker绕过联机页面及/api/online/，不缓存会话响应。离线单文件点击入口明确提示不支持，静态站联机页明确提示服务不可用。WebSocket使用固定版本[ws官方实现](https://github.com/websockets/ws)，客户端使用浏览器原生WebSocket。
+构建保留旧 online.html 重定向壳；单机与联机共用主脚本和原生模块，依然只加载一个游戏脚本。service worker绕过联机页面及/api/online/，不缓存会话响应。离线单文件点击入口明确提示不支持，静态站联机页明确提示服务不可用。WebSocket使用固定版本[ws官方实现](https://github.com/websockets/ws)，客户端使用浏览器原生WebSocket。
 
-资源上限是单进程的安全边界，不是已验证的100房并发容量承诺。固定32位规则RNG仍有可预测性风险；权威命令、私有投影与HMAC状态承诺阻止直接上传/修改权威状态，不构成竞技认证或对可控客户端的绝对防作弊保证。
+资源上限是单进程的安全边界，不是已验证的100房并发容量承诺。32位规则RNG仍有可预测性风险；权威命令、私有投影与HMAC状态承诺阻止直接上传/修改权威状态，不构成竞技认证或对可控客户端的绝对防作弊保证。
+
+## 统一体验与验证入口
+
+首页选择本机或联机；联机复用同一岛屿、地图导航、方向切换、触控拖动缩放、折叠面板和底部经营栏，WebGL不可用时回退简洁地图。顶部“房”按钮常驻，房间、准备与重连使用同一个模态框。确认操作验证房间revision；背景inert，Tab隔离，Escape保留待决选择，关闭恢复触发按钮焦点。帮助从同一规则文案搜索，音画偏好共用但对局存档独立。联机面板不暂停服务器时钟。
+
+`npm run test:online` 默认执行双客户端简洁地图、协议校验、房间设置、角色、真实键盘、滚动和视口收缩检查；两项真实WebGL用例默认跳过。`npm run test:online:3d` 用完整Chromium启用GPU，两个视口分别验证双客户端3D用卡→掷骰→买地→建设→结束，采用生产默认60秒窗口；普通超时专项保持测试用20秒。视口收缩用于输入布局模拟，不声称真机系统键盘、安卓/iOS或公网验证。失败保留截图与trace。
+
+音画和界面统一不等于规则权限混合：本机存档/JSON不发送到房间；在线自己的手牌和持股来自self，其他玩家只显示公开资金、位置与地产。客户端没有在线本地Game实例，所有规则动作仍由服务器白名单、阶段、资产和身份验证。
