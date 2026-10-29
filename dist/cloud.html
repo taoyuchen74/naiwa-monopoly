@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>旅行云存档 · 奶蛙大富翁</title><link rel="stylesheet" href="./cloud.css"></head>
+<body><main id="cloudMain"><a href="./index.html">← 返回单机</a><h1>旅行云存档</h1>
+<p>游客无需登录即可玩。云存档仅用于单机继续，属于可修改的本地数据，不用于竞技排行榜，也不是联机房间的权威状态。</p>
+<p id="status" role="status" aria-live="polite">正在检查云服务…</p><p id="network"></p>
+<section id="auth"><h2>可选登录</h2><p>账号属于当前站点。登录不会自动绑定或上传游客存档；确认上传后才归入当前账号。此版本不支持找回密码，请妥善保存。</p>
+<form id="authForm"><label>用户名（3—32 位字母、数字或下划线）<input id="username" autocomplete="username" pattern="[A-Za-z0-9_]{3,32}" minlength="3" maxlength="32" required></label>
+<label>密码（12—128 位）<input id="password" type="password" autocomplete="current-password" minlength="12" maxlength="128" required></label>
+<div class="actions"><button type="submit">登录</button><button type="submit" name="register" value="yes">注册并登录</button></div></form></section>
+<section id="account" hidden><h2 id="accountName"></h2><div class="actions"><button id="refresh">刷新云端</button><button id="logout">退出登录</button></div><p>退出仅撤销当前设备会话，不删除本机存档或云端副本；本机存档仍可由这台设备的使用者读取。</p>
+<h2>上传本机存档</h2><label>本机来源<select id="source"><option value="auto">自动槽</option><option value="manual1">手动槽 1</option><option value="manual2">手动槽 2</option><option value="manual3">手动槽 3</option></select></label>
+<p id="localSummary"></p><label>云端目标<select id="target"><option value="">新建云端副本</option></select></label><label>副本名称<input id="label" value="旅行备份" maxlength="60"></label>
+<div class="actions"><button id="upload">检查并上传</button><button id="retry" hidden>重试待确认上传</button></div>
+<p>离线修改保留在本机。上传从不自动执行；响应丢失时，重试同一请求以确认原结果，不会重复创建。待确认请求会保留当时的快照，之后的新修改仍在本机。</p>
+<h2>下载云端存档</h2><label>下载到<select id="destination"><option value="manual1">手动槽 1</option><option value="manual2">手动槽 2</option><option value="manual3">手动槽 3</option></select></label>
+<p>下载会先确认覆盖，旧槽位原始数据保留一份。返回单机，在存档管理中读取这个手动槽，继续旅行。</p><button id="backup">导出该槽覆盖前副本</button><div id="cloudList"></div>
+<details><summary>同步记录维护</summary><p>仅在同步记录损坏或放弃待确认上传时使用。原记录会先备份；云端可能已接收待确认请求，重置后请先刷新检查，避免重复副本。</p><button id="reset">备份并重置本机同步记录</button></details></section>
+<button id="check">重新检查服务 / 登录状态</button></main>
+<dialog id="confirm" aria-labelledby="confirmTitle"><h2 id="confirmTitle"></h2><div id="comparison"></div><div id="choices" class="actions"></div></dialog>
+<script type="module" src="./cloud.js"></script></body></html>
