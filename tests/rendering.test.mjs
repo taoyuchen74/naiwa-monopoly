@@ -20,3 +20,15 @@ test('every property family receives the owner palette without losing functional
 test('happy reference characters close their eyes, cup the belly and rock their torso',()=>{for(const id of ['naiwa','naishu']){const g=characterModel(id);animateCharacter(g,{time:1,mood:'happy'});assert.ok(g.userData.eyeParts.every(e=>!e.visible));assert.ok(g.userData.lids.every(e=>e.visible));assert.ok(g.userData.arms.every(a=>a.rotation.x<-.5));assert.ok(g.userData.laughMouth.visible);const angle=g.userData.body.rotation.x;animateCharacter(g,{time:1.2,mood:'happy'});assert.notEqual(g.userData.body.rotation.x,angle);animateCharacter(g,{time:1.2});assert.ok(g.userData.eyeParts.every(e=>e.visible));assert.equal(g.userData.laughMouth.visible,false);}});
 
 test('tea is a hollow handled mug with liquid, short limbs and gloved hands',()=>{const model=characterModel('naicha');assert.equal(model.userData.mug,true);assert.equal(model.userData.human,undefined);assert.ok(model.getObjectByName('tea-cup'));assert.ok(model.getObjectByName('cup-handle'));assert.ok(model.getObjectByName('cup-rim'));assert.ok(model.getObjectByName('tea-surface'));assert.equal(model.userData.arms.length,2);assert.equal(model.userData.legs.length,2);animateCharacter(model,{time:1,mood:'happy'});assert.ok(model.userData.laughMouth.visible);assert.ok(model.userData.eyeParts.every(e=>!e.visible));});
+
+test('all six toy characters keep identity, coated eyes, bases and four finite animation states',()=>{
+ for(const id of ['naiwa','naichong','naishu','naigou','naidan','naicha']){
+  const root=characterModel(id);assert.equal(root.userData.id,id);assert.equal(root.userData.toy,true);
+  assert.ok(root.getObjectByName('toy-collector-base'));assert.ok(root.getObjectByName('toy-contact-shadow'));
+  for(const pose of [{},{moving:true},{mood:'happy'},{mood:'sad'}]){
+   animateCharacter(root,{time:1.2,...pose});assert.equal(root.userData.body.scale.x,1.14);
+   root.updateMatrixWorld(true);root.traverse(node=>{assert.ok(node.matrixWorld.elements.every(Number.isFinite));});
+  }
+  root.userData.vehicleId=1;animateCharacter(root,{time:1.2});assert.equal(root.userData.toyBase.visible,false);
+ }
+});

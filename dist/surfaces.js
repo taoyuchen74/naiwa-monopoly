@@ -19,14 +19,14 @@ export function grainTexture(kind='stone'){
 export function windMaterial(mat,grass=false){mat.onBeforeCompile=shader=>{shader.uniforms.landscapeWindTime=windTime;shader.vertexShader='uniform float landscapeWindTime;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>\nfloat windAnchor=0.;\n#ifdef USE_INSTANCING\nwindAnchor=instanceMatrix[3].x*.55+instanceMatrix[3].z*.35;\n#else\nwindAnchor=modelMatrix[3].x*.55+modelMatrix[3].z*.35;\n#endif\ntransformed.x+=sin(landscapeWindTime*1.2+windAnchor)*${grass?'pow(max(position.y,0.),2.)*.4':'pow(max(position.y+1.,0.),2.)*.012'};`);};mat.customProgramCacheKey=()=>grass?'grass-wind-v1':'leaf-wind-v1';return mat;}
 export function detailMaterial(color,roughness=.72,metalness=0){
  const green=['#86ad72','#97aa7b','#a9b484','#7c9a60'].includes(color),road=['#667b7b','#718784'].includes(color),paving=['#e1cda5','#d7cab0','#c0b18a','#ebd69c','#ddd3ab'].includes(color);
- const mat=new THREE.MeshPhysicalMaterial({color,roughness,metalness,clearcoat:roughness<.6?.25:.05,clearcoatRoughness:.45,envMapIntensity:.65});
+ const mat=new THREE.MeshPhysicalMaterial({color,roughness:Math.min(roughness,.58),metalness,clearcoat:roughness<.6?.42:.22,clearcoatRoughness:.32,envMapIntensity:.65});
  if(['#347447','#458b4e','#63a357','#7eb56a','#dba0b3','#e7b3c3','#f4cbd5','#f7dae0'].includes(color))windMaterial(mat);
  if(['#152019','#182c23','#201f18','#27311d','#1c291d'].includes(color)){mat.roughness=.12;mat.clearcoat=1;mat.clearcoatRoughness=.08;}
  if(['#ffe8a8','#ffe9a2','#fff4bd'].includes(color)){mat.emissive=new THREE.Color('#ffc66d');mat.emissiveIntensity=.55;}
  if(['#528b9c','#397b8c','#4f91a5'].includes(color))windowMaterial(mat);
- if(green||road||paving){const texture=grainTexture(green?'grass':road?'road':'paving');mat.map=texture;mat.bumpMap=texture;mat.bumpScale=road?.009:green?.014:.012;mat.roughness=.88;}return mat;
+ if(green||road||paving){const texture=grainTexture(green?'grass':road?'road':'paving');mat.map=texture;mat.bumpMap=texture;mat.bumpScale=road?.004:green?.006:.005;mat.roughness=.72;}return mat;
 }
-export function roofMaterial(color){const mat=detailMaterial(color,.68,0);mat.map=grainTexture('roof');mat.bumpMap=mat.map;mat.bumpScale=.027;return mat;}
+export function roofMaterial(color){const mat=detailMaterial(color,.68,0);mat.map=grainTexture('roof');mat.bumpMap=mat.map;mat.bumpScale=.008;return mat;}
 export function waterMaterial(river=false){if(water.has(river))return water.get(river);const p=LIGHTING[surfaceLighting],mat=new THREE.ShaderMaterial({name:river?'river-silk':'coastal-water',uniforms:{time:windTime,river:{value:river?1:0},deepColor:{value:new THREE.Color(p.waterDeep)},shallowColor:{value:new THREE.Color(p.waterShallow)},skyColor:{value:new THREE.Color(p.sky)},sunColor:{value:new THREE.Color(p.sun)},sunDirection:{value:new THREE.Vector3(...p.position).normalize()},viewDirection:waterViewDirection,lightPower:{value:p.power}},vertexShader:waterVertex,fragmentShader:waterFragment});mat.toneMapped=true;water.set(river,mat);return mat;}
 export function animateSurfaces(time,camera){windTime.value=time;if(camera)camera.getWorldDirection(waterViewDirection.value).negate();}
 

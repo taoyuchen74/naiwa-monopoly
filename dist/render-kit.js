@@ -3,7 +3,7 @@ import {detailMaterial,isSharedSurfaceTexture} from './surfaces.js';
 import * as THREE from './vendor/three.module.js';
 const materials=new Map(),sharedMaterials=new Set();
 export function material(color,roughness=.72,metalness=0){const key=`${color}:${roughness}:${metalness}`;if(!materials.has(key))materials.set(key,detailMaterial(color,roughness,metalness));sharedMaterials.add(materials.get(key));return materials.get(key);}
-const ballGeometry=new THREE.SphereGeometry(1,48,36),boxGeometry=new RoundedBoxGeometry(1,1,1,2,.035);
+const ballGeometry=new THREE.SphereGeometry(1,48,36),boxGeometry=new RoundedBoxGeometry(1,1,1,2,.075);
 const sharedGeometry=new Set([ballGeometry,boxGeometry]),cylinders=new Map(),tubes=new Map();
 const roundedBoxes=new Map();
 export function roundedBox(parent,mat,pos,size,radius=.1){const key=JSON.stringify([size,radius]);if(!roundedBoxes.has(key)){const geometry=new RoundedBoxGeometry(...size,5,radius);roundedBoxes.set(key,geometry);sharedGeometry.add(geometry);}return mesh(parent,roundedBoxes.get(key),mat,pos);}

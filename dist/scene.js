@@ -1,3 +1,4 @@
+import {syncForestWeather} from './forest-scene.js';
 import {animateVehicle} from './vehicles.js';
 import {diceRollStarted} from './dice.js';
 import {structuralChange} from './building-reveal.js';
@@ -8,10 +9,10 @@ import {animateSurfaces,setSurfaceLighting} from './surfaces.js';
 import {CITY_TILES,mapPoints} from './maps.js';
 import {canvasPoint} from './orientation.js';
 import * as THREE from './vendor/three.module.js';
-import {CHARACTERS,GROUPS} from './content.js';
-import {ball,box,mesh,cylinder,tube,sign,material,disposeUnique,batchStatic,signTexture} from './render-kit.js';
+import {CHARACTERS,GROUPS as _GROUPS} from './content.js';
+import {ball as _ball,box,mesh,cylinder,tube as _tube,sign,material as _material,disposeUnique,batchStatic as _batchStatic,signTexture} from './render-kit.js';
 import {characterModel,animateCharacter,vehicleModel} from './characters.js';
-import {propertyBuilding,landmark,townTree} from './buildings.js';
+import {propertyBuilding,landmark as _landmark,townTree as _townTree} from './buildings.js';
 import {EffectSystem} from './effects.js';
 import {presentationSpeed} from './pacing.js';
 import {MapGestures} from './map-gestures.js';
@@ -19,7 +20,7 @@ import {buildIsland,plotPosition} from './island.js';
 import {roofLabelAnchor} from './world-labels.js';
 export {characterModel} from './characters.js';
 const lotPosition=plotPosition;
-function label(text,color='#35525c',size=256){const c=document.createElement('canvas');c.width=size;c.height=80;const x=c.getContext('2d');x.font='bold 28px "Microsoft YaHei",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle=color;x.fillText(text,size/2,40);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
+function _label(text,color='#35525c',size=256){const c=document.createElement('canvas');c.width=size;c.height=80;const x=c.getContext('2d');x.font='bold 28px "Microsoft YaHei",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle=color;x.fillText(text,size/2,40);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
 export class IslandScene{
  get paused(){return this._paused;}
  set paused(value){this._paused=!!value;if(value){cancelAnimationFrame(this.raf);this.raf=null;}else this.invalidate();}
@@ -43,7 +44,7 @@ export class IslandScene{
  restoreRendering(){if(!this.contextLost)return;const game=this.game,quality=game?.s.options.quality||this.quality||'auto';
   try{this.highQuality?.dispose();this.highQuality=new HighQuality(this.renderer,this.scene,this.camera);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;this.sun.shadow.mapPass?.dispose();this.sun.shadow.mapPass=null;this.sun.shadow.needsUpdate=true;
    this.contextLost=false;this.paused=!!this.pausedBeforeContextLoss;this.quality='';this.lightingKey='';this.setQuality(quality);this.applyLighting(game?.s.options.lighting||this.worldLighting);this.game=null;if(game)this.sync(game);this.resize();this.el.dispatchEvent(new CustomEvent('renderrestored'));
-  }catch(error){this.contextLost=true;this.paused=true;console.warn('3D recovery unavailable; keeping the playable map',error);}
+  }catch(error){this.contextLost=true;this.paused=true;this.el.dispatchEvent(new CustomEvent('renderrecoveryfailed',{detail:{message:error.message}}));}
  }
  setMap(tiles){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.leaveStudio();this.fx.clear();this.world.remove(this.selection,this.turnMarker);disposeUnique(this.world);this.world.clear();this.tiles=tiles;this.game=null;this.rollState=null;this.lastMoney=null;this.tileMeshes=[];this.plotMeshes.clear();this.blockMeshes.clear();this.pawns=[];this.pickupMeshes.clear();this.smokestacks=[];this.buildingBadges=[];this.floats=[];this.lights=[];this.pointLights=[];this.lightingKey='';this.build();this.world.add(this.selection,this.turnMarker);this.clearSelection();this.home();}
  build(){buildIsland(this);}
@@ -57,7 +58,7 @@ export class IslandScene{
    if(pawn.userData.vehicleId!==p.vehicle){const old=pawn.getObjectByName('vehicle');if(old){pawn.remove(old);disposeUnique(old);}if(p.vehicle){const v=vehicleModel(p.vehicle);v.position.y=-.1;pawn.add(v);}pawn.userData.vehicleId=p.vehicle;pawn.userData.body.position.y=p.vehicle?.3:0;}
   }
   for(const t of this.tiles.filter(t=>t.kind==='property')){const o=s.ownership[t.id],signature=o?`${o.player}:${o.level}:${o.buildingType||'legacy'}`:'empty';const previous=this.plotMeshes.get(t.id);if(previous?.signature===signature)continue;
-   const color=o?CHARACTERS.find(c=>c.id===s.players[o.player].character).estateColor:'#acb18d';const model=propertyBuilding({...t,buildingType:o?.buildingType},o?.level||0,color,!!o);model.position.copy(lotPosition(t));model.rotation.y=t.facing;this.tag(model,t.id);this.world.add(model);let labelModel=model;
+   const color=o?CHARACTERS.find(c=>c.id===s.players[o.player].character).estateColor:'#acb18d';const model=propertyBuilding({...t,forest:!!this.tiles.forest,buildingType:o?.buildingType},o?.level||0,color,!!o);model.position.copy(lotPosition(t));model.rotation.y=t.facing;this.tag(model,t.id);this.world.add(model);let labelModel=model;
    if(o){cylinder(model,'#587070',[.85,.5,-.6],.018,.018,.85,8);box(model,color,[.98,.81,-.6],[.28,.17,.025]);}
    if(previous){const old=previous.model;this.fx.finish(old);const removeOld=()=>{this.world.remove(old);disposeUnique(old);};if(!fresh&&structuralChange(previous,o)){const demolish=!o||o.level<previous.level;this.fx.spawn(demolish?'demolish':'build',old.position,color);this.fx.spawn('dust',old.position);
     if(demolish){model.visible=this.reduced||!o?.level;const endHeight=o?.level?new THREE.Box3().setFromObject(model).max.y:undefined;this.fx.transition(old,'remove',()=>{removeOld();model.visible=true;if(this.selectedTile===t.id)this.liftSelectionLabel();},{endHeight});if(old.parent)labelModel=old;}
@@ -68,8 +69,8 @@ export class IslandScene{
   }
   for(const [id]of Object.entries(s.blocks))if(!this.blockMeshes.has(id)){const t=this.tiles[id],g=new THREE.Group();for(const x of [-.4,.4])box(g,'#f4dcac',[x,.45,0],[.07,.55,.07]);box(g,'#c76f51',[0,.6,0],[1.15,.19,.13]);for(const x of [-.4,0,.4]){const bar=box(g,'#f1dfb1',[x,.61,.07],[.15,.2,.02]);bar.rotation.z=-.35;}g.position.set(t.x,.2,t.z);this.world.add(g);this.blockMeshes.set(id,g);this.fx.spawn('build',g.position,'#d7b871');}
   for(const [id,g]of this.blockMeshes)if(s.blocks[id]===undefined){this.world.remove(g);this.blockMeshes.delete(id);this.fx.spawn('demolish',g.position,'#c77956');disposeUnique(g);}
-  for(const id of mapPoints(s)){let token=this.pickupMeshes.get(id);if(!token){token=new THREE.Group();cylinder(token,'#f7cc54',[0,.58,0],.24,.24,.08,32).rotation.x=Math.PI/2;const badge=sign(token,'10',[0,.58,.05],.38,.23,{background:'#f7cc54',color:'#80551f',width:96,height:64});token.position.set(this.tiles[id].x,.24,this.tiles[id].z);this.world.add(token);this.pickupMeshes.set(id,token);}token.visible=s.pickups?.[id]===undefined;}
-  this.setQuality(s.options.quality);this.applyLighting(s.options.lighting);
+  for(const id of mapPoints(s)){let token=this.pickupMeshes.get(id);if(!token){token=new THREE.Group();cylinder(token,'#f7cc54',[0,.58,0],.24,.24,.08,32).rotation.x=Math.PI/2;const _badge=sign(token,'10',[0,.58,.05],.38,.23,{background:'#f7cc54',color:'#80551f',width:96,height:64});token.position.set(this.tiles[id].x,.24,this.tiles[id].z);this.world.add(token);this.pickupMeshes.set(id,token);}token.visible=s.pickups?.[id]===undefined;}
+  syncForestWeather(this,s);this.setQuality(s.options.quality);this.applyLighting(s.options.lighting);
   if(!fresh&&diceRollStarted(this.rollState,s))this.fx.rollDice(s.dice,this.pawns[s.current].position,game.char().estateColor);this.rollState={phase:s.phase,current:s.current,round:s.round};
   this.lastMoney=s.players.map(p=>p.money);this.invalidate();
  }

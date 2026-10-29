@@ -1,0 +1,68 @@
+[
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "cycles": [
+      {
+        "geometries": 247,
+        "textures": 35,
+        "programs": 65,
+        "calls": 439,
+        "triangles": 1600726
+      },
+      {
+        "geometries": 247,
+        "textures": 35,
+        "programs": 65,
+        "calls": 439,
+        "triangles": 1600726
+      },
+      {
+        "geometries": 247,
+        "textures": 35,
+        "programs": 65,
+        "calls": 439,
+        "triangles": 1600726
+      }
+    ],
+    "disposed": true,
+    "raf": null,
+    "canvasConnected": false,
+    "sceneChildren": 0
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "cycles": [
+      {
+        "geometries": 247,
+        "textures": 35,
+        "programs": 65,
+        "calls": 439,
+        "triangles": 1600726
+      },
+      {
+        "geometries": 247,
+        "textures": 35,
+        "programs": 65,
+        "calls": 439,
+        "triangles": 1600726
+      },
+      {
+        "geometries": 247,
+        "textures": 35,
+        "programs": 65,
+        "calls": 439,
+        "triangles": 1600726
+      }
+    ],
+    "disposed": true,
+    "raf": null,
+    "canvasConnected": false,
+    "sceneChildren": 0
+  }
+]

@@ -42,7 +42,7 @@ function useBestCard(g){if(g.aiDifficulty()==='easy'){const p=g.player,i=p.cards
    choices.push({index,target:t.id,value});
   }
   // Stop yourself on a useful plot. This can also hold a rival behind you on a later turn.
-  if(key==='block'&&!p.reverse){const cache=evaluations.get(g);if(!cache.blocks){cache.blocks=[];for(let n=1;n<=6;n++){let at=p.pos;for(let k=0;k<n;k++)at=g.tiles[at].next[0];if(g.s.blocks[at]!==undefined)continue;let expected=0;for(const [steps,w]of diceWeights(normal.count)){const r=bestRoute(g,steps,{blocks:{...g.s.blocks,[at]:p.id}});expected+=w*landingValue(g,r);}cache.blocks.push({target:n,value:expected-normal.value-45});}}for(const score of cache.blocks)choices.push({index,...score});}
+  if(key==='block'&&!p.reverse){const cache=evaluations.get(g);if(!cache.blocks){cache.blocks=[];for(let n=1;n<=6;n++){let at=p.pos;for(let k=0;k<n;k++)at=g.routes(at)[0];if(g.s.blocks[at]!==undefined)continue;let expected=0;for(const [steps,w]of diceWeights(normal.count)){const r=bestRoute(g,steps,{blocks:{...g.s.blocks,[at]:p.id}});expected+=w*landingValue(g,r);}cache.blocks.push({target:n,value:expected-normal.value-45});}}for(const score of cache.blocks)choices.push({index,...score});}
  }
  choices.sort((a,b)=>b.value-a.value);for(const c of choices)if(c.value>difficulty(g).cardThreshold&&g.card(c.index,c.target))return true;return false;
 }
@@ -93,7 +93,7 @@ function takeTurn(g){const p=g.player,cfg=difficulty(g);if((p.human&&g.s.phase!=
   if(aiTrade(g))return true;
   const move=g.aiDifficulty()==='easy'?{count:1}:chooseMove(g);g.setDiceCount(move.count);return g.roll();
  }
- if(g.s.phase==='branch'){if(g.aiDifficulty()==='easy'){const next=g.tiles[p.pos].next;return g.step(next[g.int(next.length)]);}const scored=g.tiles[p.pos].next.map(first=>({first,value:landingValue(g,bestRoute(g,g.s.remaining,{first}))}));scored.sort((a,b)=>b.value-a.value);return g.step(scored[0].first);}
+ if(g.s.phase==='branch'){if(g.aiDifficulty()==='easy'){const next=g.routes(p.pos);return g.step(next[g.int(next.length)]);}const scored=g.routes(p.pos).map(first=>({first,value:landingValue(g,bestRoute(g,g.s.remaining,{first}))}));scored.sort((a,b)=>b.value-a.value);return g.step(scored[0].first);}
  if(g.s.phase==='moving')return g.step();
  if(g.s.phase==='buy'){const t=g.tiles[p.pos],network=g.district(t.id,p.id).count;return g.buy(p.money>=t.price+(g.aiDifficulty()==='easy'?cfg.reserve:network?220:cfg.reserve));}
  if(g.s.phase==='estate'){const price=g.takeoverPrice(p.pos);return g.resolveEstate(g.aiDifficulty()!=='easy'&&p.money>=price+cfg.reserve&&g.district(p.pos,p.id).count>0);}
