@@ -1,0 +1,20 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>森林温泉与玩具角色样板</title><style>html,body,#scene{margin:0;width:100%;height:100%;overflow:hidden;background:#c7d7c7}#caption{position:absolute;top:20px;left:24px;font:20px sans-serif;color:#365746;z-index:3}</style><div id="scene"></div><div id="caption"></div><script type="module">
+import * as THREE from '../dist/vendor/three.module.js';
+import {characterModel,animateCharacter} from '../dist/characters.js';
+import {IslandScene} from '../dist/scene.js';
+import {Game} from '../dist/engine.js';
+const query=new URLSearchParams(location.search),el=document.querySelector('#scene');
+if(query.has('cast')){
+ const scene=new THREE.Scene();scene.background=new THREE.Color('#c5d9ca');
+ const camera=new THREE.PerspectiveCamera(34,innerWidth/innerHeight,.1,100);camera.position.set(8,6.5,16);camera.lookAt(0,1,0);
+ const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;el.append(renderer.domElement);
+ scene.add(new THREE.HemisphereLight('#fff4d8','#7a9a83',2.1));const sun=new THREE.DirectionalLight('#fff0cd',3.2);sun.position.set(-6,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(16,.35,11),new THREE.MeshStandardMaterial({color:'#b1c89e',roughness:.65}));floor.position.y=-.4;floor.receiveShadow=true;scene.add(floor);
+ const models=['naiwa','naishu','naigou','naichong','naidan','naicha'].map((id,i)=>{const root=characterModel(id);root.position.set((i%3-1)*4,0,i<3?2:-2);scene.add(root);animateCharacter(root,{time:1.2,mood:query.get('pose')||null,moving:query.has('walk')});return root;});
+ window.models=models;renderer.render(scene,camera);window.renderer=renderer;window.ready=true;
+}else{
+ const game=Game.create({mapVersion:4,seed:17,playerCount:6,randomStart:false});if(query.has('built')){for(const [i,p]of game.s.players.entries())p.pos=i*7;for(const t of game.tiles.filter(t=>t.kind==='property'&&t.id%3===1))game.s.ownership[t.id]={player:t.id%6,level:1+t.id%3,buildingType:['residence','hotel','park','research','chain','gas','mall'][t.id%7]};}
+ game.s.options.quality='low';game.s.options.sound=false;
+ const view=new IslandScene(el,()=>{},game.tiles);view.setQuality('low');view.sync(game);view.reduced=true;view.skipPresentation();view.renderStill();window.view=view;window.game=game;window.ready=true;
+}
+</script></html>

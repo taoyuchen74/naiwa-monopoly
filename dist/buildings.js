@@ -1,3 +1,4 @@
+import {forestProperty} from './forest-buildings.js';
 import {hotelMarquee,researchDish} from './facility-details.js';
 import {fineTree,architecturalDetails} from './scenery.js';
 import {roofMaterial} from './surfaces.js';
@@ -6,13 +7,13 @@ import * as THREE from './vendor/three.module.js';
 import {ball,box,mesh,material,cylinder,tube,sign,batchStatic} from './render-kit.js';
 export const ARCHITECTURES=['tea','theater','factory','garden','hotel','tower'];
 export function architectureFor(t){if(t.buildingType&&BUSINESSES[t.buildingType])return BUSINESSES[t.buildingType].architecture;if(/茶|奶茶|奶盖/.test(t.name))return'tea';if(/剧|影|照相/.test(t.name))return'theater';if(/厂|工坊|面包/.test(t.name))return'factory';if(/花园|洗澡/.test(t.name))return'garden';if(/旅馆|公寓|食堂/.test(t.name))return'hotel';return ARCHITECTURES[t.group%6];}
-const glass=material('#528b9c',.24,.25),cream='#f2dfb6',trim='#fff1d1',brick='#ba7054';
+const glass=material('#528b9c',.24,.25),_cream='#f2dfb6',trim='#fff1d1',_brick='#ba7054';
 function windows(g,floors,w=1.35,depth=.95){for(let f=0;f<floors;f++){const y=.57+f*.43;for(const x of [-w*.27,w*.27]){box(g,trim,[x,y,depth/2+.014],[.3,.3,.045]);box(g,glass,[x,y,depth/2+.042],[.23,.235,.02]);box(g,'#a7d1d2',[x-.055,y+.055,depth/2+.055],[.04,.1,.012]);}for(const z of [-depth*.25,depth*.25]){box(g,glass,[w/2+.018,y,z],[.025,.24,.2]);box(g,trim,[w/2+.035,y-.15,z],[.06,.035,.27]);}}}
 function roof(g,y,w=1.65,d=1.2,color='#c96548'){const shape=new THREE.Shape();shape.moveTo(-w/2,0);shape.lineTo(0,.48);shape.lineTo(w/2,0);shape.closePath();const geo=new THREE.ExtrudeGeometry(shape,{depth:d,bevelEnabled:false});mesh(g,geo,roofMaterial(color),[0,y,-d/2]);box(g,color,[0,y+.48,0],[.08,.06,d+.07]);for(const side of [-1,1]){const vertices=[0,y+.486,-d/2,0,y+.486,d/2,side*w/2,y+.006,-d/2,side*w/2,y+.006,d/2],surface=new THREE.BufferGeometry();surface.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));surface.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,0,2,2,0,2,2],2));surface.setIndex(side>0?[0,1,2,1,3,2]:[0,2,1,1,2,3]);surface.computeVertexNormals();mesh(g,surface,roofMaterial(color));}for(let i=0;i<Math.ceil(d/.12);i++)cylinder(g,color,[0,y+.515,-d/2+i*.12],.038,.038,.125,16).rotation.x=Math.PI/2;}
-function fence(g,w=1.6,d=1.25){for(const z of [-d/2,d/2])for(let i=0;i<7;i++)box(g,'#ddd2aa',[-w/2+i*w/6,.22,z],[.055,.36,.055]);for(const x of [-w/2,w/2])for(let i=0;i<5;i++)box(g,'#ddd2aa',[x,.22,-d/2+i*d/4],[.055,.36,.055]);for(const z of [-d/2,d/2])box(g,'#eadcb6',[0,.25,z],[w,.04,.04]);}
+function _fence(g,w=1.6,d=1.25){for(const z of [-d/2,d/2])for(let i=0;i<7;i++)box(g,'#ddd2aa',[-w/2+i*w/6,.22,z],[.055,.36,.055]);for(const x of [-w/2,w/2])for(let i=0;i<5;i++)box(g,'#ddd2aa',[x,.22,-d/2+i*d/4],[.055,.36,.055]);for(const z of [-d/2,d/2])box(g,'#eadcb6',[0,.25,z],[w,.04,.04]);}
 function tree(g,x,z,scale=.7){return fineTree(g,x,z,scale);}
 function balcony(g,y,w=1.4){box(g,trim,[0,y,.67],[w,.08,.4]);for(const x of [-w/2,w/2])box(g,'#526b6b',[x,y+.15,.8],[.025,.3,.025]);box(g,'#526b6b',[0,y+.3,.8],[w,.025,.025]);for(let x=-w/2;x<=w/2;x+=.16)box(g,'#526b6b',[x,y+.15,.8],[.018,.3,.018]);}
-export function propertyBuilding(t,level,ownerColor='#d6bb76',owned=false){
+export function propertyBuilding(t,level,ownerColor='#d6bb76',owned=false){if(t.forest&&level>0)return forestProperty(t,level,ownerColor);
  const g=new THREE.Group();g.name=`property-${t.id}-${level}`;g.userData.architecture=architectureFor(t);g.userData.level=level;
  if(level===0){
   const ground=mesh(g,new THREE.PlaneGeometry(1.95,1.62),owned?'#a9b484':'#97aa7b',[0,-.08,0]);ground.rotation.x=-Math.PI/2;ground.name='flat-ground';ground.castShadow=false;
@@ -21,11 +22,11 @@ export function propertyBuilding(t,level,ownerColor='#d6bb76',owned=false){
   const lines=new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(points,3)),new THREE.LineBasicMaterial({color:owned?ownerColor:'#fff2c4'}));lines.name='dashed-boundary';g.add(lines);g.userData.vacant=true;return g;
  }
  box(g,'#d7cab0',[0,.025,0],[1.95,.09,1.62]);box(g,ownerColor,[0,.09,.78],[1.95,.08,.1]);
- const type=architectureFor(t),floors=level,wall=owned?'#'+new THREE.Color(ownerColor).lerp(new THREE.Color('#fff1d5'),.73).getHexString():null;g.userData.ownerColor=owned?ownerColor:null;
+ const type=architectureFor(t),_floors=level,wall=owned?'#'+new THREE.Color(ownerColor).lerp(new THREE.Color('#fff1d5'),.73).getHexString():null;g.userData.ownerColor=owned?ownerColor:null;
  if(type==='residence'){const h=.64+level*.46;box(g,wall||'#eddbb9',[0,h/2+.1,0],[1.46,h,1.02]);windows(g,level,1.46,1.02);box(g,'#775640',[0,.35,.56],[.29,.48,.07]);roof(g,h+.11,1.72,1.23,ownerColor);for(let f=1;f<level;f++)box(g,trim,[0,.75+f*.46,0],[1.56,.055,1.1]);if(level>=3)balcony(g,1.2,1.55);sign(g,'奶家住宅',[0,.96,.58],.96,.23,{background:'#56756a',color:'#fff4da'});return batchStatic(architecturalDetails(g,type,level,ownerColor));}
  if(type==='research'){const h=.55+level*.25;cylinder(g,wall||'#d8dccb',[0,h/2+.12,0],.73,.79,h,48);for(const x of [-.42,0,.42])box(g,glass,[x,h*.65,.7],[.23,.25,.03]);cylinder(g,ownerColor,[0,h+.17,0],.86,.86,.16,48);const dome=mesh(g,new THREE.SphereGeometry(.56,40,24,0,Math.PI*2,0,Math.PI/2),'#89aab5',[0,h+.25,0]);dome.scale.y=.75;researchDish(g,h+.69);for(const x of [-.7,.7])box(g,'#526f94',[x,.34,-.1],[.28,.035,.8]);sign(g,'研 究 所',[0,.66,.8],1.08,.28,{background:'#4c768c',color:'#fff5cf'});return batchStatic(architecturalDetails(g,type,level,ownerColor));}
  if(type==='gas'){for(const x of [-.72,.72])box(g,'#e9ddbf',[x,.82,0],[.085,1.5,.085]);box(g,ownerColor,[0,1.62,0],[1.9,.15,1.46]);box(g,trim,[0,1.49,.76],[1.9,.12,.05]);for(const x of [-.45,.45]){box(g,'#d6dacb',[x,.46,.05],[.3,.8,.31]);box(g,'#486c75',[x,.64,.22],[.24,.18,.025]);tube(g,'#3e4b45',[[x+.13,.67,.04],[x+.28,.54,.04],[x+.23,.19,.12],[x+.13,.35,.22]],.025);}sign(g,'奶 罐 加 油',[0,1.61,.77],1.65,.22,{background:ownerColor,color:'#fff6dd'});return batchStatic(architecturalDetails(g,type,level,ownerColor));}
- if(type==='mall'){const h=.75+level*.5;box(g,wall||'#e0d2b4',[0,h/2+.1,0],[1.62,h,1.2]);for(let f=0;f<level;f++){box(g,glass,[0,.51+f*.5,.625],[1.35,.31,.035]);box(g,trim,[0,.73+f*.5,.64],[1.76,.06,.07]);}box(g,ownerColor,[0,h+.18,0],[1.83,.18,1.4]);const bag=box(g,'#e8c36b',[0,h+.52,0],[.5,.48,.3]);mesh(g,new THREE.TorusGeometry(.13,.025,8,24,Math.PI),'#84623f',[0,h+.8,0]);sign(g,'奶 家 百 货',[0,1.01,.7],1.54,.3,{background:'#91615c',color:'#fff2c7'});return batchStatic(architecturalDetails(g,type,level,ownerColor));}
+ if(type==='mall'){const h=.75+level*.5;box(g,wall||'#e0d2b4',[0,h/2+.1,0],[1.62,h,1.2]);for(let f=0;f<level;f++){box(g,glass,[0,.51+f*.5,.625],[1.35,.31,.035]);box(g,trim,[0,.73+f*.5,.64],[1.76,.06,.07]);}box(g,ownerColor,[0,h+.18,0],[1.83,.18,1.4]);const _bag=box(g,'#e8c36b',[0,h+.52,0],[.5,.48,.3]);mesh(g,new THREE.TorusGeometry(.13,.025,8,24,Math.PI),'#84623f',[0,h+.8,0]);sign(g,'奶 家 百 货',[0,1.01,.7],1.54,.3,{background:'#91615c',color:'#fff2c7'});return batchStatic(architecturalDetails(g,type,level,ownerColor));}
  if(type==='tea'){
   const h=.65+level*.65;box(g,wall||'#e9cda1',[0,h/2+.08,0],[1.5,h,1.05]);for(let f=1;f<level;f++){for(const x of [-.37,.37]){box(g,trim,[x,.78+f*.65,.55],[.41,.39,.035]);box(g,glass,[x,.78+f*.65,.575],[.33,.3,.025]);}box(g,trim,[0,1+f*.65,.04],[1.61,.07,1.12]);}box(g,trim,[0,.4,.55],[1.26,.58,.06]);box(g,glass,[0,.4,.59],[1.15,.5,.035]);box(g,'#87654c',[0,.13,.63],[1.3,.12,.25]);
   for(let i=0;i<8;i++){const a=box(g,i%2?'#fff0d2':'#ba6a52',[-.66+i*.19,.88,.72],[.19,.08,.5]);a.rotation.x=.2;box(g,i%2?'#fff0d2':'#ba6a52',[-.66+i*.19,.8,.95],[.19,.13,.04]);}
@@ -36,7 +37,7 @@ export function propertyBuilding(t,level,ownerColor='#d6bb76',owned=false){
   const h=.8+level*.45;box(g,wall||'#b97561',[0,h/2+.1,0],[1.52,h,1.16]);box(g,'#f2d29c',[0,.55,.61],[1.35,.95,.07]);for(const x of [-.45,0,.45])box(g,'#4c6369',[x,.43,.67],[.32,.61,.035]);box(g,owned?ownerColor:'#f1c451',[0,1.08,.79],[1.78,.3,.4]);sign(g,'大 笑 剧 场',[0,1.09,1.0],1.65,.27,{background:'#833e43',color:'#ffdda1'});
   for(let i=0;i<9;i++)ball(g,'#ffe9a2',[-.78+i*.195,1.24,1.0],[.035,.035,.035]);
   for(const x of [-.67,.67]){box(g,'#dbc5a0',[x,h*.64,.65],[.17,h*.85,.12]);ball(g,'#f5ce69',[x,h+.13,.54],[.14,.14,.13]);}
-  const arch=mesh(g,new THREE.TorusGeometry(.48,.1,10,32,Math.PI),owned?ownerColor:'#f1c451',[0,h+.12,.03]);sign(g,'笑',[0,h+.35,.15],.46,.46,{background:'#b95b53',color:'#fff1bb'});if(level>=3){for(const x of [-.55,.55]){const light=cylinder(g,'#4a5f69',[x,h+.3,-.35],.09,.09,.28);light.rotation.x=.45;}}
+  const _arch=mesh(g,new THREE.TorusGeometry(.48,.1,10,32,Math.PI),owned?ownerColor:'#f1c451',[0,h+.12,.03]);sign(g,'笑',[0,h+.35,.15],.46,.46,{background:'#b95b53',color:'#fff1bb'});if(level>=3){for(const x of [-.55,.55]){const light=cylinder(g,'#4a5f69',[x,h+.3,-.35],.09,.09,.28);light.rotation.x=.45;}}
  }else if(type==='factory'){
   const h=.62+level*.35;box(g,wall||'#c68860',[0,h/2+.1,0],[1.6,h,1.1]);box(g,'#53616c',[0,.45,.57],[.74,.63,.035]);for(let y=.2;y<.75;y+=.08)box(g,'#8b9d9e',[0,y,.6],[.69,.025,.025]);windows(g,Math.max(1,level-1),1.6,1.1);roof(g,h+.1,1.82,1.25,owned?ownerColor:'#5c7886');
   for(let i=0;i<Math.min(level,2);i++){const x=.46-i*.32;cylinder(g,'#ac6554',[x,h+.5,-.37],.12,.17,1.25);for(let y=h+.2;y<h+1.1;y+=.28)cylinder(g,'#e0bc91',[x,y,-.37],.13,.13,.045);}
@@ -55,7 +56,7 @@ export function propertyBuilding(t,level,ownerColor='#d6bb76',owned=false){
   const h=.8+level*.62;box(g,wall||'#d6d5c1',[0,h/2+.1,0],[1.35,h,1.0]);box(g,glass,[0,h/2+.12,.51],[1.22,h-.12,.02]);box(g,glass,[.69,h/2+.12,0],[.025,h-.12,.88]);for(let f=.3;f<h;f+=.33){box(g,'#cbd7cf',[0,f,.535],[1.4,.035,.04]);box(g,'#cbd7cf',[.71,f,0],[.04,.035,1]);}for(const x of [-.45,0,.45])box(g,'#cbd7cf',[x,h/2+.12,.54],[.035,h,.035]);box(g,owned?ownerColor:'#dae4d5',[0,h+.15,0],[1.53,.15,1.14]);box(g,owned?ownerColor:'#4d6574',[.2,h+.4,-.1],[.7,.35,.7]);tube(g,'#70868a',[[.3,h+.5,-.1],[.3,h+1,-.1]],.018);sign(g,'奶币中心',[0,.48,.57],.9,.25,{background:'#486e7f',color:'#fff0c0'});
  }return batchStatic(architecturalDetails(g,type,level,ownerColor));
 }
-export function landmark(t){const g=new THREE.Group();g.name=`landmark-${t.kind}`;box(g,'#d7c8a7',[0,.07,0],[2.0,.15,1.72]);const h=1.25;
+export function landmark(t){const g=new THREE.Group();g.name=`landmark-${t.kind}`;box(g,'#d7c8a7',[0,.07,0],[2.0,.15,1.72]);const _h=1.25;
  if(t.kind==='bank'){
   box(g,'#e5d3ae',[0,.72,-.15],[1.58,1.28,1.06]);for(const x of [-.6,-.2,.2,.6]){cylinder(g,'#fff0ce',[x,.78,.62],.08,.1,1.1);box(g,'#b7b293',[x,.24,.62],[.23,.12,.24]);}const ped=mesh(g,new THREE.ConeGeometry(1,.42,3),'#d4b882',[0,1.6,.38]);ped.rotation.y=Math.PI/2;box(g,'#b5a278',[0,.17,.54],[1.94,.1,.75]);sign(g,'奶 币 银 行',[0,1.25,.74],1.3,.25,{background:'#456779',color:'#fff0c2'});ball(g,'#dbb45d',[0,1.66,.65],[.16,.16,.08]);
  }else if(t.kind==='hospital'){
@@ -67,7 +68,7 @@ export function landmark(t){const g=new THREE.Group();g.name=`landmark-${t.kind}
  }else if(t.kind==='spirit'){
   for(let i=0;i<3;i++){box(g,'#b3a07c',[0,.13+i*.09,0],[1.95-i*.23,.1,1.6-i*.18]);}for(const x of [-.55,.55])for(const z of [-.35,.35])cylinder(g,'#b14c37',[x,.85,z],.07,.07,1.1);const r=mesh(g,new THREE.ConeGeometry(1.12,.5,4),'#557f6b',[0,1.55,0]);r.rotation.y=Math.PI/4;ball(g,'#dfbb5c',[0,1.88,0],[.1,.15,.1]);sign(g,'大笑神殿',[0,1.13,.42],.9,.28,{background:'#8e3d30',color:'#ffe49c'});
  }else if(t.kind==='event'){
-  cylinder(g,'#bb967a',[0,.2,0],.85,.9,.27);for(const x of [-.65,.65]){box(g,'#4b5f67',[x,.9,-.35],[.07,1.5,.07]);box(g,'#4b5f67',[x,.55,.4],[.3,.7,.28]);}box(g,'#4b5f67',[0,1.6,-.35],[1.35,.06,.06]);const stage=sign(g,t.id===33?'奶蛙街舞':'表情包广场',[0,1.18,-.3],1.15,.56,{background:'#b75a5d',color:'#ffe9bd'});g.userData.stage=true;
+  cylinder(g,'#bb967a',[0,.2,0],.85,.9,.27);for(const x of [-.65,.65]){box(g,'#4b5f67',[x,.9,-.35],[.07,1.5,.07]);box(g,'#4b5f67',[x,.55,.4],[.3,.7,.28]);}box(g,'#4b5f67',[0,1.6,-.35],[1.35,.06,.06]);const _stage=sign(g,t.id===33?'奶蛙街舞':'表情包广场',[0,1.18,-.3],1.15,.56,{background:'#b75a5d',color:'#ffe9bd'});g.userData.stage=true;
  }else if(t.kind==='rest'){
   g.add(propertyBuilding({...t,name:'小旅馆',group:4},1,'#84aa7a'));roof(g,1.35,1.85,1.3,'#698b68');sign(g,'奶蛙的小窝',[0,1.15,.8],1.1,.24,{background:'#6e875a',color:'#fff0cb'});
  }else if(t.kind==='tax'){

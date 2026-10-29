@@ -12,3 +12,7 @@ data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# Versioned, non-private simulation and benchmark evidence.
+!docs/data/
+!docs/data/*.json

@@ -61,7 +61,8 @@ async function makePair(browser, testInfo, nameB = '奶蛙乙', entry = 'legacy'
   if (entry === 'home')
     for (const p of pages) {
       await expect(p.locator('#loadingScreen')).toBeHidden();
-      await p.locator('#onlineEntry').click();
+      await expect(p.locator('#onlineEntry')).toBeHidden();
+      await p.goto('http://127.0.0.1:4182/?online=1');
     }
   await expect(a.locator('#createRoom')).toBeEnabled();
   await expect(b.locator('#joinRoom')).toBeEnabled();

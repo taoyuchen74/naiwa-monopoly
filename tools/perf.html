@@ -4,6 +4,7 @@ import {Game} from '../dist/engine.js';
 import {sixPlayerGame,aiFixtures} from './perf-fixture.mjs';
 Date.now=()=>1700000000000;
 window.Game=Game;window.fixtures=aiFixtures();window.game=sixPlayerGame();
+if(new URLSearchParams(location.search).has('forest')){const old=game;window.game=Game.create({mapVersion:4,seed:1701,playerCount:6,randomStart:false,difficulty:'hard'});for(const [i,p]of game.s.players.entries())Object.assign(p,{pos:i*7,vehicle:i%3,money:6000,tickets:100});for(const [id,o]of Object.entries(old.s.ownership))if(game.tiles[id]?.kind==='property')game.s.ownership[id]=structuredClone(o);}
 if(new URLSearchParams(location.search).has('low'))game.s.options.quality='low';
 window.view=new IslandScene(document.querySelector('#scene'),()=>{});view.sync(game);view.fx.clear();
 window.ready=true;

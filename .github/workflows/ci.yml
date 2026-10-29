@@ -40,6 +40,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser smoke tests
         run: npm run test:browser
+      - name: Forest WebGL interactions
+        env:
+          NAIWA_FOREST_WEBGL: '1'
+        run: npx playwright test e2e-ci/forest.spec.mjs --grep WebGL
+      - name: Forest map and quality resource lifecycle
+        run: npm run test:forest:resources
       - name: Engineering browser regressions
         run: npm run test:e2e
       - name: Two-client online browser tests
@@ -60,5 +66,7 @@ jobs:
             test-results/
             coverage/
             artifacts/size-report.json
+            artifacts/forest-*.json
+            artifacts/forest-ui-*.png
           if-no-files-found: ignore
           retention-days: 7

@@ -48,10 +48,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "from",
-          "merge"
-        ],
+        "required": ["from", "merge"],
         "properties": {
           "from": {
             "type": "integer",
@@ -79,7 +76,7 @@
     "eventPool": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 13,
+      "maxItems": 16,
       "uniqueItems": true,
       "items": {
         "enum": [
@@ -95,7 +92,10 @@
           "event-10",
           "event-11",
           "event-12",
-          "event-13"
+          "event-13",
+          "forest-coupons",
+          "forest-market",
+          "forest-maintenance"
         ]
       }
     },
@@ -107,25 +107,13 @@
     "victory": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "rounds",
-        "type",
-        "target"
-      ],
+      "required": ["rounds", "type", "target"],
       "properties": {
         "rounds": {
-          "enum": [
-            20,
-            30,
-            50,
-            80
-          ]
+          "enum": [20, 30, 50, 80]
         },
         "type": {
-          "enum": [
-            "ranking",
-            "netWorth"
-          ]
+          "enum": ["ranking", "netWorth"]
         },
         "target": {
           "type": "integer",
@@ -164,17 +152,7 @@
     "tile": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "kind",
-        "name",
-        "description",
-        "x",
-        "z",
-        "group",
-        "price",
-        "next"
-      ],
+      "required": ["id", "kind", "name", "description", "x", "z", "group", "price", "next"],
       "properties": {
         "id": {
           "type": "integer",
