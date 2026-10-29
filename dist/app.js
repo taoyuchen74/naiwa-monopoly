@@ -1,4 +1,5 @@
 import {auctionPanel,offerPanel,readOffer} from './commerce-panel.js';
+import {startOnlineSession} from './online-session.js';
 import {commerceEnabled} from './commerce.js';
 import {replayRecord,attachRecording} from './replay-log.js';
 import {ReplayPlayer,readHistory,storeReplay,localStats,causeStats,resultSummary} from './replay.js';
@@ -14,9 +15,9 @@ import {LIGHTING,lightingMode} from './lighting.js';
 import {resultsPanel} from './results-panel.js';
 import {cardsPanel} from './cards-panel.js';
 import {gameShareUrl} from './share.js';
-import {normalizeSetup,setupError,DEFAULT_SETUP} from './setup.js';
+import {normalizeSetup,setupError} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
-import {BUSINESSES,businessType,buildingLimit} from './businesses.js';
+import {BUSINESSES,businessType} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
 import {researchChangePanel} from './research-panel.js';
 import {shopPanel} from './shop-panel.js';
@@ -33,16 +34,15 @@ import {DIFFICULTIES} from './difficulty.js';
 import {mapInfo,MAPS} from './maps.js';
 import {TALENTS} from './talents.js?v=16';
 import {GameOrientation} from './orientation.js';
-import {art,guideArt,buildingImage} from './illustrations.js';
+import {buildingImage} from './illustrations.js';
 import {landmarkPanel} from './landmark-panel.js';
 import {eventPanel} from './event-panel.js';
 import {ActionPacer,PlaybackSession,presentationSpeed} from './pacing.js';
 import {diceWeights} from './strategy.js';
-import {createSaveRepository,Game,SAVE_KEY,BACKUP_KEY,storeGame,backupStoredGame,restoreStoredBackup} from './engine.js?v=16';
-import {CHARACTERS,GROUPS,CARDS,SPIRITS,STOCKS,VEHICLES} from './content.js';
+import {createSaveRepository,Game,storeGame,restoreStoredBackup} from './engine.js?v=16';
+import {CHARACTERS,GROUPS,CARDS,SPIRITS,VEHICLES} from './content.js';
 import {IslandScene} from './scene.js';
 import {portrait,portraitBitmap} from './portraits.js';
-import {architectureFor} from './buildings.js';
 import {GameAudio,audioOptions,MUSIC_TRACKS} from './audio.js';
 import {readPreferences,writePreferences} from './preferences.js';
 import {MiniMap,MapOverview} from './minimap.js';
@@ -54,11 +54,11 @@ import {GameAnnouncements} from './announcements.js';
 import {mountPlayerDrawer} from './mobile-ui.js';
 async function startGame(){
 globalThis.__NAIWA_BOOT__?.set(25,'正在准备精细场景…');await nextPaint();await waitForStyles();
+if(new URL(location.href).searchParams.get('online')==='1'){await startOnlineSession();return;}
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Math.round(n).toLocaleString('zh-CN');
 let advanced=normalizeSetup(),advancedDraft=null;try{advanced=normalizeSetup(JSON.parse(localStorage.getItem('naiwa-setup-v1')||'{}'));}catch{}
 let stockWindow=20,stockHeld=false;
-const faces={naiwa:'◉',naichong:'≋',naishu:'♧'};
 let bankDraft={kind:'deposit',amount:'300'};
 let game=Game.create({seed:7481}),started=false,selected='naiwa',saved=null,scene,activePanel=null,pinned=false,blockKey='',toastTimer,timer,saveOk=true,gamePaused=false;
 const trial=new URL(location.href).searchParams.get('mapTrial')==='1';
@@ -70,7 +70,7 @@ mountPlayerDrawer($('app'));
 const announcements=new GameAnnouncements(()=>!$('sheet').hidden?$('dialogAnnouncements'):$('gameAnnouncements'));
 const modal=new ModalFocus($('sheet'),{onEscape:()=>{if(!$('sheetRuleHelp').hidden){toggleSheetHelp(false);return;}if(pinned){toast('请先完成当前选择。');return;}dismiss();render();},fallback:()=>!$('actionBtn').disabled?$('actionBtn'):$('settingsBtn')});
 try{saved=Game.restore(repository.read('auto').state);Object.assign(game.s.options,readPreferences(localStorage,saved?.s.options||game.s.options));}catch{}
-try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch(e){console.warn('3D unavailable; using playable map',e);$('fallback').hidden=false;}
+try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch{$('fallback').hidden=false;}
 if(scene)scene.paused=true;globalThis.__NAIWA_BOOT__?.set(55,'正在准备奶伴与操作界面…');await nextPaint();
 $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-pressed',String(e.detail.follow)));
 $('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
@@ -270,7 +270,7 @@ function durationHint(){$('roundSelect').disabled=advanced.modeId!=='standard';i
 $('talentsEnabled').addEventListener('change',picker);$('roundSelect').addEventListener('change',durationHint);$('playerCountSelect').addEventListener('change',durationHint);durationHint();
 $('mapEditorEntry').addEventListener('click',()=>{if(globalThis.__NAIWA_PORTABLE__||location.protocol==='file:'){toast('请在完整网页中打开地图编辑器，离线单文件暂不包含编辑器。');return;}location.assign(new URL('./map-editor.html',location.href).href);});
 $('cloudEntry').addEventListener('click',()=>{if(trial){toast('试玩存档独立，请先从设置导出JSON；云存档管理的是原单机槽位。');return;}if(globalThis.__NAIWA_PORTABLE__||location.protocol==='file:'){toast('当前离线文件不支持云存档，请通过已启用云服务的站点打开。');return;}location.assign(new URL('./cloud.html',location.href).href);});
-$('onlineEntry').addEventListener('click',()=>{if(globalThis.__NAIWA_PORTABLE__||location.protocol==='file:'){toast('当前离线文件不支持联机，请通过房间服务器打开。');return;}location.assign(new URL('./online.html',location.href).href);});
+$('onlineEntry').addEventListener('click',()=>{if(globalThis.__NAIWA_PORTABLE__||location.protocol==='file:'){toast('当前离线文件不支持联机，请通过房间服务器打开。');return;}location.assign(new URL('./?online=1',location.href).href);});
 $('startBtn').addEventListener('click',startFresh);$('continueBtn').addEventListener('click',resume);$('characterPicker').addEventListener('click',e=>{const b=e.target.closest('[data-character]');if(b){selected=b.dataset.character;picker();sound();}});
 $('actionBtn').addEventListener('click',onAction);$('soundBtn').addEventListener('click',()=>{unlockSound();game.s.options.sound=!game.s.options.sound;commit();toast(game.s.options.sound?'声音已开启':'声音已关闭');});
 $('mapSelect').addEventListener('change',e=>{if(started)return;advanced.mapVersion=+e.target.value===1?1:2;try{localStorage.setItem('naiwa-setup-v1',JSON.stringify(advanced));}catch{}picker();render();sound();});
@@ -278,7 +278,7 @@ $('advancedBtn').addEventListener('click',()=>{advancedDraft=null;openPanel('adv
 $('difficultyBtn').addEventListener('click',()=>{if(!pinned)openPanel('mapGuide');});
 $('difficultySelect').addEventListener('change',()=>{$('difficultyHint').textContent=DIFFICULTIES[$('difficultySelect').value].description;});
 $('talentBtn').addEventListener('click',()=>{if(!pinned)openPanel('talents');});
-const orientation=new GameOrientation($('app'),$('orientationBtn'),{notify:toast,resize:()=>scene?.resize()});
+new GameOrientation($('app'),$('orientationBtn'),{notify:toast,resize:()=>scene?.resize()});
 $('newsHistoryBtn').addEventListener('click',()=>{if(started&&!pinned)openPanel('news');});
 $('pauseBtn').addEventListener('click',()=>{if(!pinned&&started)openPanel('pause');else toast('先完成当前选择，即可暂停。');});
 $('shareBtn').addEventListener('click',()=>{if(!pinned)openPanel('share');else toast('先完成当前选择，再分享链接。');});
@@ -384,4 +384,4 @@ if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!==
 
 globalThis.__NAIWA_BOOT__?.set(75,'正在载入字体、图标与声音…');await prepareStartupAssets();scene?.renderStill();await nextPaint();globalThis.__NAIWA_BOOT__?.set(100,'准备完成，欢迎来到奶家！');await nextPaint();globalThis.__NAIWA_BOOT__?.ready();syncTutorial();if(scene&&!scene.contextLost&&$('loadingScreen').hidden)scene.paused=gamePaused;if(trial&&saved)resume();
 }
-startGame().catch(error=>{console.error('Game startup failed',error);globalThis.__NAIWA_BOOT__?.fail();});
+startGame().catch(()=>{globalThis.__NAIWA_BOOT__?.fail();});

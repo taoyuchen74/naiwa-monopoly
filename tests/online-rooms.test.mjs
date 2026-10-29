@@ -1,17 +1,315 @@
-import test from 'node:test';import assert from 'node:assert/strict';
-import {Game} from '../dist/engine.js';
-import {Rooms} from '../server/rooms.mjs';
-const peer=id=>({sessionId:id,messages:[],send(m){this.messages.push(structuredClone(m));},close(code){this.closed=code;}});
-function fixture(n=2,opts={}){let time=1000,code=123456;const service=new Rooms({now:()=>time,seed:()=>17,code:()=>String(code++),...opts}),peers=Array.from({length:n},(_,i)=>peer('session-'+i));service.bind(peers[0],{op:'create',protocol:1,name:'玩家0'});const r=[...service.rooms.values()][0];for(let i=1;i<n;i++)service.bind(peers[i],{op:'join',protocol:1,roomId:r.id,name:'玩家'+i});return {service,peers,r,setTime:t=>time=t};}
-function cmd(f,id,type,payload={},extra={}){const p=f.peers[id];return f.service.execute(p,{op:'command',roomId:f.r.id,playerId:id,sequence:f.r.seats[id].sequence+1,expectedRevision:f.r.revision,type,payload,...extra});}
-function start(f){for(let i=0;i<f.peers.length;i++)assert.equal(cmd(f,i,'ready',{ready:true}).accepted,true);assert.ok(cmd(f,0,'start').accepted);}
-test('rooms enforce 2—6 ready connected seats and host-only start',()=>{for(const n of [2,6]){const f=fixture(n);assert.equal(f.r.seats.length,n);assert.equal(cmd(f,1,'start').error,'HOST_ONLY');assert.equal(cmd(f,0,'start').error,'NOT_READY');start(f);assert.equal(f.r.status,'PLAYING');assert.equal(f.r.game.s.players.length,n);assert.ok(f.r.game.s.players.every(p=>!p.human));assert.equal(f.r.game.s.handoff,null);assert.equal(cmd(f,0,'start').error,'INVALID_PHASE');}const f=fixture(1);assert.equal(cmd(f,0,'start').error,'NOT_READY');const full=fixture(6),p=peer('extra');full.service.bind(p,{op:'join',protocol:1,roomId:full.r.id,name:'第七人'});assert.equal(p.messages.at(-1).error,'ROOM_FULL');});
-test('room codes, names, auth shapes and room ceilings reject without allocating unwanted seats',()=>{const f=fixture(2,{maxRooms:1});for(const m of [{op:'join',protocol:1,roomId:'xxxxxx',name:'ok'},{op:'create',protocol:1,name:'x',seed:17},{op:'create',protocol:1,name:''},{op:'join',protocol:99,roomId:f.r.id,name:'x'}]){const before=f.r.seats.length;f.service.bind(peer('bad'),m);assert.equal(f.r.seats.length,before);}const p=peer('new');f.service.bind(p,{op:'create',protocol:1,name:'x'});assert.equal(p.messages.at(-1).error,'ROOM_LIMIT');});
-test('authority never comes from client save, expectedRevision and sequence are required and rejection is atomic',()=>{const f=fixture();start(f);const before=f.r.game.stateHash(),revision=f.r.revision;for(const [extra,error]of [[{playerId:1},'AUTH_FAILED'],[{roomId:'654321'},'AUTH_FAILED'],[{sequence:100},'OUT_OF_ORDER'],[{expectedRevision:revision-1},'STALE_REVISION'],[{expectedRevision:undefined},'STALE_REVISION'],[{state:{money:999999,seed:1}},'INVALID_MESSAGE']])assert.equal(cmd(f,0,'roll',{},extra).error,error);for(const [type,payload]of [['restore',{state:{money:999999}}],['aiTurn',{}],['roll',{seed:1}],['card',{index:0,target:999}],['bank',{kind:'borrow',amount:999999}],['buy',{yes:true}]])assert.equal(cmd(f,0,type,payload).accepted,false);assert.equal(f.r.game.stateHash(),before);assert.equal(f.r.revision,revision);assert.equal(f.r.game.player.money,3200);const sequence=f.r.seats[0].sequence+1;assert.ok(cmd(f,0,'setDiceCount',{count:1}).accepted);assert.equal(cmd(f,0,'setDiceCount',{count:1},{sequence}).error,'DUPLICATE');assert.equal(f.r.game.player.money,3200);});
-test('every snapshot hides seed, other hands, books, positions of stock, identity credentials and raw logs',()=>{const f=fixture();start(f);f.r.game.s.players[1].cards=['ward'];f.r.game.s.players[1].stocks=[9,8,7,6];for(let id=0;id<2;id++){const v=f.service.view(f.r,id),serialized=JSON.stringify(v);for(const key of ['setupSeed','"seed"','stockBook','commandSequences','sessionId','"token"','"logs"'])assert.ok(!serialized.includes(key),key);assert.equal(v.game.players[1-id].cards,undefined);assert.equal(v.game.players[1-id].stocks,undefined);assert.deepEqual(v.self.cards,f.r.game.s.players[id].cards);assert.equal(v.controls.actions.length>0,id===0);}assert.match(f.service.view(f.r,0).stateHash,/^hmac-sha256:[a-f0-9]{64}$/);const different=fixture();start(different);assert.notEqual(f.service.hash(f.r),different.service.hash(different.r));});
-test('resume uses same authenticated session, replaces old socket and stale close cannot disconnect new one',()=>{const f=fixture();start(f);const imposter=peer('wrong');f.service.bind(imposter,{op:'resume',protocol:1,roomId:f.r.id,playerId:0});assert.equal(imposter.messages.at(-1).error,'AUTH_FAILED');const old=f.peers[0],p=peer(old.sessionId);f.service.bind(p,{op:'resume',protocol:1,roomId:f.r.id,playerId:0});assert.equal(old.closed,4001);f.service.disconnect(old);assert.equal(f.r.seats[0].peer,p);assert.equal(cmd(f,0,'roll').error,'AUTH_FAILED');f.peers[0]=p;assert.ok(cmd(f,0,'roll').accepted);});
-test('server moves automatically, rejects manual movement and retains controls through refresh grace',()=>{const f=fixture();start(f);assert.ok(cmd(f,0,'card',{index:0,target:1}).accepted);assert.ok(cmd(f,0,'roll').accepted);assert.equal(cmd(f,0,'step').error,'SERVER_MOVEMENT');for(let t=2000;t<=3000&&f.r.game.s.phase!=='buy';t+=250){f.setTime(t);f.service.tick();}assert.equal(f.r.game.s.phase,'buy');const deadline=f.r.deadline;f.service.disconnect(f.peers[0]);f.setTime(3500);f.service.tick();assert.equal(f.r.seats[0].ai,false);const p=peer(f.peers[0].sessionId);f.service.bind(p,{op:'resume',protocol:1,roomId:f.r.id,playerId:0});assert.equal(f.r.deadline,deadline);assert.equal(f.r.game.s.phase,'buy');});
-test('disconnect and timeout switch to AI; heartbeat messages, rejected commands and control toggles cannot extend turn',()=>{const f=fixture(2,{graceMs:1000,turnMs:3000,stepMs:1});start(f);const d=f.r.deadline;assert.ok(cmd(f,0,'control',{ai:true}).accepted);assert.ok(cmd(f,0,'control',{ai:false}).accepted);assert.equal(f.r.deadline,d);f.service.disconnect(f.peers[0]);f.setTime(2500);f.service.tick();assert.equal(f.r.seats[0].ai,true);const h=fixture(2,{turnMs:1000});start(h);h.setTime(2500);assert.equal(cmd(h,0,'roll').error,'TURN_TIMEOUT');h.service.tick();assert.equal(h.r.seats[0].ai,true);assert.equal(cmd(h,0,'control',{ai:false}).error,'TURN_TIMEOUT');});
-test('both seats under AI finish a bounded complete game without changing RNG rules; sessions expire explicitly',()=>{const f=fixture(2,{stepMs:1,turnMs:60000});start(f);assert.ok(cmd(f,0,'control',{ai:true}).accepted);assert.ok(cmd(f,1,'control',{ai:true}).accepted);const baseline=Game.restore(f.r.game.s);while(baseline.s.phase!=='finished')assert.ok(baseline.ai());let time=1000,steps=0;while(f.r.status!=='FINISHED'&&++steps<10000){f.setTime(++time);f.service.tick();}assert.equal(f.r.status,'FINISHED');assert.equal(f.r.game.s.phase,'finished');assert.equal(f.r.game.stateHash(),baseline.stateHash());const h=fixture(2,{ttlMs:100});start(h);h.service.disconnect(h.peers[0]);h.service.disconnect(h.peers[1]);h.setTime(1200);h.service.tick();assert.equal(h.service.rooms.size,0);const p=peer(h.peers[0].sessionId);h.service.bind(p,{op:'resume',protocol:1,roomId:h.r.id,playerId:0});assert.equal(p.messages.at(-1).error,'ROOM_NOT_FOUND');});
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { Game } from '../dist/engine.js';
+import { Rooms } from '../server/rooms.mjs';
+const peer = (id) => ({
+  sessionId: id,
+  messages: [],
+  send(m) {
+    this.messages.push(structuredClone(m));
+  },
+  close(code) {
+    this.closed = code;
+  },
+});
 
-test('asset ownership, stock holdings and bank loan cap are checked after valid identity and phase',()=>{const f=fixture();start(f);const g=f.r.game,id=g.tiles.find(t=>t.kind==='property').id;g.s.ownership[id]={player:1,level:0,buildingType:'residence'};g.player.bankAccess=true;const hash=g.stateHash(),revision=f.r.revision;for(const [type,payload]of [['sell',{id}],['construct',{id,buildingType:'residence'}],['trade',{stock:0,qty:-100}],['bank',{kind:'borrow',amount:999999}],['bank',{kind:'withdraw',amount:999999}],['card',{index:999,target:id}]]){assert.equal(cmd(f,0,type,payload).accepted,false);assert.equal(g.stateHash(),hash);assert.equal(f.r.revision,revision);}});
+test('lobby settings and independent character choices are authoritative, reset readiness and reject invalid changes atomically', () => {
+  const f = fixture();
+  assert.equal(
+    cmd(f, 1, 'settings', { mapVersion: 1, rounds: 30, difficulty: 'hard', talents: false }).error,
+    'HOST_ONLY',
+  );
+  assert.equal(cmd(f, 0, 'ready', { ready: true }).accepted, true);
+  assert.equal(cmd(f, 1, 'configure', { character: 'naicha' }).accepted, true);
+  assert.equal(cmd(f, 0, 'configure', { character: 'naicha' }).error, 'CHARACTER_TAKEN');
+  const settings = { mapVersion: 1, rounds: 30, difficulty: 'hard', talents: false };
+  assert.equal(cmd(f, 0, 'settings', settings).accepted, true);
+  assert.ok(f.r.seats.every((s) => !s.ready));
+  const before = f.service.hash(f.r),
+    revision = f.r.revision;
+  for (const change of [
+    { mapVersion: 3 },
+    { rounds: 999 },
+    { difficulty: 'cheat' },
+    { seed: 17 },
+    { talents: 'yes' },
+  ]) {
+    assert.equal(cmd(f, 0, 'settings', { ...settings, ...change }).accepted, false);
+    assert.equal(f.service.hash(f.r), before);
+    assert.equal(f.r.revision, revision);
+  }
+  start(f);
+  assert.equal(f.r.game.s.mapVersion, 1);
+  assert.equal(f.r.game.s.maxRounds, 30);
+  assert.equal(f.r.game.s.difficulty, 'hard');
+  assert.equal(f.r.game.s.talents, false);
+  assert.equal(f.r.game.s.players[1].character, 'naicha');
+  assert.equal(cmd(f, 0, 'configure', { character: 'naigou' }).error, 'INVALID_PHASE');
+  assert.equal(cmd(f, 0, 'settings', settings).error, 'INVALID_PHASE');
+});
+function fixture(n = 2, opts = {}) {
+  let time = 1000,
+    code = 123456;
+  const service = new Rooms({
+      now: () => time,
+      seed: () => 17,
+      code: () => String(code++),
+      ...opts,
+    }),
+    peers = Array.from({ length: n }, (_, i) => peer('session-' + i));
+  service.bind(peers[0], { op: 'create', protocol: 1, name: '玩家0' });
+  const r = [...service.rooms.values()][0];
+  for (let i = 1; i < n; i++)
+    service.bind(peers[i], { op: 'join', protocol: 1, roomId: r.id, name: '玩家' + i });
+  return { service, peers, r, setTime: (t) => (time = t) };
+}
+function cmd(f, id, type, payload = {}, extra = {}) {
+  const p = f.peers[id];
+  return f.service.execute(p, {
+    op: 'command',
+    roomId: f.r.id,
+    playerId: id,
+    sequence: f.r.seats[id].sequence + 1,
+    expectedRevision: f.r.revision,
+    type,
+    payload,
+    ...extra,
+  });
+}
+function start(f) {
+  for (let i = 0; i < f.peers.length; i++)
+    assert.equal(cmd(f, i, 'ready', { ready: true }).accepted, true);
+  assert.ok(cmd(f, 0, 'start').accepted);
+}
+test('rooms enforce 2—6 ready connected seats and host-only start', () => {
+  for (const n of [2, 6]) {
+    const f = fixture(n);
+    assert.equal(f.r.seats.length, n);
+    assert.equal(cmd(f, 1, 'start').error, 'HOST_ONLY');
+    assert.equal(cmd(f, 0, 'start').error, 'NOT_READY');
+    start(f);
+    assert.equal(f.r.status, 'PLAYING');
+    assert.equal(f.r.game.s.players.length, n);
+    assert.ok(f.r.game.s.players.every((p) => !p.human));
+    assert.equal(f.r.game.s.handoff, null);
+    assert.equal(cmd(f, 0, 'start').error, 'INVALID_PHASE');
+  }
+  const f = fixture(1);
+  assert.equal(cmd(f, 0, 'start').error, 'NOT_READY');
+  const full = fixture(6),
+    p = peer('extra');
+  full.service.bind(p, { op: 'join', protocol: 1, roomId: full.r.id, name: '第七人' });
+  assert.equal(p.messages.at(-1).error, 'ROOM_FULL');
+});
+test('room codes, names, auth shapes and room ceilings reject without allocating unwanted seats', () => {
+  const f = fixture(2, { maxRooms: 1 });
+  for (const m of [
+    { op: 'join', protocol: 1, roomId: 'xxxxxx', name: 'ok' },
+    { op: 'create', protocol: 1, name: 'x', seed: 17 },
+    { op: 'create', protocol: 1, name: '' },
+    { op: 'join', protocol: 99, roomId: f.r.id, name: 'x' },
+  ]) {
+    const before = f.r.seats.length;
+    f.service.bind(peer('bad'), m);
+    assert.equal(f.r.seats.length, before);
+  }
+  const p = peer('new');
+  f.service.bind(p, { op: 'create', protocol: 1, name: 'x' });
+  assert.equal(p.messages.at(-1).error, 'ROOM_LIMIT');
+});
+test('authority never comes from client save, expectedRevision and sequence are required and rejection is atomic', () => {
+  const f = fixture();
+  start(f);
+  const before = f.r.game.stateHash(),
+    revision = f.r.revision;
+  for (const [extra, error] of [
+    [{ playerId: 1 }, 'AUTH_FAILED'],
+    [{ roomId: '654321' }, 'AUTH_FAILED'],
+    [{ sequence: 100 }, 'OUT_OF_ORDER'],
+    [{ expectedRevision: revision - 1 }, 'STALE_REVISION'],
+    [{ expectedRevision: undefined }, 'STALE_REVISION'],
+    [{ state: { money: 999999, seed: 1 } }, 'INVALID_MESSAGE'],
+  ])
+    assert.equal(cmd(f, 0, 'roll', {}, extra).error, error);
+  for (const [type, payload] of [
+    ['restore', { state: { money: 999999 } }],
+    ['aiTurn', {}],
+    ['roll', { seed: 1 }],
+    ['card', { index: 0, target: 999 }],
+    ['bank', { kind: 'borrow', amount: 999999 }],
+    ['buy', { yes: true }],
+  ])
+    assert.equal(cmd(f, 0, type, payload).accepted, false);
+  assert.equal(f.r.game.stateHash(), before);
+  assert.equal(f.r.revision, revision);
+  assert.equal(f.r.game.player.money, 3200);
+  const sequence = f.r.seats[0].sequence + 1;
+  assert.ok(cmd(f, 0, 'setDiceCount', { count: 1 }).accepted);
+  assert.equal(cmd(f, 0, 'setDiceCount', { count: 1 }, { sequence }).error, 'DUPLICATE');
+  assert.equal(f.r.game.player.money, 3200);
+});
+test('every snapshot hides seed, other hands, books, positions of stock, identity credentials and raw logs', () => {
+  const f = fixture();
+  start(f);
+  f.r.game.s.players[1].cards = ['ward'];
+  f.r.game.s.players[1].stocks = [9, 8, 7, 6];
+  for (let id = 0; id < 2; id++) {
+    const v = f.service.view(f.r, id),
+      serialized = JSON.stringify(v);
+    for (const key of [
+      'setupSeed',
+      '"seed"',
+      'stockBook',
+      'commandSequences',
+      'sessionId',
+      '"token"',
+      '"logs"',
+    ])
+      assert.ok(!serialized.includes(key), key);
+    assert.equal(v.game.players[1 - id].cards, undefined);
+    assert.equal(v.game.players[1 - id].stocks, undefined);
+    assert.deepEqual(v.self.cards, f.r.game.s.players[id].cards);
+    assert.equal(v.controls.actions.length > 0, id === 0);
+  }
+  assert.match(f.service.view(f.r, 0).stateHash, /^hmac-sha256:[a-f0-9]{64}$/);
+  const different = fixture();
+  start(different);
+  assert.notEqual(f.service.hash(f.r), different.service.hash(different.r));
+});
+test('resume uses same authenticated session, replaces old socket and stale close cannot disconnect new one', () => {
+  const f = fixture();
+  start(f);
+  const imposter = peer('wrong');
+  f.service.bind(imposter, { op: 'resume', protocol: 1, roomId: f.r.id, playerId: 0 });
+  assert.equal(imposter.messages.at(-1).error, 'AUTH_FAILED');
+  const old = f.peers[0],
+    p = peer(old.sessionId);
+  f.service.bind(p, { op: 'resume', protocol: 1, roomId: f.r.id, playerId: 0 });
+  assert.equal(old.closed, 4001);
+  f.service.disconnect(old);
+  assert.equal(f.r.seats[0].peer, p);
+  assert.equal(cmd(f, 0, 'roll').error, 'AUTH_FAILED');
+  f.peers[0] = p;
+  assert.ok(cmd(f, 0, 'roll').accepted);
+});
+test('server moves automatically, rejects manual movement and retains controls through refresh grace', () => {
+  const f = fixture();
+  start(f);
+  assert.ok(cmd(f, 0, 'card', { index: 0, target: 1 }).accepted);
+  assert.ok(cmd(f, 0, 'roll').accepted);
+  assert.equal(cmd(f, 0, 'step').error, 'SERVER_MOVEMENT');
+  for (let t = 2000; t <= 3000 && f.r.game.s.phase !== 'buy'; t += 250) {
+    f.setTime(t);
+    f.service.tick();
+  }
+  assert.equal(f.r.game.s.phase, 'buy');
+  const deadline = f.r.deadline;
+  f.service.disconnect(f.peers[0]);
+  f.setTime(3500);
+  f.service.tick();
+  assert.equal(f.r.seats[0].ai, false);
+  const p = peer(f.peers[0].sessionId);
+  f.service.bind(p, { op: 'resume', protocol: 1, roomId: f.r.id, playerId: 0 });
+  assert.equal(f.r.deadline, deadline);
+  assert.equal(f.r.game.s.phase, 'buy');
+});
+test('disconnect and timeout switch to AI; heartbeat messages, rejected commands and control toggles cannot extend turn', () => {
+  const f = fixture(2, { graceMs: 1000, turnMs: 3000, stepMs: 1 });
+  start(f);
+  const d = f.r.deadline;
+  assert.ok(cmd(f, 0, 'control', { ai: true }).accepted);
+  assert.ok(cmd(f, 0, 'control', { ai: false }).accepted);
+  assert.equal(f.r.deadline, d);
+  f.service.disconnect(f.peers[0]);
+  f.setTime(2500);
+  f.service.tick();
+  assert.equal(f.r.seats[0].ai, true);
+  const h = fixture(2, { turnMs: 1000 });
+  start(h);
+  h.setTime(2500);
+  assert.equal(cmd(h, 0, 'roll').error, 'TURN_TIMEOUT');
+  h.service.tick();
+  assert.equal(h.r.seats[0].ai, true);
+  assert.equal(cmd(h, 0, 'control', { ai: false }).error, 'TURN_TIMEOUT');
+});
+test('both seats under AI finish a bounded complete game without changing RNG rules; sessions expire explicitly', () => {
+  const f = fixture(2, { stepMs: 1, turnMs: 60000 });
+  start(f);
+  assert.ok(cmd(f, 0, 'control', { ai: true }).accepted);
+  assert.ok(cmd(f, 1, 'control', { ai: true }).accepted);
+  const baseline = Game.restore(f.r.game.s);
+  while (baseline.s.phase !== 'finished') assert.ok(baseline.ai());
+  let time = 1000,
+    steps = 0;
+  while (f.r.status !== 'FINISHED' && ++steps < 10000) {
+    f.setTime(++time);
+    f.service.tick();
+  }
+  assert.equal(f.r.status, 'FINISHED');
+  assert.equal(f.r.game.s.phase, 'finished');
+  assert.equal(f.r.game.stateHash(), baseline.stateHash());
+  const h = fixture(2, { ttlMs: 100 });
+  start(h);
+  h.service.disconnect(h.peers[0]);
+  h.service.disconnect(h.peers[1]);
+  h.setTime(1200);
+  h.service.tick();
+  assert.equal(h.service.rooms.size, 0);
+  const p = peer(h.peers[0].sessionId);
+  h.service.bind(p, { op: 'resume', protocol: 1, roomId: h.r.id, playerId: 0 });
+  assert.equal(p.messages.at(-1).error, 'ROOM_NOT_FOUND');
+});
+
+test('asset ownership, stock holdings and bank loan cap are checked after valid identity and phase', () => {
+  const f = fixture();
+  start(f);
+  const g = f.r.game,
+    id = g.tiles.find((t) => t.kind === 'property').id;
+  g.s.ownership[id] = { player: 1, level: 0, buildingType: 'residence' };
+  g.player.bankAccess = true;
+  const hash = g.stateHash(),
+    revision = f.r.revision;
+  for (const [type, payload] of [
+    ['sell', { id }],
+    ['construct', { id, buildingType: 'residence' }],
+    ['trade', { stock: 0, qty: -100 }],
+    ['bank', { kind: 'borrow', amount: 999999 }],
+    ['bank', { kind: 'withdraw', amount: 999999 }],
+    ['card', { index: 999, target: id }],
+  ]) {
+    assert.equal(cmd(f, 0, type, payload).accepted, false);
+    assert.equal(g.stateHash(), hash);
+    assert.equal(f.r.revision, revision);
+  }
+});
+
+test('configured six-seat rooms on both maps finish with the same deterministic result as the shared engine', () => {
+  for (const mapVersion of [1, 2]) {
+    const f = fixture(6, { stepMs: 1, turnMs: 60000 });
+    assert.equal(
+      cmd(f, 0, 'settings', { mapVersion, rounds: 30, difficulty: 'hard', talents: true }).accepted,
+      true,
+    );
+    start(f);
+    for (const p of f.peers) p.send = () => {};
+    for (let id = 0; id < 6; id++) assert.equal(cmd(f, id, 'control', { ai: true }).accepted, true);
+    const baseline = Game.restore(f.r.game.s);
+    let actions = 0;
+    while (baseline.s.phase !== 'finished' && actions++ < 25000) assert.ok(baseline.ai());
+    assert.equal(baseline.s.phase, 'finished');
+    let time = 1000,
+      steps = 0;
+    while (f.r.status !== 'FINISHED' && steps++ < 25000) {
+      f.setTime(++time);
+      f.service.tick();
+    }
+    assert.equal(f.r.status, 'FINISHED');
+    assert.equal(f.r.game.stateHash(), baseline.stateHash());
+    for (let id = 0; id < 6; id++) {
+      const snapshot = f.service.view(f.r, id);
+      assert.equal(snapshot.game.players.length, 6);
+      assert.equal(snapshot.game.players[(id + 1) % 6].cards, undefined);
+      assert.deepEqual(snapshot.self.cards, baseline.s.players[id].cards);
+    }
+  }
+});

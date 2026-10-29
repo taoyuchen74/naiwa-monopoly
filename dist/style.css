@@ -352,3 +352,20 @@ button.player:focus-visible{outline-color:#85391f}
 .replay-map{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.replay-tile{min-height:64px;padding:6px;border:1px solid #b18b50;border-radius:5px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}.replay-tile[aria-current=location]{border:3px double #6c4126;background:#fff4c8}
 
 .commerce-choice{display:flex;align-items:center;gap:12px;min-height:44px;font-size:15px;line-height:1.5}.commerce-choice input{width:24px;height:24px;flex:none}#sheetBody fieldset{min-width:0;margin:14px 0;padding:12px;border:1px solid #756b57;border-radius:12px}#sheetBody fieldset legend{font-size:17px;font-weight:bold}#sheetBody input[type=number]{min-height:44px;font-size:16px;max-width:100%}
+/* Online sessions share the safe-area layout, modal sheet and action dock. */
+#app[data-session=online] #diceCount{min-height:44px;height:44px;font-size:16px}
+.online-session-status{position:absolute;top:calc(var(--safe-top,0px) + 82px);left:250px;right:80px;z-index:5;max-width:430px;padding:10px 14px;border:2px solid #a47b42;border-radius:12px;background:#fff2d6ed;color:#573b24;font:14px/1.5 sans-serif;pointer-events:none}
+.online-session-status p{margin:3px 0}
+.online-session-status strong{font-size:16px}
+#app[data-session=online] .map-title{display:none}
+#app[data-session=online] .sheet-body label{display:block;margin:10px 0 5px}
+#app[data-session=online] .sheet-body input:not([type=checkbox]),#app[data-session=online] .sheet-body select{width:100%;min-height:44px;font-size:16px}
+#app[data-session=online] .sheet-body button,#app[data-session=online] .online-local-link{min-height:44px;min-width:44px}
+#app[data-session=online] .sheet-body fieldset{margin:12px 0;padding:12px;border:1px solid #a47b42;border-radius:8px}
+#app[data-session=online] .seat{padding:8px;background:#f6e5bd;border-radius:6px}
+#app[data-session=online] .online-local-link{display:inline-flex;align-items:center;margin-top:12px;color:#573b24}
+#app[data-session=online] #turnAvatar{font-size:16px}
+#app[data-session=online] .player{display:grid;text-align:left}
+#app[data-session=online] #onlineGame{display:inline}
+@media(orientation:portrait) and (max-width:700px){.online-session-status{top:calc(var(--safe-top,0px) + 146px);left:14px;right:72px;padding:7px 10px;max-width:none;font-size:13px}}
+@media(max-height:450px) and (orientation:landscape){.online-session-status{top:calc(var(--safe-top,0px) + 76px);padding:6px 10px;font-size:13px}}
