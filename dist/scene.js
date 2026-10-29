@@ -5,10 +5,10 @@ import {LIGHTING,lightingMode} from './lighting.js';
 import {HighQuality} from './high-quality.js';
 import {renderProfile} from './render-profile.js';
 import {animateSurfaces,setSurfaceLighting} from './surfaces.js';
-import {CITY_TILES} from './maps.js';
+import {CITY_TILES,mapPoints} from './maps.js';
 import {canvasPoint} from './orientation.js';
 import * as THREE from './vendor/three.module.js';
-import {CHARACTERS,GROUPS,POINT_STOPS} from './content.js';
+import {CHARACTERS,GROUPS} from './content.js';
 import {ball,box,mesh,cylinder,tube,sign,material,disposeUnique,batchStatic,signTexture} from './render-kit.js';
 import {characterModel,animateCharacter,vehicleModel} from './characters.js';
 import {propertyBuilding,landmark,townTree} from './buildings.js';
@@ -27,7 +27,7 @@ export class IslandScene{
  setMenu(value){if(this.menu===value)return;this.menu=value;if(value)this.fx.clear();this.invalidate();}
  needsAnimation(){if(this.menu&&!this.studio)return false;if(!this.reduced)return true;if(this.fx.items.length||this.focusTarget||this.isMoving())return true;if(this.game&&!this.studio){const p=this.pawns[this.game.s.current];if(this.game.s.players.some(q=>Math.abs(this.pawns[q.id].scale.x-(q.alive?.56:.001))>.001))return true;if(this.follow&&p&&(Math.hypot(this.offset.x-p.position.x,this.offset.z-p.position.z)>.02||Math.abs(this.zoom-this.followZoom)>.002))return true;}return false;}
  dispose(){if(this.disposed)return;this.disposed=true;cancelAnimationFrame(this.raf);this.raf=null;this.events.abort();this.observer.disconnect();this.cancelGestures();this.fx.clear();this.highQuality.dispose();this.scene.environment=null;this.sun.shadow.dispose();disposeUnique(this.scene);this.scene.clear();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();}
- constructor(container,onTile,tiles=CITY_TILES){this.tiles=tiles;this.el=container;this.onTile=onTile;this.follow=false;this.zoom=1;this.offset=new THREE.Vector3();this.quality='';this._paused=false;this.events=new AbortController();this.last=0;this.time=0;this.game=null;this.showcase=null;this.motionQuery=matchMedia('(prefers-reduced-motion:reduce)');this.reduced=this.motionQuery.matches;
+ constructor(container,onTile,tiles=CITY_TILES){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.tiles=tiles;this.el=container;this.onTile=onTile;this.follow=false;this.zoom=1;this.offset=new THREE.Vector3();this.quality='';this._paused=false;this.events=new AbortController();this.last=0;this.time=0;this.game=null;this.showcase=null;this.motionQuery=matchMedia('(prefers-reduced-motion:reduce)');this.reduced=this.motionQuery.matches;
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#b7d3dc');this.scene.fog=new THREE.Fog('#b7d3dc',70,130);
   this.camera=new THREE.OrthographicCamera(-19,19,13,-13,.1,180);this.camera.position.set(28,30,36);this.camera.lookAt(0,0,0);
   this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio,1.5),2.5));this.renderer.shadowMap.enabled=true;this.renderer.localClippingEnabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.94;container.append(this.renderer.domElement);
@@ -45,7 +45,7 @@ export class IslandScene{
    this.contextLost=false;this.paused=!!this.pausedBeforeContextLoss;this.quality='';this.lightingKey='';this.setQuality(quality);this.applyLighting(game?.s.options.lighting||this.worldLighting);this.game=null;if(game)this.sync(game);this.resize();this.el.dispatchEvent(new CustomEvent('renderrestored'));
   }catch(error){this.contextLost=true;this.paused=true;console.warn('3D recovery unavailable; keeping the playable map',error);}
  }
- setMap(tiles){this.leaveStudio();this.fx.clear();this.world.remove(this.selection,this.turnMarker);disposeUnique(this.world);this.world.clear();this.tiles=tiles;this.game=null;this.rollState=null;this.lastMoney=null;this.tileMeshes=[];this.plotMeshes.clear();this.blockMeshes.clear();this.pawns=[];this.pickupMeshes.clear();this.smokestacks=[];this.buildingBadges=[];this.floats=[];this.lights=[];this.pointLights=[];this.lightingKey='';this.build();this.world.add(this.selection,this.turnMarker);this.clearSelection();this.home();}
+ setMap(tiles){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.leaveStudio();this.fx.clear();this.world.remove(this.selection,this.turnMarker);disposeUnique(this.world);this.world.clear();this.tiles=tiles;this.game=null;this.rollState=null;this.lastMoney=null;this.tileMeshes=[];this.plotMeshes.clear();this.blockMeshes.clear();this.pawns=[];this.pickupMeshes.clear();this.smokestacks=[];this.buildingBadges=[];this.floats=[];this.lights=[];this.pointLights=[];this.lightingKey='';this.build();this.world.add(this.selection,this.turnMarker);this.clearSelection();this.home();}
  build(){buildIsland(this);}
  tag(root,id){root.userData.tile=id;root.traverse(o=>{if(o.isMesh)o.userData.tile=id;});}
  lamp(x,z){const g=new THREE.Group();cylinder(g,'#4e6366',[0,.95,0],.028,.05,1.5);box(g,'#597375',[0,1.72,0],[.23,.09,.23]);const lantern=box(g,'#ffe8a8',[0,1.59,0],[.15,.23,.15]);g.position.set(x,.2,z);this.world.add(g);this.lights.push(lantern);const light=new THREE.PointLight('#ffc779',0,4.5,2);light.position.set(0,1.5,0);g.add(light);this.pointLights.push(light);}
@@ -68,7 +68,7 @@ export class IslandScene{
   }
   for(const [id]of Object.entries(s.blocks))if(!this.blockMeshes.has(id)){const t=this.tiles[id],g=new THREE.Group();for(const x of [-.4,.4])box(g,'#f4dcac',[x,.45,0],[.07,.55,.07]);box(g,'#c76f51',[0,.6,0],[1.15,.19,.13]);for(const x of [-.4,0,.4]){const bar=box(g,'#f1dfb1',[x,.61,.07],[.15,.2,.02]);bar.rotation.z=-.35;}g.position.set(t.x,.2,t.z);this.world.add(g);this.blockMeshes.set(id,g);this.fx.spawn('build',g.position,'#d7b871');}
   for(const [id,g]of this.blockMeshes)if(s.blocks[id]===undefined){this.world.remove(g);this.blockMeshes.delete(id);this.fx.spawn('demolish',g.position,'#c77956');disposeUnique(g);}
-  for(const id of POINT_STOPS){let token=this.pickupMeshes.get(id);if(!token){token=new THREE.Group();cylinder(token,'#f7cc54',[0,.58,0],.24,.24,.08,32).rotation.x=Math.PI/2;const badge=sign(token,'10',[0,.58,.05],.38,.23,{background:'#f7cc54',color:'#80551f',width:96,height:64});token.position.set(this.tiles[id].x,.24,this.tiles[id].z);this.world.add(token);this.pickupMeshes.set(id,token);}token.visible=s.pickups?.[id]===undefined;}
+  for(const id of mapPoints(s)){let token=this.pickupMeshes.get(id);if(!token){token=new THREE.Group();cylinder(token,'#f7cc54',[0,.58,0],.24,.24,.08,32).rotation.x=Math.PI/2;const badge=sign(token,'10',[0,.58,.05],.38,.23,{background:'#f7cc54',color:'#80551f',width:96,height:64});token.position.set(this.tiles[id].x,.24,this.tiles[id].z);this.world.add(token);this.pickupMeshes.set(id,token);}token.visible=s.pickups?.[id]===undefined;}
   this.setQuality(s.options.quality);this.applyLighting(s.options.lighting);
   if(!fresh&&diceRollStarted(this.rollState,s))this.fx.rollDice(s.dice,this.pawns[s.current].position,game.char().estateColor);this.rollState={phase:s.phase,current:s.current,round:s.round};
   this.lastMoney=s.players.map(p=>p.money);this.invalidate();

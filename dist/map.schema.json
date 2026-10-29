@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Naiwa constrained map v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "description",
+    "tiles",
+    "branches",
+    "pointStops",
+    "eventPool",
+    "startingCash",
+    "victory"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,47}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[^<>&\"\\u0027\\u0000-\\u001f\\u007f-\\u009f]*$"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 240,
+      "pattern": "^[^<>&\"\\u0027\\u0000-\\u001f\\u007f-\\u009f]*$"
+    },
+    "tiles": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/tile"
+      }
+    },
+    "branches": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "merge"
+        ],
+        "properties": {
+          "from": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 63
+          },
+          "merge": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 63
+          }
+        }
+      }
+    },
+    "pointStops": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 63
+      }
+    },
+    "eventPool": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 13,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "event-01",
+          "event-02",
+          "event-03",
+          "event-04",
+          "event-05",
+          "event-06",
+          "event-07",
+          "event-08",
+          "event-09",
+          "event-10",
+          "event-11",
+          "event-12",
+          "event-13"
+        ]
+      }
+    },
+    "startingCash": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 20000
+    },
+    "victory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rounds",
+        "type",
+        "target"
+      ],
+      "properties": {
+        "rounds": {
+          "enum": [
+            20,
+            30,
+            50,
+            80
+          ]
+        },
+        "type": {
+          "enum": [
+            "ranking",
+            "netWorth"
+          ]
+        },
+        "target": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ranking"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "target": {
+                "minimum": 1000
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "tile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "description",
+        "x",
+        "z",
+        "group",
+        "price",
+        "next"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 63
+        },
+        "kind": {
+          "enum": [
+            "start",
+            "property",
+            "event",
+            "bank",
+            "shop",
+            "stock",
+            "hospital",
+            "spirit",
+            "rest",
+            "tax"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[^<>&\"\\u0027\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 240,
+          "pattern": "^[^<>&\"\\u0027\\u0000-\\u001f\\u007f-\\u009f]*$"
+        },
+        "x": {
+          "type": "number",
+          "minimum": -24,
+          "maximum": 24
+        },
+        "z": {
+          "type": "number",
+          "minimum": -24,
+          "maximum": 24
+        },
+        "group": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "price": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 2000
+        },
+        "next": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 63
+          }
+        },
+        "yaw": {
+          "type": "number",
+          "minimum": -32,
+          "maximum": 32
+        },
+        "facing": {
+          "type": "number",
+          "minimum": -32,
+          "maximum": 32
+        },
+        "lotX": {
+          "type": "number",
+          "minimum": -32,
+          "maximum": 32
+        },
+        "lotZ": {
+          "type": "number",
+          "minimum": -32,
+          "maximum": 32
+        }
+      }
+    }
+  }
+}

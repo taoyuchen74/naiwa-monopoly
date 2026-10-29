@@ -1,0 +1,18 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>受约束地图编辑器</title><link rel="stylesheet" href="./cloud.css"><link rel="stylesheet" href="./map-editor.css"></head><body><main>
+<a href="./index.html">← 返回游戏</a><h1>自定义地图编辑器</h1><p>只导入 JSON 数据。自定义地图暂用 2D 试玩，不支持岛屿专用 3D 布景。试玩使用独立存档，不覆盖原局；再次试玩会替换上次试玩。</p>
+<div class="actions"><label>模板<select id="template"><option value="2">奶家滨河镇</option><option value="1">经典发财岛</option></select></label><button id="copy">复制模板</button><label>导入地图 JSON（最多128KiB）<input id="import" type="file" accept=".json,application/json"></label></div>
+<p id="validation" role="status" aria-live="polite"></p>
+<div class="editor-layout"><section><h2>地图与胜利条件</h2>
+<label>地图 ID<input id="mapId" maxlength="48"></label><label>名称<input id="mapName" maxlength="32"></label><label>描述<input id="description" maxlength="240"></label>
+<label>起始资金<input id="cash" type="number" min="1000" max="20000" step="100"></label>
+<label>轮数<select id="rounds"><option>20</option><option>30</option><option>50</option><option>80</option></select></label><label>胜利条件<select id="goal"><option value="ranking">存活优先，净资产排名</option><option value="netWorth">存活且达到净资产目标</option></select></label><label>目标净资产<input id="target" type="number" min="0" max="100000"></label>
+<label>点券格 ID（逗号分隔）<input id="points"></label><fieldset><legend>事件池（选择现有规则）</legend><div id="events"></div></fieldset></section>
+<section><h2>地块和连接</h2><label>选中地块<select id="tile"></select></label><button id="add">在选中地块的主连接中插入一格</button>
+<label>地块名称<input id="tileName" maxlength="32"></label><label>地块描述<input id="tileDescription" maxlength="240"></label><label>类型<select id="kind"></select></label><label>地价<input id="price" type="number" min="100" max="2000"></label><label>街区（0—5）<input id="group" type="number" min="0" max="5"></label>
+<div class="coordinate"><label>X<input id="x" type="number" min="-24" max="24" step=".1"></label><label>Z<input id="z" type="number" min="-24" max="24" step=".1"></label></div>
+<label>主连接 next[0]<select id="next"></select></label><label>支路入口 next[1]（可选）<select id="side"></select></label><label>支路汇合点（与主环重新连接）<select id="merge"></select></label>
+<p>0 是唯一起点。主环至少12格，总计16—64格，至少12块地产。最多两条支路，每条至少一个专属中间格。编号保持连续；不支持嵌套分岔。</p>
+</section></div>
+<section><h2>实时 2D 预览</h2><p>点击编号选择地块；带箭头的线表示前进连接，黄色为起点。</p><svg id="preview" viewBox="0 0 600 600" role="group" aria-label="自定义地图实时预览"></svg></section>
+<div class="actions"><button id="play">试玩当前地图</button><button id="export">导出 JSON 文件</button><button id="share">分享地图文件</button></div><p id="notice" role="status"></p>
+</main><script type="module" src="./map-editor.js"></script></body></html>

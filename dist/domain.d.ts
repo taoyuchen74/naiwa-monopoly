@@ -34,7 +34,7 @@ export interface ModeConfig {
  allowedCards:CardKey[]; goal:{type:'ranking'|'netWorth';target:number}; dailyDate:string|null; fixedSeed:number|null;
 }
 export interface GameState {
- version: 2; rules: 11; mode:ModeConfig; setupSeed?: number; mapVersion: 1 | 2; difficulty: Difficulty; talents: boolean;
+ version: 2; rules: 11; mode:ModeConfig; setupSeed?: number; mapVersion: 1 | 2 | 3; customMap?:CustomMap; difficulty: Difficulty; talents: boolean;
  firstPlayer: number; seed: number; round: number; maxRounds: number; current: number; phase: Phase;
  dice: number[]; remaining: number; moveTotal: number; moveSteps: number | null;
  players: Player[]; ownership: Record<number, Ownership|undefined>; blocks: Record<number, number|undefined>; pickups: Record<number, number|undefined>;
@@ -70,9 +70,16 @@ export type SlotRecord =
  | {id:SlotId; status:'corrupt'|'future'; raw:string; state:null; updatedAt:null};
 export interface SaveOptions {expectedRaw?:string|null; now?:number}
 export interface CreateGameOptions {
- mode?:ModeConfig;
+ customMap?:CustomMap; mode?:ModeConfig;
  seatTypes?:Array<'human'|'ai'>; primaryLevel?:Difficulty|'inherit';
  character?:CharacterId|'dounai'; rounds?:number; playerCount?:2|3|4|5|6; randomStart?:boolean; talents?:boolean;
- mapVersion?:1|2; difficulty?:Difficulty; opponents?:Array<CharacterId|'dounai'|'random'>; seatLevels?:Array<Difficulty|'inherit'>;
+ mapVersion?:1|2|3; difficulty?:Difficulty; opponents?:Array<CharacterId|'dounai'|'random'>; seatLevels?:Array<Difficulty|'inherit'>;
  startingCash?:number; startingTickets?:number; seed?:number;
+}
+
+export interface CustomMap {
+ schemaVersion:1; id:string; name:string; description:string;
+ tiles:Array<{id:number;kind:string;name:string;description:string;x:number;z:number;group:number;price:number;next:number[];yaw?:number;lotX?:number;lotZ?:number;facing?:number}>;
+ branches:Array<{from:number;merge:number}>; pointStops:number[]; eventPool:string[]; startingCash:number;
+ victory:{rounds:number;type:'ranking'|'netWorth';target:number};
 }

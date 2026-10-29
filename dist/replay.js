@@ -3,7 +3,7 @@ import {CHARACTERS} from './content.js';
 import {Game} from './engine.js?v=16';
 import {compatible,muteReplay,attachRecording,clone} from './replay-log.js';
 import {sha256} from './state-hash.js';
-import {MAPS} from './maps.js';
+import {mapInfo} from './maps.js';
 import {settlement} from './results-panel.js';
 const turnIndexes=new WeakMap();
 export const ARCHIVE_KEY='naiwa-local-history-v1';
@@ -16,7 +16,7 @@ export class ReplayPlayer{
  turn(direction){const marks=this.turns,target=direction>0?marks.find(n=>n>this.index):marks.filter(n=>n<this.index).at(-1);this.playing=false;return this.seek(target??(direction>0?this.record.commands.length:0));}
  continueGame(){if(this.game.s.phase==='finished')throw Error('对局已结束，请先跳转。');const g=Game.restore(this.game.s);const r=clone(this.record);r.commands=r.commands.slice(0,this.index);r.finalHash=g.stateHash();attachRecording(g,r,true);return g;}
 }
-export function resultSummary(g){return ['奶家本地战绩 · 非竞技认证',MAPS[g.s.mapVersion].name+' · 第 '+g.s.round+' / '+g.s.maxRounds+' 轮',...settlement(g).map(r=>{const a=r.assets;return `第${r.rank}名 ${g.char(r.player).name}${r.player.alive?'':'（破产）'}：净资产${a.total}；现金${a.cash}、存款${a.deposit}、地产${a.property}、股票市值${a.stocks}、交通工具${a.vehicle}、贷款${a.loan}`;})].join('\n');}
+export function resultSummary(g){return ['奶家本地战绩 · 非竞技认证',mapInfo(g.s).name+' · 第 '+g.s.round+' / '+g.s.maxRounds+' 轮',...settlement(g).map(r=>{const a=r.assets;return `第${r.rank}名 ${g.char(r.player).name}${r.player.alive?'':'（破产）'}：净资产${a.total}；现金${a.cash}、存款${a.deposit}、地产${a.property}、股票市值${a.stocks}、交通工具${a.vehicle}、贷款${a.loan}`;})].join('\n');}
 export function readHistory(storage){try{const d=JSON.parse(storage.getItem(ARCHIVE_KEY)||'null');if(d&&d.version!==1)return {version:d.version,matches:[],scores:[],incompatible:true};return d?.version===1&&Array.isArray(d.matches)?{version:1,matches:d.matches.filter(m=>m?.replay?.initial&&Array.isArray(m.replay.commands)).slice(-20),scores:Array.isArray(d.scores)?d.scores:d.matches.filter(m=>m?.results).map(({id,rounds,results,causes})=>({id,rounds,results,causes}))}:{version:1,matches:[],scores:[]};}catch{return {version:1,matches:[],scores:[],incompatible:true};}}
 export function storeReplay(storage,g,record){const d=readHistory(storage);if(d.incompatible)throw Error('本地战绩版本不兼容');const id=record.captureId||record.initialHash;let item=d.matches.find(m=>m.id===id);if(!item){item={id};d.matches.push(item);}item.updatedAt=Date.now();item.replay=clone(record);if(g.s.phase==='finished'){item.summary=resultSummary(g);item.rounds=g.s.round;item.results=settlement(g).map(r=>({character:r.player.character,winner:g.s.mode.goal.type==='netWorth'?modeProgress(g).find(p=>p.playerId===r.player.id).success:r.winner,bankrupt:!r.player.alive}));item.causes=record.commands.filter(e=>e.cause).map(e=>e.cause).concat(record.initial.players.filter(p=>!p.alive).map(()=>'接续前，原因未知'));const score={id,rounds:item.rounds,results:item.results,causes:item.causes};d.scores=d.scores.filter(s=>s?.id!==id);d.scores.push(score);}
  // Bound local storage; eviction is explicit in the UI documentation.
