@@ -38,7 +38,7 @@ export function auctionLimit(g,p){
 export function aiAuction(g){const a=g.s.auction;if(!a||g.s.players[a.actor].human)return false;const min=auctionMinimum(g);return auctionAction(g,min<=auctionLimit(g,g.s.players[a.actor])?min:null);}
 const bundleShape=b=>!!b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).sort().join(',')==='cards,cash,properties'&&int(b.cash)&&Array.isArray(b.properties)&&Array.isArray(b.cards)&&b.properties.length<=48&&b.cards.length<=RULES.handLimit&&[...b.properties,...b.cards].every(int)&&new Set(b.properties).size===b.properties.length&&new Set(b.cards).size===b.cards.length;
 function assetsValid(s,p,b){
- return bundleShape(b)&&b.cash<=p.money&&b.properties.every(id=>{const o=s.ownership[id];return mapTiles(s.mapVersion)[id]?.kind==='property'&&o&&o.player===p.id&&Number.isInteger(o.level)&&o.level>=0&&o.level<=buildingLimit(o)&&(o.buildingType===undefined||Object.hasOwn(BUSINESSES,o.buildingType))&&!o.mortgaged&&!o.mortgage;})&&b.cards.every(i=>Object.hasOwn(CARDS,p.cards[i])&&s.mode.allowedCards.includes(p.cards[i]));
+ return bundleShape(b)&&b.cash<=p.money&&b.properties.every(id=>{const o=s.ownership[id];return mapTiles(s.mapVersion,s.customMap)[id]?.kind==='property'&&o&&o.player===p.id&&Number.isInteger(o.level)&&o.level>=0&&o.level<=buildingLimit(o)&&(o.buildingType===undefined||Object.hasOwn(BUSINESSES,o.buildingType))&&!o.mortgaged&&!o.mortgage;})&&b.cards.every(i=>Object.hasOwn(CARDS,p.cards[i])&&s.mode.allowedCards.includes(p.cards[i]));
 }
 export function offerValid(s,o){
  if(!o||!commerceEnabled(s)||s.debt||!['roll','end'].includes(o.resume)||!int(o.to)||o.to===s.current)return false;
@@ -74,7 +74,7 @@ export function validCommerce(s){
  if(s.phase!=='auction'&&a!=null||s.phase!=='negotiation'&&o!=null)return false;
  if(s.phase==='negotiation')return offerValid(s,o);
  if(s.phase!=='auction')return true;
- const tiles=mapTiles(s.mapVersion),alive=s.players.filter(p=>p.alive).map(p=>p.id);
+ const tiles=mapTiles(s.mapVersion,s.customMap),alive=s.players.filter(p=>p.alive).map(p=>p.id);
  if(!a||!commerceEnabled(s)||!s.players[s.current].alive||s.debt||tiles[a.tile]?.kind!=='property'||a.tile!==s.players[s.current].pos||s.ownership[a.tile]||!Array.isArray(a.eligible)||!Array.isArray(a.passed)||a.eligible.some((id,index)=>id!==Array.from({length:s.players.length},(_,i)=>(s.current+i)%s.players.length).filter(i=>s.players[i].alive)[index])||new Set(a.eligible).size!==alive.length||a.eligible.length!==alive.length||a.eligible.some(i=>!alive.includes(i))||new Set(a.passed).size!==a.passed.length||a.passed.some(i=>!alive.includes(i))||!a.eligible.includes(a.actor)||a.passed.includes(a.actor)||a.leader===a.actor||!int(a.bid))return false;
  const active=a.eligible.filter(i=>!a.passed.includes(i));
  if(!active.length||a.leader===null&&a.bid!==0)return false;
