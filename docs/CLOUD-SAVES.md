@@ -12,7 +12,7 @@
 
 - GET /api/cloud/session → supported、user {id,username}|null、serverNow；未启用云服务返回CLOUD_DISABLED。
 - POST /api/cloud/auth/register、/auth/login：{username,password}，成功设置独立HttpOnly Cookie；注册不上传本地数据。
-- POST /api/cloud/auth/logout：{}，服务端撤销会话，清除Cookie。
+- POST /api/cloud/auth/logout：{actorUserId}（未登录时幂等清理），服务端撤销会话，清除Cookie。
 - GET /api/cloud/saves：自己的元数据列表及accountId，不提供跨用户查询参数。
 - GET /api/cloud/saves/:id：自己的有效存档、version、serverSavedAt、snapshotHash、summary、accountId。不存在或非本人均404。
 - GET /api/cloud/saves/:id/raw：本人原始JSON下载；用于损坏数据备份，不直接作为可运行对局导入。
@@ -43,7 +43,7 @@ SQLite使用WAL与外键，仅支持同一个数据库文件所在服务实例�
 离线修改保留在本机；网络恢复后手动上传。用户确认上传后，冻结的请求及requestId保存在该账号的独立本机待办中；响应丢失时手动重试同一请求，不能换key重复创建。退出或换账号停止当前流程，待办只允许原账号重试；不会在新账号自动发出。
 
 409冲突展示两边轮数和时间，并提供：
-1. 读取云端：再次读取最新有效云档，明确替换目标本地槽位；使用expectedRaw防止本地确认过期，并先备份有效旧档；不替换正在运行的对局，返回单机后从槽位继续。
+1. 读取云端：再次读取最新有效云档，明确替换目标本地手动槽位（不直接写自动槽或替换运行中的对局）；使用expectedRaw防止本地确认过期，并先备份有效旧档；不替换正在运行的对局，返回单机后从槽位继续。
 2. 使用本地：再次明确确认，生成新requestId，按刚展示的云版本提交；若云端再次变化继续409，绝不静默覆盖。
 3. 保留副本：新cloudId/expectedVersion=0，原云记录保持不变；新副本归当前登录用户。
 4. 取消：保留两边。
@@ -55,3 +55,23 @@ SQLite使用WAL与外键，仅支持同一个数据库文件所在服务实例�
 API/仓储：登录/退出/过期、跨账号读写拒绝、伪造owner和客户端时间、幂等及重启后重放、同key不同内容、双端版本竞争、事务失败不部分提交、旧档迁移、损坏和未来云档、与联机Cookie/状态隔离。
 
 浏览器：游客原流程不需登录；游客绑定、跨独立浏览器登录/下载/继续；离线修改后冲突三种选择；本地确认过期；上传响应丢失同key重试；退出/换账号不误传；损坏云档不覆盖本机；静态/未启用服务明确提示。使用真实浏览器和真实API，不以HTML字符串断言代替流程验证。
+
+
+## 实现与运行
+
+- `server/cloud-store.mjs`：SQLite账号、密码摘要、会话、存档、事务与持久幂等；`server/cloud-http.mjs`：独立HTTP协议、同源和大小/频率校验。
+- `dist/cloud-sync.js`：本机槽位适配、账号隔离的待确认请求、版本关联和下载备份；`dist/cloud.html/js/css`：可选入口、对比确认、登录与恢复流程，复用现有ModalFocus。
+- `npm run start:cloud` 默认私有 `data/cloud.sqlite`；不设置 `CLOUD_DB` 的普通服务器明确拒绝云功能，不影响游客单机或联机房间。生产启用账号必须配置HTTPS的PUBLIC_ORIGIN；静态/离线构建无云服务器。
+- 云下载只写manual1—3。独立覆盖前原始备份键为 `naiwa-cloud-download-backup-v1:<slot>`，界面可导出。同步记录为 `naiwa-cloud-links-v1`，账号隔离；损坏时仅用户确认后备份并重置。密码/会话令牌不进localStorage。SQLite文件不能位于公开out目录中。
+- 离线退出不能保证撤销服务器Cookie：界面明确“会话仍可能有效，联网后重试”，不谎报已退出。返回单机不触发自动同步。退出成功会撤销当前设备会话；本机进度不等于隐私保险箱，共享设备使用者仍可读取。
+- 云原始文件、标签与摘要均按数据处理，不执行HTML。云API与cloud.html在服务工作线程中始终走网络，不缓存私人响应，也不把离线单机页面误当云端成功响应。
+- 单账号最多50副本、10000成功请求记录、20活跃会话；全库最多10000用户。达到上限拒绝新写入，不清除旧幂等历史。未提供云删除、密码重置、自动合并或多实例部署。
+
+
+## 本地验证结果（2026-10-29）
+
+- `npm test`：479通过，0失败，含新增17项云仓储/HTTP/同步测试；覆盖重启幂等、所有权隔离、时钟回拨、并发CAS、事务失败回滚、旧档迁移、未来/损坏数据、配额和本机写入失败。
+- `npm run test:cloud`：16通过，390×844与844×390各8项，真实Chromium、独立浏览器上下文和真实HTTP/SQLite。覆盖注册不自动绑定、跨设备下载并实际读槽进入游戏、冲突取消/副本/本机/云端四种选择、离线修改、响应丢失后刷新和同请求重试、退出/换账号、损坏原文下载、Tab/Shift+Tab/Escape/焦点恢复及离线退出提示。
+- `npm run test:browser`：88通过，2项既有可选WebGL用例跳过；`npm run test:online`：10通过；类型检查和完整网页/离线HTML构建通过。
+- 新云页面另用agent-browser检查游客交互树与无障碍规则，未发现违规；这只是补充检查，不代替上面的键盘与实际读写测试。
+- CI增加云浏览器套件，统一上传报告与失败截图/trace。以上为桌面Chromium与移动视口仿真，不是实物手机、跨公网设备、生产HTTPS或磁盘灾难恢复演练。

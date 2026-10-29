@@ -6,3 +6,8 @@ node_modules/
 out/
 test-results/
 playwright-report/
+
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

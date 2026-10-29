@@ -37,6 +37,8 @@ jobs:
         run: npm run test:browser
       - name: Two-client online browser tests
         run: npm run test:online
+      - name: Two-device cloud save browser tests
+        run: npm run test:cloud
       - name: Build site and portable game
         run: npm run build
       - name: Upload browser report and failure evidence
