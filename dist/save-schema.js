@@ -1,10 +1,11 @@
 // @ts-check
 import {validCommerce} from './commerce.js';
 import {modeConfig,validMode} from './modes.js';
-import {mapTiles} from './maps.js';
+import {parseMap} from './map-schema.js';
+import {mapPoints,mapTiles} from './maps.js';
 import {migratePortfolio} from './portfolio.js';
 import {BUSINESSES,businessType,buildingLimit,researchChoices} from './businesses.js';
-import {CHARACTERS,CARDS,EVENT_RULES,SPIRITS,VEHICLES,POINT_STOPS} from './content.js';
+import {CHARACTERS,CARDS,EVENT_RULES,SPIRITS,VEHICLES} from './content.js';
 import {RULES,MAX_BUILDING_LEVEL,ROUND_OPTIONS} from './rules-config.js';
 export {MAX_BUILDING_LEVEL,ROUND_OPTIONS};
 export const SCHEMA_VERSION=1;
@@ -22,10 +23,11 @@ export function migrateSave(raw){
   const s=typeof raw==='string'?JSON.parse(raw):copy(raw);
   if(s&&Object.hasOwn(s,'schemaVersion')){if(s.schemaVersion!==SCHEMA_VERSION||!validSaveTime(s.savedAt))return null;
    delete s.schemaVersion;
-  }const TILES=mapTiles(s?.mapVersion??1);
+  }if(s?.mapVersion===3)s.customMap=parseMap(s.customMap);else if(s&&s.customMap!==undefined)return null;
+  const TILES=mapTiles(s?.mapVersion??1,s?.customMap);
   if(s&&s.mapVersion===undefined)s.mapVersion=1;
   if(s&&s.difficulty===undefined)s.difficulty='normal';
-  if(!s||![1,2].includes(s.mapVersion)||!['easy','normal','hard'].includes(s.difficulty)||s.version!==2||!Array.isArray(s.players)||![2,3,4,5,6].includes(s.players.length)||!['roll','departure','moving','branch','buy','estate','event','end','debt','finished','auction','negotiation'].includes(s.phase))return null;
+  if(!s||![1,2,3].includes(s.mapVersion)||!['easy','normal','hard'].includes(s.difficulty)||s.version!==2||!Array.isArray(s.players)||![2,3,4,5,6].includes(s.players.length)||!['roll','departure','moving','branch','buy','estate','event','end','debt','finished','auction','negotiation'].includes(s.phase))return null;
   if(!Number.isInteger(s.current)||s.current<0||s.current>=s.players.length||!Number.isInteger(s.round)||s.round<1||!ROUND_OPTIONS.includes(s.maxRounds)||s.round>s.maxRounds||!Number.isInteger(s.seed)||!Number.isInteger(s.remaining)||s.remaining<0||s.remaining>18)return null;
   if(s.revision===undefined&&s.commandSequences===undefined){s.revision=0;
    s.commandSequences=s.players.map(()=>0);
@@ -97,7 +99,7 @@ if(o.buildingType!==undefined&&!Object.hasOwn(BUSINESSES,o.buildingType)||
   if(s.firstPlayer===undefined)s.firstPlayer=0;
   if(!Number.isInteger(s.firstPlayer)||s.firstPlayer<0||s.firstPlayer>=s.players.length)return null;
   if(s.pickups===undefined)s.pickups={};
-  if(!s.pickups||typeof s.pickups!=='object'||Object.entries(s.pickups).some(([id,owner])=>!POINT_STOPS.includes(+id)||!Number.isInteger(owner)||!s.players[owner]))return null;
+  if(!s.pickups||typeof s.pickups!=='object'||Object.entries(s.pickups).some(([id,owner])=>!mapPoints(s).includes(+id)||!Number.isInteger(owner)||!s.players[owner]))return null;
   if(s.talents===undefined)s.talents=false;
   if(typeof s.talents!=='boolean')return null;
   s.rules=11;

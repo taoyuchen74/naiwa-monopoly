@@ -4,7 +4,7 @@ import {dirname,resolve} from 'node:path';
 import {randomBytes,randomUUID,scrypt,timingSafeEqual,createHash} from 'node:crypto';
 import {promisify} from 'node:util';
 import {migrateSave,SCHEMA_VERSION} from '../dist/save-schema.js';
-import {MAPS} from '../dist/maps.js';
+import {mapInfo} from '../dist/maps.js';
 
 const derive=promisify(scrypt),SESSION_MS=7*86400000;
 const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v);
@@ -20,7 +20,7 @@ function normalize(raw){
  if(!save)fail(422,'INVALID_SAVE');
  return save;
 }
-function summary(save){return {map:MAPS[save.mapVersion].name,round:save.round,players:save.players.length,maxRounds:save.maxRounds};}
+function summary(save){return {map:mapInfo(save).name,round:save.round,players:save.players.length,maxRounds:save.maxRounds};}
 function inspect(row){
  try{
   const save=normalize(JSON.parse(row.payload)),snapshotHash=digest(JSON.stringify(stable(save)));
