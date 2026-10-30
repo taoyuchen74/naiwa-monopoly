@@ -443,3 +443,4 @@ button.player:focus-visible{outline-color:#85391f}
 #app[data-compact=true][data-layout=portrait] .move-indicator{top:212px;left:12px}
 #app[data-compact=true][data-layout=portrait] #tutorialFloat{top:252px;left:8px;right:8px}
 #app:is(.is-menu,.is-studio) .map-tools-toggle{display:none}
+#app[data-compact=true]:has(.mini-toggle[aria-expanded=true]) #tutorialFloat{display:none}
