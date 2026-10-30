@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e-ci',
-  timeout: 120000,
+  timeout: process.env.NAIWA_FOREST_WEBGL === '1' ? 240000 : 120000,
   expect: { timeout: 20000 },
   workers: 1,
   retries: 0,
@@ -18,7 +18,7 @@ export default defineConfig({
     deviceScaleFactor: 1,
     reducedMotion: 'reduce',
     serviceWorkers: 'block',
-    actionTimeout: 20000,
+    actionTimeout: process.env.NAIWA_FOREST_WEBGL === '1' ? 60000 : 20000,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     launchOptions: {

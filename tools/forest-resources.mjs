@@ -21,7 +21,7 @@ try {
     await page.goto(
       'http://127.0.0.1:' + server.address().port + '/tools/forest-preview.html?built',
     );
-    await page.waitForFunction(() => window.ready);
+    await page.waitForFunction(() => window.ready, null, { timeout: 120000 });
     const row = await page.evaluate(async () => {
       const { Game } = await import('../dist/engine.js');
       view.paused = true;
