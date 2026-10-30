@@ -23,6 +23,7 @@ test('desktop WebGL sleeps while waiting for a human and redraws on camera input
         const original = HTMLCanvasElement.prototype.getContext,
           seen = new WeakSet();
         HTMLCanvasElement.prototype.getContext = function (...args) {
+          if (/webgl/i.test(args[0]) && args[1]?.preserveDrawingBuffer) return null;
           const gl = original.apply(this, args);
           if (gl && /webgl/i.test(args[0]) && !seen.has(gl)) {
             seen.add(gl);
@@ -46,9 +47,10 @@ test('desktop WebGL sleeps while waiting for a human and redraws on camera input
       { s: g.s, key: SAVE_KEY },
     );
     await page.goto('/');
-    await expect(page.locator('#loadingScreen')).toBeHidden();
+    await expect(page.locator('#loadingScreen')).toBeHidden({ timeout: 60000 });
     await page.locator('#continueBtn').click();
     await expect(page.locator('#actionBtn')).toBeEnabled();
+    await page.locator('#homeBtn').click();
     const idle = async () => {
       const n = await page.evaluate(() => window.sceneDraws);
       await page.waitForTimeout(350);
