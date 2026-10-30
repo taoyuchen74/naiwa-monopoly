@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { performanceServer } from './perf-server.mjs';
 const server = await performanceServer(),
-  browser = await chromium.launch({ args: ['--enable-gpu', '--enable-unsafe-swiftshader'] }),
+  browser = await chromium.launch({
+    channel: 'chromium',
+    args: [
+      '--enable-gpu',
+      '--enable-unsafe-swiftshader',
+      ...(process.env.NAIWA_SOFTWARE_WEBGL === '1' ? ['--use-angle=swiftshader'] : []),
+    ],
+  }),
   rows = [];
 try {
   for (const viewport of [
@@ -14,7 +21,7 @@ try {
     await page.goto(
       'http://127.0.0.1:' + server.address().port + '/tools/forest-preview.html?built',
     );
-    await page.waitForFunction(() => window.ready);
+    await page.waitForFunction(() => window.ready, null, { timeout: 120000 });
     const row = await page.evaluate(async () => {
       const { Game } = await import('../dist/engine.js');
       view.paused = true;
