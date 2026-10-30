@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { performanceServer } from './perf-server.mjs';
 const server = await performanceServer(),
-  browser = await chromium.launch({ args: ['--enable-gpu', '--enable-unsafe-swiftshader'] }),
+  browser = await chromium.launch({
+    channel: 'chromium',
+    args: [
+      '--enable-gpu',
+      '--enable-unsafe-swiftshader',
+      ...(process.env.NAIWA_SOFTWARE_WEBGL === '1' ? ['--use-angle=swiftshader'] : []),
+    ],
+  }),
   rows = [];
 try {
   for (const viewport of [
