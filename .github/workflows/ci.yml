@@ -44,7 +44,7 @@ jobs:
         env:
           NAIWA_FOREST_WEBGL: '1'
           NAIWA_SOFTWARE_WEBGL: '1'
-        run: npx playwright test e2e-ci/forest.spec.mjs --grep WebGL
+        run: npx playwright test e2e-ci/forest.spec.mjs e2e-ci/desktop-layout.spec.mjs --grep WebGL
       - name: Forest map and quality resource lifecycle
         env:
           NAIWA_SOFTWARE_WEBGL: '1'

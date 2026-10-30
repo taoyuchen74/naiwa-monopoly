@@ -185,7 +185,13 @@ html,body{width:100%;height:100%;position:fixed;overflow:hidden;overscroll-behav
 #app .players{overflow:auto;overscroll-behavior:contain;min-height:0;padding:3px;flex:1;align-content:start}
 #app .players .player{min-height:60px;font-size:14px}
 #app .players :is(.player-name,.player-stats,.badge){font-size:13px}
-#app .players .player-head{flex-wrap:nowrap;display:flex}
+#app .players .player{min-width:0}
+#app .players .player-head{display:grid;grid-template-columns:32px minmax(0,1fr);gap:6px;min-width:0}
+#app .players .player-head>div{min-width:0}
+#app .players .player-name{white-space:normal;overflow-wrap:anywhere}
+#app .players .player-money{grid-column:1/-1;justify-self:end;max-width:100%;overflow-wrap:anywhere}
+#app .players .player-stats{flex-wrap:wrap;gap:6px}
+#app .map-btn{white-space:normal;overflow-wrap:normal;word-break:keep-all;font-size:13px;line-height:1.2;padding:2px}
 #app .players .player-money{width:auto;font-size:18px}
 #app .players .mini-face{width:32px;height:32px;flex-shrink:0}
 #app .players .player-stats{display:flex}
