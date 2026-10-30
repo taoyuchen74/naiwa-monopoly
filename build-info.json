@@ -1,20 +1,20 @@
 {
-  "buildId": "4d5471ad5358",
-  "sourceJsFiles": 87,
-  "originalJsBytes": 2514940,
-  "scriptBytes": 950312,
-  "scriptGzipBytes": 271290,
-  "fontBytes": 99152,
+  "buildId": "eb58e6238e0f",
+  "sourceJsFiles": 117,
+  "originalJsBytes": 2817436,
+  "scriptBytes": 1123207,
+  "scriptGzipBytes": 328094,
+  "fontBytes": 111128,
   "assets": [
     {
-      "file": "assets/game.9c748eff5f7b.js",
-      "bytes": 950312,
-      "gzipBytes": 271290
+      "file": "assets/game.3e645abec80d.js",
+      "bytes": 1123207,
+      "gzipBytes": 328094
     },
     {
-      "file": "assets/font.f517c79066f1.woff2",
-      "bytes": 99152,
-      "gzipBytes": 99205
+      "file": "assets/font.bcb5ffc4c57b.woff2",
+      "bytes": 111128,
+      "gzipBytes": 111181
     },
     {
       "file": "assets/laugh.92a25df4321c.mp3",
@@ -27,18 +27,54 @@
       "gzipBytes": 486
     },
     {
-      "file": "assets/style.8739de6901df.css",
-      "bytes": 110974,
-      "gzipBytes": 22138
+      "file": "assets/style.1db14fec62c1.css",
+      "bytes": 130585,
+      "gzipBytes": 26139
+    },
+    {
+      "file": "assets/online.16e487a28d14.js",
+      "bytes": 80,
+      "gzipBytes": 93
+    },
+    {
+      "file": "assets/online-style.db4ae95a8a11.css",
+      "bytes": 2332,
+      "gzipBytes": 952
+    },
+    {
+      "file": "assets/cloud.2b4048eba5a2.js",
+      "bytes": 354375,
+      "gzipBytes": 90009
+    },
+    {
+      "file": "assets/cloud-style.b86904518a52.css",
+      "bytes": 1843,
+      "gzipBytes": 817
+    },
+    {
+      "file": "assets/map-editor.3a9928ad6cdb.js",
+      "bytes": 130385,
+      "gzipBytes": 42667
+    },
+    {
+      "file": "assets/map-editor-style.49530b4a9663.css",
+      "bytes": 2526,
+      "gzipBytes": 1035
     }
   ],
   "offlineFiles": [
     "./index.html",
-    "./assets/game.9c748eff5f7b.js",
-    "./assets/font.f517c79066f1.woff2",
+    "./assets/game.3e645abec80d.js",
+    "./assets/font.bcb5ffc4c57b.woff2",
     "./assets/laugh.92a25df4321c.mp3",
     "./assets/icon.9fa8699356e6.svg",
-    "./assets/style.8739de6901df.css",
+    "./assets/style.1db14fec62c1.css",
+    "./assets/online.16e487a28d14.js",
+    "./assets/online-style.db4ae95a8a11.css",
+    "./assets/cloud.2b4048eba5a2.js",
+    "./assets/cloud-style.b86904518a52.css",
+    "./assets/map-editor.3a9928ad6cdb.js",
+    "./assets/map-editor-style.49530b4a9663.css",
     "./licenses/OFL.txt",
     "./licenses/THREE-LICENSE.txt"
   ]
