@@ -33,7 +33,7 @@ try {
       hasTouch: true,
       cpu: 4,
     },
-  ]) {
+  ].filter((p) => !process.env.PERF_ONLY || p.name === process.env.PERF_ONLY)) {
     console.log('Measuring ' + profile.name);
     const context = await browser.newContext({ ...profile, serviceWorkers: 'block' }),
       page = await context.newPage(),
@@ -56,8 +56,10 @@ try {
         textures: view.renderer.info.memory.textures,
         programs: view.renderer.info.programs.length,
         ratio: view.renderer.getPixelRatio(),
-        shadow: view.sun.shadow.mapSize.x,
-        aoSamples: view.highQuality.ao.gtaoMaterial.defines.SAMPLES,
+        shadow: view.renderer.shadowMap.enabled ? view.sun.shadow.mapSize.x : 0,
+        aoSamples: view.highQuality.ao.enabled
+          ? view.highQuality.ao.gtaoMaterial.defines.SAMPLES
+          : 0,
         cssSize: [view.el.clientWidth, view.el.clientHeight],
         bufferSize: [view.renderer.domElement.width, view.renderer.domElement.height],
         aoSize: [view.highQuality.ao.width, view.highQuality.ao.height],
@@ -102,8 +104,11 @@ try {
       const gl = view.renderer.getContext(),
         debug = gl.getExtension('WEBGL_debug_renderer_info'),
         gpu = debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-      const active = await measure('active'),
-        menu = await measure('menu'),
+      const normalAnimation = view.needsAnimation;
+      view.needsAnimation = () => true;
+      const active = await measure('active');
+      view.needsAnimation = normalAnimation;
+      const menu = await measure('menu'),
         staticScene = await measure('static');
       cancelAnimationFrame(view.raf);
       view.paused = true;
