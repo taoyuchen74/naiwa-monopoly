@@ -1,3 +1,4 @@
+import { openMapTools } from '../e2e/ui-controls.mjs';
 import { test, expect } from '@playwright/test';
 import { Game, SAVE_KEY } from '../dist/engine.js';
 async function boot(page, saved = null, gl = false) {
@@ -115,6 +116,7 @@ test('forest actual WebGL buy-build flow and remaining actions survive motion an
   await expect(page.locator('#scene > canvas')).toHaveCount(1);
   await expect(page.locator('#fallback')).toBeHidden();
   await buyBuild(page);
+  await openMapTools(page);
   await page.locator('#qualityBtn').click();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.locator('#actionBtn')).toBeEnabled();

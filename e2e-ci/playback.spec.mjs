@@ -1,35 +1,202 @@
-import {test,expect} from '@playwright/test';
-import {Game,SAVE_KEY} from '../dist/engine.js';
-const realWebGL=process.env.NAIWA_BROWSER_WEBGL==='1';
-const make=()=>Game.create({seed:17,mapVersion:1,talents:false});
-async function boot(page,state,{real=false,prefs={speed:1,aiFast:false}}={}){
- await page.clock.setFixedTime(new Date('2026-10-28T12:00:00Z'));await page.addInitScript(({state,real,prefs,key})=>{if(!sessionStorage.getItem('playback-fixture')){localStorage.clear();localStorage.setItem(key,JSON.stringify(state));localStorage.setItem('naiwa-tutorial-v1',JSON.stringify({version:1,disabled:true,seen:[]}));if(prefs)localStorage.setItem('naiwa-monopoly-preferences-v1',JSON.stringify({...prefs,quality:'low',sound:false,music:false,voice:false}));sessionStorage.setItem('playback-fixture','1');}const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,options,...args){if(/webgl/i.test(type)&&(!real||options?.preserveDrawingBuffer))return null;return get.call(this,type,options,...args);};Object.defineProperty(window,'AudioContext',{value:undefined});Object.defineProperty(window,'webkitAudioContext',{value:undefined});},{state,real,prefs,key:SAVE_KEY});await page.goto('/');await expect(page.locator('#loadingScreen')).toBeHidden({timeout:90000});await page.locator('#continueBtn').click();await expect(page.locator('#startScreen')).toBeHidden();
+import { openMapTools } from '../e2e/ui-controls.mjs';
+import { test, expect } from '@playwright/test';
+import { Game, SAVE_KEY } from '../dist/engine.js';
+const realWebGL = process.env.NAIWA_BROWSER_WEBGL === '1';
+const make = () => Game.create({ seed: 17, mapVersion: 1, talents: false });
+async function boot(page, state, { real = false, prefs = { speed: 1, aiFast: false } } = {}) {
+  await page.clock.setFixedTime(new Date('2026-10-28T12:00:00Z'));
+  await page.addInitScript(
+    ({ state, real, prefs, key }) => {
+      if (!sessionStorage.getItem('playback-fixture')) {
+        localStorage.clear();
+        localStorage.setItem(key, JSON.stringify(state));
+        localStorage.setItem(
+          'naiwa-tutorial-v1',
+          JSON.stringify({ version: 1, disabled: true, seen: [] }),
+        );
+        if (prefs)
+          localStorage.setItem(
+            'naiwa-monopoly-preferences-v1',
+            JSON.stringify({ ...prefs, quality: 'low', sound: false, music: false, voice: false }),
+          );
+        sessionStorage.setItem('playback-fixture', '1');
+      }
+      const get = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (type, options, ...args) {
+        if (/webgl/i.test(type) && (!real || options?.preserveDrawingBuffer)) return null;
+        return get.call(this, type, options, ...args);
+      };
+      Object.defineProperty(window, 'AudioContext', { value: undefined });
+      Object.defineProperty(window, 'webkitAudioContext', { value: undefined });
+    },
+    { state, real, prefs, key: SAVE_KEY },
+  );
+  await page.goto('/');
+  await expect(page.locator('#loadingScreen')).toBeHidden({ timeout: 90000 });
+  await page.locator('#continueBtn').click();
+  await expect(page.locator('#startScreen')).toBeHidden();
 }
-const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),SAVE_KEY);
-const hash=async page=>{const g=Game.restore(await saved(page));expect(g).toBeTruthy();return g.stateHash();};
-async function choose(page,selector,value){const select=page.locator(selector),label=await select.locator('option[value="'+value+'"]').textContent();await select.locator('..').getByRole('combobox').click();await page.getByRole('option',{name:label,exact:true}).click();}
-test('speed buttons, AI boost and settings change only presentation and persist through reload',async({page})=>{
- const g=make();g.s.phase='end';await boot(page,g.s);const before=await hash(page);for(const text of ['2×','3×','1×']){await page.locator('#speedBtn').click();await expect(page.locator('#speedBtn')).toHaveText(text);expect(await hash(page)).toBe(before);}await page.locator('#aiPaceBtn').click();await expect(page.locator('#aiPaceBtn')).toHaveAttribute('aria-pressed','true');expect(await hash(page)).toBe(before);
- await page.locator('#settingsBtn').click();await choose(page,'#speedSelect','3');await page.keyboard.press('Escape');await expect(page.locator('#speedBtn')).toHaveText('3×');await page.reload();await expect(page.locator('#loadingScreen')).toBeHidden();await page.locator('#continueBtn').click();await expect(page.locator('#speedBtn')).toHaveText('3×');expect(await hash(page)).toBe(before);
+const saved = (page) => page.evaluate((key) => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
+const hash = async (page) => {
+  const g = Game.restore(await saved(page));
+  expect(g).toBeTruthy();
+  return g.stateHash();
+};
+async function choose(page, selector, value) {
+  const select = page.locator(selector),
+    label = await select.locator('option[value="' + value + '"]').textContent();
+  await select.locator('..').getByRole('combobox').click();
+  await page.getByRole('option', { name: label, exact: true }).click();
+}
+test('speed buttons, AI boost and settings change only presentation and persist through reload', async ({
+  page,
+}) => {
+  const g = make();
+  g.s.phase = 'end';
+  await boot(page, g.s);
+  const before = await hash(page);
+  for (const text of ['2×', '3×', '1×']) {
+    await openMapTools(page);
+    await page.locator('#speedBtn').click();
+    await expect(page.locator('#speedBtn')).toHaveText(text);
+    expect(await hash(page)).toBe(before);
+  }
+  await openMapTools(page);
+  await page.locator('#aiPaceBtn').click();
+  await expect(page.locator('#aiPaceBtn')).toHaveAttribute('aria-pressed', 'true');
+  expect(await hash(page)).toBe(before);
+  await page.locator('#settingsBtn').click();
+  await choose(page, '#speedSelect', '3');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#speedBtn')).toHaveText('3×');
+  await page.reload();
+  await expect(page.locator('#loadingScreen')).toBeHidden();
+  await page.locator('#continueBtn').click();
+  await expect(page.locator('#speedBtn')).toHaveText('3×');
+  expect(await hash(page)).toBe(before);
 });
-test('rapid skip clicks do not dispatch commands and movement still reaches a usable purchase and end button',async({page})=>{
- const g=make();g.player.forced=1;await boot(page,g.s);await page.locator('#actionBtn').click();await expect.poll(async()=> (await saved(page)).phase).toBe('moving');await page.locator('#skipShowBtn').focus();await page.keyboard.down('Enter');const same=await page.evaluate(key=>{const before=localStorage.getItem(key),b=document.getElementById('skipShowBtn');for(let n=0;n<30;n++)b.click();return before===localStorage.getItem(key);},SAVE_KEY);expect(same).toBe(true);await expect(page.locator('#sheet')).toHaveAttribute('data-panel','buy');await expect(page.locator('[data-act=buy]')).toBeEnabled();await page.keyboard.down('Enter');await page.keyboard.up('Enter');await expect(page.locator('#sheet')).toHaveAttribute('data-panel','buy');await page.locator('[data-act=pass]').click();await expect(page.locator('#sheet')).toHaveAttribute('data-panel','auction');await page.locator('[data-act=auctionPass]').click();await expect.poll(async()=> (await saved(page)).phase).toBe('end');await expect(page.locator('#actionBtn')).toBeEnabled();await expect(page.locator('#actionBtn')).toContainText('结束');
+test('rapid skip clicks do not dispatch commands and movement still reaches a usable purchase and end button', async ({
+  page,
+}) => {
+  const g = make();
+  g.player.forced = 1;
+  await boot(page, g.s);
+  await page.locator('#actionBtn').click();
+  await expect.poll(async () => (await saved(page)).phase).toBe('moving');
+  await openMapTools(page);
+  await page.locator('#skipShowBtn').focus();
+  await page.keyboard.down('Enter');
+  const same = await page.evaluate((key) => {
+    const before = localStorage.getItem(key),
+      b = document.getElementById('skipShowBtn');
+    for (let n = 0; n < 30; n++) b.click();
+    return before === localStorage.getItem(key);
+  }, SAVE_KEY);
+  expect(same).toBe(true);
+  await expect(page.locator('#sheet')).toHaveAttribute('data-panel', 'buy');
+  await expect(page.locator('[data-act=buy]')).toBeEnabled();
+  await page.keyboard.down('Enter');
+  await page.keyboard.up('Enter');
+  await expect(page.locator('#sheet')).toHaveAttribute('data-panel', 'buy');
+  await page.locator('[data-act=pass]').click();
+  await expect(page.locator('#sheet')).toHaveAttribute('data-panel', 'auction');
+  await page.locator('[data-act=auctionPass]').click();
+  await expect.poll(async () => (await saved(page)).phase).toBe('end');
+  await expect(page.locator('#actionBtn')).toBeEnabled();
+  await expect(page.locator('#actionBtn')).toContainText('结束');
 });
-test('skipping keeps full transaction amounts visible',async({page})=>{
- const g=make();g.player.pos=6;g.player.bankAccess=true;g.s.phase='end';await boot(page,g.s);await page.locator('.dock-tabs [data-panel=bank]').click();await page.locator('#bankAmount').fill('300');await page.locator('[data-act=bank]').click();await page.locator('#closeSheet').click();await page.locator('#skipShowBtn').click();await expect(page.locator('#newsFlash')).toContainText('存入');await expect(page.locator('#newsFlash')).toContainText('300');
+test('skipping keeps full transaction amounts visible', async ({ page }) => {
+  const g = make();
+  g.player.pos = 6;
+  g.player.bankAccess = true;
+  g.s.phase = 'end';
+  await boot(page, g.s);
+  await page.locator('.dock-tabs [data-panel=bank]').click();
+  await page.locator('#bankAmount').fill('300');
+  await page.locator('[data-act=bank]').click();
+  await page.locator('#closeSheet').click();
+  await openMapTools(page);
+  await page.locator('#skipShowBtn').click();
+  await expect(page.locator('#newsFlash')).toContainText('存入');
+  await expect(page.locator('#newsFlash')).toContainText('300');
 });
-test('skip cannot dismiss a pending debt or bankruptcy confirmation',async({page})=>{
- const g=make();g.s.phase='debt';g.s.debt={amount:99999,to:1,label:'租金'};g.player.money=0;await boot(page,g.s);await expect(page.locator('#sheet')).toHaveAttribute('data-panel','debt');await page.locator('.debt-bankruptcy summary').click();await page.locator('[data-act=confirmBankrupt]').click();const before=await hash(page);await page.locator('#skipShowBtn').evaluate(el=>{for(let n=0;n<20;n++)el.dispatchEvent(new MouseEvent('click',{bubbles:true}));});await expect(page.locator('#sheet')).toHaveAttribute('data-panel','confirmBankrupt');expect(await hash(page)).toBe(before);expect((await saved(page)).players[0].alive).toBe(true);
+test('skip cannot dismiss a pending debt or bankruptcy confirmation', async ({ page }) => {
+  const g = make();
+  g.s.phase = 'debt';
+  g.s.debt = { amount: 99999, to: 1, label: '租金' };
+  g.player.money = 0;
+  await boot(page, g.s);
+  await expect(page.locator('#sheet')).toHaveAttribute('data-panel', 'debt');
+  await page.locator('.debt-bankruptcy summary').click();
+  await page.locator('[data-act=confirmBankrupt]').click();
+  const before = await hash(page);
+  await page.locator('#skipShowBtn').evaluate((el) => {
+    for (let n = 0; n < 20; n++) el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  await expect(page.locator('#sheet')).toHaveAttribute('data-panel', 'confirmBankrupt');
+  expect(await hash(page)).toBe(before);
+  expect((await saved(page)).players[0].alive).toBe(true);
 });
-test('AI boost advances normally; repeated skips cannot erase an AI bankruptcy result',async({page})=>{
- const g=Game.create({seed:17,seatTypes:['ai','ai','ai']});g.s.phase='debt';g.player.money=0;g.s.debt={amount:99999,to:1,label:'租金'};await boot(page,g.s,{prefs:{speed:1,aiFast:true}});await expect.poll(async()=> (await saved(page)).players[0].alive).toBe(false);await page.locator('#skipShowBtn').click();await expect(page.locator('#newsFlash')).toContainText('破产');const text=await page.locator('#newsFlash').evaluate(el=>{for(let n=0;n<30;n++)document.getElementById('skipShowBtn').click();return el.textContent;});expect(text).toContain('破产');await expect.poll(async()=> (await saved(page)).current).not.toBe(0);
+test('AI boost advances normally; repeated skips cannot erase an AI bankruptcy result', async ({
+  page,
+}) => {
+  const g = Game.create({ seed: 17, seatTypes: ['ai', 'ai', 'ai'] });
+  g.s.phase = 'debt';
+  g.player.money = 0;
+  g.s.debt = { amount: 99999, to: 1, label: '租金' };
+  await boot(page, g.s, { prefs: { speed: 1, aiFast: true } });
+  await expect.poll(async () => (await saved(page)).players[0].alive).toBe(false);
+  await openMapTools(page);
+  await page.locator('#skipShowBtn').click();
+  await expect(page.locator('#newsFlash')).toContainText('破产');
+  const text = await page.locator('#newsFlash').evaluate((el) => {
+    for (let n = 0; n < 30; n++) document.getElementById('skipShowBtn').click();
+    return el.textContent;
+  });
+  expect(text).toContain('破产');
+  await expect.poll(async () => (await saved(page)).current).not.toBe(0);
 });
-test('legacy 4x moving save resumes at 3x with no stale skipped flag',async({page})=>{
- const g=make();g.player.forced=1;g.roll();g.s.options.speed=4;await boot(page,g.s,{prefs:null});await expect(page.locator('#speedBtn')).toHaveText('3×');await expect(page.locator('#skipShowBtn')).toBeEnabled();await page.locator('#skipShowBtn').click();await expect(page.locator('#sheet')).toHaveAttribute('data-panel','buy');await expect(page.locator('[data-act=pass]')).toBeEnabled();
+test('legacy 4x moving save resumes at 3x with no stale skipped flag', async ({ page }) => {
+  const g = make();
+  g.player.forced = 1;
+  g.roll();
+  g.s.options.speed = 4;
+  await boot(page, g.s, { prefs: null });
+  await expect(page.locator('#speedBtn')).toHaveText('3×');
+  await expect(page.locator('#skipShowBtn')).toBeEnabled();
+  await openMapTools(page);
+  await page.locator('#skipShowBtn').click();
+  await expect(page.locator('#sheet')).toHaveAttribute('data-panel', 'buy');
+  await expect(page.locator('[data-act=pass]')).toBeEnabled();
 });
-test.describe('real WebGL playback',()=>{
- test.use({reducedMotion:'no-preference'});test.skip(!realWebGL,'Run with npm run test:browser:3d -- e2e-ci/playback.spec.mjs --grep "real WebGL"');
- test('skips real dice and movement, then respects live reduced-motion changes',async({page})=>{
-  const g=make();g.player.forced=1;await boot(page,g.s,{real:true});await expect(page.locator('#scene canvas')).toBeVisible();await page.locator('#actionBtn').click();await expect(page.locator('#app')).toHaveClass(/is-dice-active/);await page.locator('#speedBtn').click();await page.locator('#speedBtn').click();await page.locator('#skipShowBtn').click();await expect(page.locator('#app')).not.toHaveClass(/is-dice-active/);await expect(page.locator('#sheet')).toHaveAttribute('data-panel','buy');const before=await hash(page);await page.emulateMedia({reducedMotion:'reduce'});expect(await hash(page)).toBe(before);await expect(page.locator('#followBtn')).toHaveAttribute('aria-pressed','false');await page.locator('[data-act=pass]').click();await expect(page.locator('#actionBtn')).toBeEnabled();
- });
+test.describe('real WebGL playback', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  test.skip(
+    !realWebGL,
+    'Run with npm run test:browser:3d -- e2e-ci/playback.spec.mjs --grep "real WebGL"',
+  );
+  test('skips real dice and movement, then respects live reduced-motion changes', async ({
+    page,
+  }) => {
+    const g = make();
+    g.player.forced = 1;
+    await boot(page, g.s, { real: true });
+    await expect(page.locator('#scene canvas')).toBeVisible();
+    await page.locator('#actionBtn').click();
+    await expect(page.locator('#app')).toHaveClass(/is-dice-active/);
+    await openMapTools(page);
+    await page.locator('#speedBtn').click();
+    await openMapTools(page);
+    await page.locator('#speedBtn').click();
+    await openMapTools(page);
+    await page.locator('#skipShowBtn').click();
+    await expect(page.locator('#app')).not.toHaveClass(/is-dice-active/);
+    await expect(page.locator('#sheet')).toHaveAttribute('data-panel', 'buy');
+    const before = await hash(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await hash(page)).toBe(before);
+    await expect(page.locator('#followBtn')).toHaveAttribute('aria-pressed', 'false');
+    await page.locator('[data-act=pass]').click();
+    await expect(page.locator('#actionBtn')).toBeEnabled();
+  });
 });
