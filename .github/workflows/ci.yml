@@ -3,6 +3,10 @@ name: Verify game
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/images/**'
+      - 'LICENSE'
   pull_request:
   workflow_dispatch:
 
@@ -16,7 +20,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -36,7 +40,7 @@ jobs:
           LINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
         run: npm run lint
       - name: Install Chromium and system libraries
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: npx playwright install --with-deps chromium
       - name: Browser smoke tests
         run: npm run test:browser

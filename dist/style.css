@@ -444,3 +444,20 @@ button.player:focus-visible{outline-color:#85391f}
 #app[data-compact=true][data-layout=portrait] #tutorialFloat{top:252px;left:8px;right:8px}
 #app:is(.is-menu,.is-studio) .map-tools-toggle{display:none}
 #app[data-compact=true]:has(.mini-toggle[aria-expanded=true]) #tutorialFloat{display:none}
+
+/* The 2D board scrolls below its guide instead of underneath floating 3D controls. */
+#app.has-fallback #fallback{top:150px;bottom:210px;left:12px;right:12px;display:flex;flex-direction:column;overflow:hidden}
+#fallbackGuide{flex:none;max-height:45%;overflow:auto;overscroll-behavior:contain}
+#fallbackGuide .tutorial-tip{margin:0 0 8px;padding:8px}
+#fallbackTiles{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;scroll-padding:8px}
+#app.has-fallback .fallback-grid{height:auto;min-height:100%;padding:4px;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#app.has-fallback .fallback-tile{min-height:60px;min-width:44px;font-size:13px;overflow-wrap:anywhere}
+#app.has-fallback[data-layout=portrait] .mini-map{top:114px;left:auto;right:64px;bottom:auto;max-width:150px}
+#app.has-fallback[data-layout=portrait] .map-title{display:none}
+#app.has-fallback[data-layout=landscape] #fallback{top:150px;bottom:110px;left:272px;right:150px}
+#app.has-fallback[data-compact=true][data-layout=landscape] #fallback{top:120px;bottom:76px;left:148px;right:144px}
+#app.has-fallback[data-layout=landscape] .fallback-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+#app.has-fallback #forestWeather{display:none}
+#app.has-fallback.is-menu #fallback{visibility:hidden}
+
+#fallbackWeather{flex:none;font:13px/18px sans-serif;padding:5px 8px;background:#fff0cb;border:1px solid #7c9d7c;border-radius:6px;margin:0 0 6px}
