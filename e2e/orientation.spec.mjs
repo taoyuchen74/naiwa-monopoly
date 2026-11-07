@@ -12,7 +12,7 @@ test('portrait ↔ landscape keeps rendered map and dialogs aligned', async ({ p
       i === 0 ? test.info().project.name === '390x844' : test.info().project.name === '844x390',
     );
     await expect(page.locator('#fallback')).toBeVisible();
-    await expect(page.locator('#fallback button').first()).toBeVisible();
+    await expect(page.locator('#fallback .fallback-tile').first()).toBeVisible();
     await page.locator('#settingsBtn').click();
     const aligned = await page.locator('#sheet').evaluate((el) => {
       const axes = (node) => {
