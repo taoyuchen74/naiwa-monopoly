@@ -75,7 +75,8 @@ try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',i
 if(scene)scene.paused=true;globalThis.__NAIWA_BOOT__?.set(55,'正在准备奶伴与操作界面…');await nextPaint();
 $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-pressed',String(e.detail.follow)));
 $('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
-$('scene').addEventListener('renderlost',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;$('fallback').hidden=false;save();toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
+function releaseFailedScene(){if(!scene?.renderFailed)return;const failed=scene;scene=null;try{failed.dispose();}catch{failed.events?.abort();failed.observer?.disconnect();}$('scene').replaceChildren();$('fallback').hidden=false;}
+$('scene').addEventListener('renderlost',()=>{releaseFailedScene();scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;$('fallback').hidden=false;save();toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
 $('scene').addEventListener('renderrestored',()=>{$('fallback').hidden=true;if(scene)scene.paused=gamePaused;render();scene?.renderStill();toast('3D 画面已恢复，继续当前旅程。');});
 const miniMap=new MiniMap($('miniMap'),{jump:id=>{if(started&&!pinned&&!scene?.studio){scene?.focusTile(id);sound();}},inspect:id=>{if(started&&!pinned)openPanel('tile',id);},overview:id=>{if(started&&!pinned&&!scene?.studio)openPanel('overview',id);}});
 const transferFeed=new TransferFeed();
@@ -117,7 +118,7 @@ function syncHandoff(){
  if(game.s.handoff&&activePanel?.type!=='handoff'){dismiss(true);$('sheetBody').replaceChildren();newsFeed.reset();openPanel('handoff');}
 }
 function relockSession(){lockSession(game);}
-function render(){const forecast=weatherSummary(game.s);$('forestWeather').hidden=!forecast;$('forestWeather').textContent=forecast;$('fallbackWeather').hidden=!forecast;$('fallbackWeather').textContent=forecast;
+function render(){releaseFailedScene();const forecast=weatherSummary(game.s);$('forestWeather').hidden=!forecast;$('forestWeather').textContent=forecast;$('fallbackWeather').hidden=!forecast;$('fallbackWeather').textContent=forecast;
 if(started)replayRecord(game);selectMenus.sync();announcements.sync(game,started);const transfers=transferFeed.read(game,started);TILES=game.tiles;const s=game.s,p=game.player;syncHandoff();audioState();sceneSounds();const rate=presentationSpeed(s.options,!p.human);playback.bind(game);actionPacer.setSpeed(rate);newsFeed.setSpeed(rate);newsFeed.sync(game,started);if(s.customMap&&scene){scene.dispose();scene=null;$('fallback').hidden=false;toast('自定义地图使用可玩的2D简洁地图，暂不支持岛屿3D布景。');}scene?.setMenu(!started);scene?.sync(game);miniMap.sync(game,{visible:started&&!scene?.studio});$('app').classList.toggle('is-menu',!started);$('app').dataset.phase=s.phase;$('app').dataset.mapVersion=String(s.mapVersion);$('app').style.setProperty('--player-count',s.players.length);
  $('speedBtn').textContent=s.options.speed+'×';$('speedBtn').setAttribute('aria-label','演出速度 '+s.options.speed+'倍，点击切换');$('aiPaceBtn').setAttribute('aria-pressed',String(s.options.aiFast!==false));$('aiPaceBtn').textContent=s.options.aiFast!==false?'AI快':'AI原速';$('skipShowBtn').disabled=!started||!!s.handoff||!!activePanel||!!scene?.studio||s.phase==='finished'||!playback.canSkip(game);
  $('pauseBtn').hidden=!started;$('pauseBtn').setAttribute('aria-pressed',String(gamePaused));
