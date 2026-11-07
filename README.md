@@ -2,14 +2,53 @@
 
 [![CI](https://github.com/taoyuchen74/naiwa-monopoly/actions/workflows/ci.yml/badge.svg)](https://github.com/taoyuchen74/naiwa-monopoly/actions/workflows/ci.yml)
 
-开发检查、逐模块覆盖率、增量规范与夜间种子模拟见 [工程化说明](docs/ENGINEERING.md) 和 [贡献指南](CONTRIBUTING.md)。构建体积仅报告，不设硬上限。原创代码与文档采用 [MIT](LICENSE)，第三方角色、商标、视频、录音及依赖遵循各自授权边界。
+一个基于 Three.js 开发的浏览器 3D 大富翁风格经营游戏，支持 AI 玩家、多人本地对局、自适应画质和移动设备。
 
-以奶家角色为主角的浏览器3D经营游戏，支持手机横竖屏、2—6席（每席可选真人或电脑）、本机存档与离线游玩。非官方粉丝作品，玩法参考历代《大富翁》，地图、模型、界面和技能由本项目实现。
+**在线试玩：** [GitHub Pages](https://taoyuchen74.github.io/naiwa-monopoly/)
 
-- [直接试玩 · GitHub Pages](https://taoyuchen74.github.io/naiwa-monopoly/)
-- [备用试玩入口](https://naiwa-monopoly-island.chicreed128.chatgpt.site/)
-- [下载离线单文件](play/奶蛙大富翁.html?raw=1)：用浏览器打开，无需外部素材服务。
+**离线版本：** [下载单文件游戏](play/奶蛙大富翁.html?raw=1)
 
+![游戏画面](docs/images/cinematic-town.png)
+
+## 项目特点
+
+- **3D 游戏场景：** 基于 Three.js 实现角色、建筑和地图渲染。
+- **AI 玩家：** 支持真人与电脑玩家组合，最多 6 个席位。
+- **多种地图：** 支持经典地图、滨河镇和森林温泉小镇。
+- **自适应画质：** 根据设备性能调整渲染效果，兼顾画面与流畅度。
+- **存档系统：** 支持本地存档、导入导出和存档迁移。
+- **移动端适配：** 支持手机横竖屏及触控操作。
+
+## 技术栈
+
+| 技术 | 用途 |
+|---|---|
+| JavaScript | 游戏逻辑与交互 |
+| Three.js | 3D 渲染 |
+| Node.js | 服务端及工程化工具 |
+| Playwright | 浏览器自动化测试 |
+| GitHub Actions | 持续集成与自动化验证 |
+
+## 本地运行
+
+需要 Node.js 24。
+
+```bash
+npm ci
+npm run typecheck
+npm test
+npm run build
+```
+
+## 项目文档
+
+- [工程化说明](docs/ENGINEERING.md)
+- [浏览器测试说明](docs/BROWSER-QA.md)
+- [游戏规则](docs/RULES.md)
+- [性能报告](docs/PERFORMANCE.md)
+- [联机架构](docs/ONLINE.md)
+
+本项目为非官方粉丝作品，相关第三方素材与角色遵循各自授权边界。
 ## 自适应画质
 
 默认采用自适应画质：桌面使用1024阴影、关闭额外GTAO、pixelRatio上限1.25；粗指针移动设备保留1024阴影、8样本半尺寸GTAO和1.25上限。连续慢帧会自动回退到省电绘制，手动切换画质可重新尝试。省电关闭阴影与后处理。等待玩家操作时地图按需绘制，移动、交易演出、镜头和角色近看仍可动画，页面隐藏时暂停。详见 [桌面卡顿与遮挡修复](docs/DESKTOP-PLAYABILITY.md)。
