@@ -104,8 +104,31 @@ export class IslandScene{
  focusTile(id){if(!this.tiles[id]||this.studio)return;this.follow=false;this.focusTarget=this.tiles[id].kind==='property'?lotPosition(this.tiles[id]):new THREE.Vector3(this.tiles[id].x,0,this.tiles[id].z);this.focusTarget.y=0;this.focusZoom=this.aspect<.8?2.6:2.1;this.selectTile(id,'nav');this.cameraChanged();}
  skipPresentation(){this.fx.clear();if(this.game&&!this.studio){const s=this.game.s;for(const p of s.players){const pawn=this.pawns[p.id],t=this.tiles[p.pos];if(!pawn)continue;pawn.position.set(t.x+(p.id-(s.players.length-1)/2)*.4,.24,t.z-.15+(p.id%2)*.22);pawn.scale.setScalar(p.alive?.56:.001);pawn.visible=p.alive;}if(this.focusTarget){this.offset.copy(this.focusTarget);this.zoom=this.focusZoom;this.focusTarget=null;}if(this.follow){const p=this.pawns[s.current];this.offset.set(p.position.x,0,p.position.z);this.zoom=this.followZoom;}this.updateCamera();}this.invalidate();}
  isMoving(){if(this.contextLost||!this.game||this.studio)return false;return this.game.s.players.some(p=>{const t=this.tiles[p.pos],pawn=this.pawns[p.id];return pawn&&Math.hypot(pawn.position.x-(t.x+(p.id-(this.game.s.players.length-1)/2)*.4),pawn.position.z-(t.z-.15+(p.id%2)*.22))>.075;});}
- drawFrame(){const started=performance.now();this.updateLabelVisibility();this.fx.anchorDice(this.camera,this.aspect<.8);this.renderer.info.autoReset=false;this.renderer.info.reset();if(this.profile.name==='low')this.renderer.render(this.scene,this.camera);else this.highQuality.render();this.el.dataset.renderTier=this.profile.name;if(this.quality==='auto'&&this.frameBudget.record(performance.now()-started))this.setQuality('auto');}
- renderStill(){if(!this.disposed&&!document.hidden&&!this.contextLost&&!this.renderer.getContext().isContextLost()){this.updateCamera();this.drawFrame();}}
+ drawFrame(){
+  if(this.disposed||this.contextLost)return;
+  try{
+   const started=performance.now();
+   this.updateLabelVisibility();this.fx.anchorDice(this.camera,this.aspect<.8);
+   this.renderer.info.autoReset=false;this.renderer.info.reset();
+   if(this.profile.name==='low')this.renderer.render(this.scene,this.camera);
+   else this.highQuality.render();
+   this.el.dataset.renderTier=this.profile.name;
+   if(this.quality==='auto'&&this.frameBudget.record(performance.now()-started))this.setQuality('auto');
+  }catch(error){this.failRendering(error);}
+ }
+ failRendering(error){
+  if(this.disposed||this.renderFailed)return;
+  this.renderFailed=true;this.contextLost=true;this.paused=true;
+  this.cancelGestures();this.fx?.clear();
+  this.el.dispatchEvent(new CustomEvent('renderlost',{detail:{reason:'draw',message:String(error?.message||error)}}));
+ }
+ renderStill(){
+  try{
+   if(!this.disposed&&!document.hidden&&!this.contextLost&&!this.renderer.getContext().isContextLost()){
+    this.updateCamera();this.drawFrame();
+   }
+  }catch(error){this.failRendering(error);}
+ }
  cameraChanged(){this.invalidate();this.el.dispatchEvent(new CustomEvent('camerachange',{detail:{follow:this.follow,zoom:this.studio?.zoom||this.zoom,offset:{x:this.offset.x,z:this.offset.z}}}));}
  zoomBy(factor){if(this.studio){this.studio.zoom=Math.max(.65,Math.min(2.5,this.studio.zoom*factor));}else{this.zoom=Math.max(.65,Math.min(3.3,this.zoom*factor));this.followZoom=this.zoom;}this.updateCamera();this.cameraChanged();}
  cancelGestures(){const c=this.renderer.domElement,ids=[...(this.gestures?.points.keys()||[])];this.gestures?.reset();for(const id of ids)try{if(c.hasPointerCapture(id))c.releasePointerCapture(id);}catch{}}
