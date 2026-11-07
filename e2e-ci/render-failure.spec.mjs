@@ -60,7 +60,11 @@ for (const stage of ['startup', 'running']) {
       await expect
         .poll(() => page.evaluate(() => window.injectedDrawFailures), { timeout: 60000 })
         .toBeGreaterThan(0);
-    await expect(page.locator('#loadingScreen')).toBeHidden({ timeout: 15000 });
+    // Runtime injection waits for an ordinary software-GPU boot first; startup
+    // recovery must still unlock within 15 seconds after the injected exception.
+    await expect(page.locator('#loadingScreen')).toBeHidden({
+      timeout: stage === 'startup' ? 15000 : 60000,
+    });
     await expect(page.locator('#app')).not.toHaveAttribute('inert');
     await page.locator('#talentsEnabled').uncheck();
     await page.locator('#startBtn').click();
@@ -76,7 +80,7 @@ for (const stage of ['startup', 'running']) {
       await expect.poll(() => page.evaluate(() => window.injectedDrawFailures)).toBeGreaterThan(0);
       expect(await hash()).toBe(before);
     }
-    await expect(page.locator('#fallback')).toBeVisible();
+    await expect(page.locator('#fallback')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#scene canvas')).toHaveCount(0);
     const failures = await page.evaluate(() => window.injectedDrawFailures);
     await page.waitForTimeout(350);
