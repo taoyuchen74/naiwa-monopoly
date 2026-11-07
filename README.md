@@ -1,6 +1,10 @@
 # 奶蛙大富翁
 
 [![CI](https://github.com/taoyuchen74/naiwa-monopoly/actions/workflows/ci.yml/badge.svg)](https://github.com/taoyuchen74/naiwa-monopoly/actions/workflows/ci.yml)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-yellow)
+![Three.js](https://img.shields.io/badge/Three.js-3D%20Rendering-black)
+![Node.js](https://img.shields.io/badge/Node.js-24-green)
+![License](https://img.shields.io/badge/License-MIT-blue)
 
 一个基于 Three.js 开发的浏览器 3D 大富翁风格经营游戏，支持 AI 玩家、多人本地对局、自适应画质和移动设备。
 
@@ -8,7 +12,21 @@
 
 **离线版本：** [下载单文件游戏](play/奶蛙大富翁.html?raw=1)
 
-![游戏画面](docs/images/cinematic-town.png)
+## 项目展示
+
+### 3D 游戏场景
+
+| 森林温泉小镇 | 角色阵容 |
+|---|---|
+| ![森林温泉小镇](docs/images/forest-toy-town-final.png) | ![角色阵容](docs/images/toy-cast-after-final.png) |
+
+### 移动端适配
+
+| 手机竖屏 | 手机横屏 |
+|---|---|
+| ![手机竖屏界面](docs/images/forest-ui-390.png) | ![手机横屏界面](docs/images/forest-ui-844.png) |
+
+
 
 ## 项目特点
 
