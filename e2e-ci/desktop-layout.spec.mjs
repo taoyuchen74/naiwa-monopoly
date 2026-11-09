@@ -130,3 +130,67 @@ test('desktop sidebar contains player labels and every tool fits its button at z
     }
   }
 });
+
+test('compact WebGL uses SVG portraits while the character studio keeps the main renderer', async ({
+  browser,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== '390x844', 'One dedicated compact real-GPU fixture');
+  test.skip(process.env.NAIWA_FOREST_WEBGL !== '1', 'Actual WebGL opt-in');
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    serviceWorkers: 'block',
+  });
+  const page = await context.newPage();
+  try {
+    const g = Game.create({ seed: 17, playerCount: 6 });
+    await page.addInitScript(
+      ({ s, key }) => {
+        localStorage.setItem(key, JSON.stringify(s));
+        localStorage.setItem(
+          'naiwa-monopoly-preferences-v1',
+          JSON.stringify({ quality: 'low', sound: false }),
+        );
+        window.decorativeContexts = 0;
+        window.mainDraws = 0;
+        const get = HTMLCanvasElement.prototype.getContext,
+          seen = new WeakSet();
+        HTMLCanvasElement.prototype.getContext = function (...args) {
+          if (/webgl/i.test(args[0]) && args[1]?.preserveDrawingBuffer) window.decorativeContexts++;
+          const gl = get.apply(this, args);
+          if (gl && /webgl/i.test(args[0]) && !seen.has(gl)) {
+            seen.add(gl);
+            const draw = gl.drawElements;
+            gl.drawElements = function (...a) {
+              if (gl.canvas.parentElement?.id === 'scene') window.mainDraws++;
+              return draw.apply(gl, a);
+            };
+          }
+          return gl;
+        };
+      },
+      { s: g.s, key: SAVE_KEY },
+    );
+    await page.goto('/');
+    await expect(page.locator('#loadingScreen')).toBeHidden({ timeout: 60000 });
+    await page.locator('#continueBtn').click();
+    await expect(page.locator('#scene canvas')).toHaveCount(1);
+    expect(await page.evaluate(() => window.mainDraws)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.decorativeContexts)).toBe(0);
+    await expect(page.locator('.mini-face svg image')).toHaveCount(0);
+    await page.locator('#playersToggle').click();
+    await expect(page.locator('#playersToggle')).toHaveAttribute('aria-expanded', 'true');
+    await page.locator('#playersToggle').click();
+    await page.locator('#mapToolsToggle').click();
+    await page.locator('#castBtn').click();
+    await expect(page.locator('#studioPanel')).toBeVisible();
+    await expect(page.locator('#scene canvas')).toHaveCount(1);
+    await page.locator('#closeStudio').click();
+    await expect(page.locator('#actionBtn')).toBeEnabled();
+    expect(await page.evaluate(() => window.decorativeContexts)).toBe(0);
+    await page.screenshot({ path: 'artifacts/mobile-svg-after.png' });
+  } finally {
+    await context.close();
+  }
+});

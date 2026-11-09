@@ -49,10 +49,6 @@ jobs:
           NAIWA_FOREST_WEBGL: '1'
           NAIWA_SOFTWARE_WEBGL: '1'
         run: npx playwright test e2e-ci/forest.spec.mjs e2e-ci/desktop-layout.spec.mjs e2e-ci/render-failure.spec.mjs --grep WebGL
-      - name: Forest map and quality resource lifecycle
-        env:
-          NAIWA_SOFTWARE_WEBGL: '1'
-        run: npm run test:forest:resources
       - name: Engineering browser regressions
         run: npm run test:e2e
       - name: Two-client online browser tests
@@ -75,5 +71,53 @@ jobs:
             artifacts/size-report.json
             artifacts/forest-*.json
             artifacts/forest-ui-*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  mobile-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Six viewport touch, scroll and keyboard interactions
+        env:
+          NAIWA_SOFTWARE_WEBGL: '1'
+        run: npm run test:mobile -- e2e/mobile.spec.mjs
+      - name: Upload mobile failure evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: mobile-results-${{ github.run_attempt }}
+          path: test-results/mobile/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  resource-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Forest map and quality resource lifecycle
+        env:
+          NAIWA_SOFTWARE_WEBGL: '1'
+        run: npm run test:forest:resources
+      - name: Upload resource lifecycle evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: forest-resources-${{ github.run_attempt }}
+          path: artifacts/forest-resource-cycles.json
           if-no-files-found: ignore
           retention-days: 7

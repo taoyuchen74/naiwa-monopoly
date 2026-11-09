@@ -69,14 +69,21 @@ async function close(page) {
   await expect(page.locator('#sheet')).toBeHidden();
 }
 async function exposedMap(page) {
+  // Flush the transformed HUD into Chromium's native touch hit-test tree.
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+  );
   return page.locator('#scene canvas').evaluate((canvas) => {
-    for (let y = 150; y < innerHeight - 180; y += 20)
-      for (let x = 280; x < innerWidth - 120; x += 20)
-        if ([0, 40, 80].every((dx) => document.elementFromPoint(x + dx, y) === canvas))
-          return { x, y };
-    for (let y = 300; y < innerHeight - 220; y += 20)
-      for (let x = 40; x < innerWidth - 120; x += 20)
-        if ([0, 40, 80].every((dx) => document.elementFromPoint(x + dx, y) === canvas))
+    // Native touch adjusts taps toward nearby controls. Keep a clear 24px margin.
+    for (let y = 32; y < innerHeight - 32; y += 16)
+      for (let x = 32; x < innerWidth - 112; x += 16)
+        if (
+          [0, 40, 80].every((dx) =>
+            [-24, 0, 24].every((bx) =>
+              [-24, 0, 24].every((by) => document.elementFromPoint(x + dx + bx, y + by) === canvas),
+            ),
+          )
+        )
           return { x, y };
     throw Error('No exposed map drag/pinch target');
   });
@@ -185,15 +192,22 @@ test('native touch drag/pinch survive manual rotation and modal scroll never lea
       .addEventListener('camerachange', (e) => window.cameraEvents.push(e.detail));
   });
   for (let rotation = 0; rotation < 2; rotation++) {
-    await page.locator('#followBtn').click();
+    if (await page.locator('#mapToolsToggle').isVisible())
+      await page.locator('#mapToolsToggle').click();
+    if ((await page.locator('#followBtn').getAttribute('aria-pressed')) !== 'true')
+      await page.locator('#followBtn').click();
+    await expect(page.locator('#followBtn')).toHaveAttribute('aria-pressed', 'true');
+    if ((await page.locator('#mapToolsToggle').getAttribute('aria-expanded')) === 'true')
+      await page.locator('#mapToolsToggle').click();
     const p = await exposedMap(page);
     await touch(page, 'touchStart', [p]);
     await touch(page, 'touchMove', [{ x: p.x + 50, y: p.y + 10 }]);
     await touch(page, 'touchEnd', []);
     await expect(page.locator('#followBtn')).toHaveAttribute('aria-pressed', 'false');
+    const pinch = await exposedMap(page);
     const count = await page.evaluate(() => cameraEvents.length);
-    await touch(page, 'touchStart', [p, { x: p.x + 40, y: p.y }]);
-    await touch(page, 'touchMove', [p, { x: p.x + 80, y: p.y }]);
+    await touch(page, 'touchStart', [pinch, { x: pinch.x + 40, y: pinch.y }]);
+    await touch(page, 'touchMove', [pinch, { x: pinch.x + 80, y: pinch.y }]);
     await touch(page, 'touchEnd', []);
     await expect.poll(() => page.evaluate(() => cameraEvents.length)).toBeGreaterThan(count);
     await expect(page.locator('#sheet')).toBeHidden();
