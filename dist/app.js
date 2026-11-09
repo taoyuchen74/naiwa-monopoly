@@ -1,3 +1,4 @@
+import {RenderDiagnostics} from './render-diagnostics.js';
 import {weatherSummary,closedBranches} from './forest-rules.js';
 import {auctionPanel,offerPanel,readOffer} from './commerce-panel.js';
 import {startOnlineSession} from './online-session.js';
@@ -66,22 +67,24 @@ const trial=new URL(location.href).searchParams.get('mapTrial')==='1';
 const gameStorage=trial?{getItem:k=>localStorage.getItem('naiwa-map-trial:'+k),setItem:(k,v)=>localStorage.setItem('naiwa-map-trial:'+k,v),removeItem:k=>localStorage.removeItem('naiwa-map-trial:'+k)}:localStorage;
 const repository=createSaveRepository(()=>gameStorage);
 let TILES=game.tiles;const selectMenus=new GameSelects($('app'));
+const renderDiagnostics=new RenderDiagnostics();
 const tutorial=new Tutorial($('app'),{getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)});
 mountPlayerDrawer($('app'));
 const announcements=new GameAnnouncements(()=>!$('sheet').hidden?$('dialogAnnouncements'):$('gameAnnouncements'));
 const modal=new ModalFocus($('sheet'),{onEscape:()=>{if(!$('sheetRuleHelp').hidden){toggleSheetHelp(false);return;}if(pinned){toast('请先完成当前选择。');return;}dismiss();render();},fallback:()=>!$('actionBtn').disabled?$('actionBtn'):$('settingsBtn')});
 try{saved=Game.restore(repository.read('auto').state);Object.assign(game.s.options,readPreferences(localStorage,saved?.s.options||game.s.options));}catch{}
-try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch{$('fallback').hidden=false;}
+try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch{renderDiagnostics.fallback('context-unavailable');$('fallback').hidden=false;}
 if(scene)scene.paused=true;globalThis.__NAIWA_BOOT__?.set(55,'正在准备奶伴与操作界面…');await nextPaint();
 $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-pressed',String(e.detail.follow)));
 $('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
-function releaseFailedScene(){if(!scene?.renderFailed)return;const failed=scene;scene=null;try{failed.dispose();}catch{failed.events?.abort();failed.observer?.disconnect();}$('scene').replaceChildren();$('fallback').hidden=false;}
-$('scene').addEventListener('renderlost',()=>{releaseFailedScene();scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;$('fallback').hidden=false;save();toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
-$('scene').addEventListener('renderrestored',()=>{$('fallback').hidden=true;if(scene)scene.paused=gamePaused;render();scene?.renderStill();toast('3D 画面已恢复，继续当前旅程。');});
+function releaseFailedScene(){if(!scene?.renderFailed)return;renderDiagnostics.fallback('draw-error');const failed=scene;scene=null;try{failed.dispose();}catch{failed.events?.abort();failed.observer?.disconnect();}$('scene').replaceChildren();$('fallback').hidden=false;}
+$('scene').addEventListener('renderlost',()=>{if(!scene?.renderFailed)renderDiagnostics.fallback('context-lost');releaseFailedScene();scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;$('fallback').hidden=false;save();toast('3D 画面暂时不可用，已切换到可玩的简洁地图。');render();});
+$('scene').addEventListener('renderrestored',()=>{renderDiagnostics.webgl();$('fallback').hidden=true;if(scene)scene.paused=gamePaused;render();scene?.renderStill();toast('3D 画面已恢复，继续当前旅程。');});
 const miniMap=new MiniMap($('miniMap'),{jump:id=>{if(started&&!pinned&&!scene?.studio){scene?.focusTile(id);sound();}},inspect:id=>{if(started&&!pinned)openPanel('tile',id);},overview:id=>{if(started&&!pinned&&!scene?.studio)openPanel('overview',id);}});
 const transferFeed=new TransferFeed();
 const newsFeed=new NewsFeed($('newsFlash'),{onEvent:({mood})=>{if(mood!=='idle')sound(mood);}});const actionPacer=new ActionPacer(),playback=new PlaybackSession();
 const soundtrack=new GameAudio(game.s.options);let soundSnapshot=null;
+function getRenderDiagnostic(){return renderDiagnostics.snapshot({buildId:document.documentElement.dataset.build||'source',width:Math.round(innerWidth),height:Math.round(innerHeight),mapVersion:game.s.mapVersion,phase:started?game.s.phase:'setup',requestedQuality:game.s.options.quality,effectiveQuality:scene&&!scene.contextLost?scene.profile?.name||'starting':'none'});}
 function audioState(){soundtrack.setOptions(game.s.options);$('soundBtn').dataset.state=soundtrack.status();const status=$('audioStatus');if(status)status.textContent=soundtrack.status();}
 function sound(type='tap'){audioState();soundtrack.sfx(type);}
 async function unlockSound(){await soundtrack.unlock();audioState();}
@@ -119,7 +122,7 @@ function syncHandoff(){
 }
 function relockSession(){lockSession(game);}
 function render(){releaseFailedScene();const forecast=weatherSummary(game.s);$('forestWeather').hidden=!forecast;$('forestWeather').textContent=forecast;$('fallbackWeather').hidden=!forecast;$('fallbackWeather').textContent=forecast;
-if(started)replayRecord(game);selectMenus.sync();announcements.sync(game,started);const transfers=transferFeed.read(game,started);TILES=game.tiles;const s=game.s,p=game.player;syncHandoff();audioState();sceneSounds();const rate=presentationSpeed(s.options,!p.human);playback.bind(game);actionPacer.setSpeed(rate);newsFeed.setSpeed(rate);newsFeed.sync(game,started);if(s.customMap&&scene){scene.dispose();scene=null;$('fallback').hidden=false;toast('自定义地图使用可玩的2D简洁地图，暂不支持岛屿3D布景。');}scene?.setMenu(!started);scene?.sync(game);miniMap.sync(game,{visible:started&&!scene?.studio});$('app').classList.toggle('is-menu',!started);$('app').dataset.phase=s.phase;$('app').dataset.mapVersion=String(s.mapVersion);$('app').style.setProperty('--player-count',s.players.length);
+if(started)replayRecord(game);selectMenus.sync();announcements.sync(game,started);const transfers=transferFeed.read(game,started);TILES=game.tiles;const s=game.s,p=game.player;syncHandoff();audioState();sceneSounds();const rate=presentationSpeed(s.options,!p.human);playback.bind(game);actionPacer.setSpeed(rate);newsFeed.setSpeed(rate);newsFeed.sync(game,started);if(s.customMap)renderDiagnostics.fallback('custom-map');if(s.customMap&&scene){renderDiagnostics.fallback('custom-map');scene.dispose();scene=null;$('fallback').hidden=false;toast('自定义地图使用可玩的2D简洁地图，暂不支持岛屿3D布景。');}scene?.setMenu(!started);scene?.sync(game);miniMap.sync(game,{visible:started&&!scene?.studio});$('app').classList.toggle('is-menu',!started);$('app').dataset.phase=s.phase;$('app').dataset.mapVersion=String(s.mapVersion);$('app').style.setProperty('--player-count',s.players.length);
  $('speedBtn').textContent=s.options.speed+'×';$('speedBtn').setAttribute('aria-label','演出速度 '+s.options.speed+'倍，点击切换');$('aiPaceBtn').setAttribute('aria-pressed',String(s.options.aiFast!==false));$('aiPaceBtn').textContent=s.options.aiFast!==false?'AI快':'AI原速';$('skipShowBtn').disabled=!started||!!s.handoff||!!activePanel||!!scene?.studio||s.phase==='finished'||!playback.canSkip(game);
  $('pauseBtn').hidden=!started;$('pauseBtn').setAttribute('aria-pressed',String(gamePaused));
  $('difficultyBtn').textContent=DIFFICULTIES[s.difficulty].name;$('difficultyBtn').title=DIFFICULTIES[s.difficulty].description;$('mapHeading').textContent=mapInfo(s).name;
@@ -139,6 +142,7 @@ if(started)replayRecord(game);selectMenus.sync();announcements.sync(game,started
  $('soundBtn').textContent=s.options.sound?'♫':'♪';$('soundBtn').setAttribute('aria-label',s.options.sound?'关闭声音':'开启声音');$('qualityBtn').textContent=s.options.quality==='low'?'省电':'自动';$('qualityBtn').title=s.options.quality==='low'?'省电画质 · 点击切换自适应画质':'自适应画质 · 点击切换省电画质';
  $('castBtn').disabled=!scene||!!scene.contextLost;$('followBtn').setAttribute('aria-pressed',String(!!scene?.follow));$('moveIndicator').hidden=!started;$('moveIndicator').textContent=`${game.char().name} · ${TILES[p.pos].name}${s.phase==='moving'?' · 剩 '+s.remaining+' 格':''}`;
  $('app').classList.toggle('has-fallback',!$('fallback').hidden);if(!$('fallback').hidden)$('fallbackTiles').innerHTML=`<div class="fallback-grid">${TILES.map(t=>`<button class="fallback-tile ${p.pos===t.id?'current':''}" data-tile="${t.id}" style="background:${GROUPS[t.group].color}50">${t.id+1}. ${esc(t.name)}<br>${s.players.filter(q=>q.alive&&q.pos===t.id).map(q=>game.char(q).name).join(' ')}${s.ownership[t.id]?'<br>⌂ '+game.char(s.players[s.ownership[t.id].player]).name:''}</button>`).join('')}</div>`;
+ if($('renderDiagnosticStatus')){const d=getRenderDiagnostic();$('renderDiagnosticStatus').textContent='版本：'+d.buildId+' · '+({starting:'启动中',webgl:'正常3D',fallback:'简洁地图'})[d.renderState];$('renderDiagnosticQuality').textContent='实际画质：'+d.effectiveQuality+' · '+(d.errorSummary||'无降级原因');}
  const currentKey=`${s.phase}:${s.current}:${s.round}:${p.pos}:${s.auction?.actor}:${s.auction?.bid}`;
  if(started&&s.phase==='auction'&&s.players[s.auction.actor].human&&!activePanel&&blockKey!==currentKey){blockKey=currentKey;openPanel('auction');}
  if(started&&!s.handoff&&(p.human||s.phase==='finished')&&['buy','estate','event','branch','debt','finished','negotiation'].includes(s.phase)&&!activePanel&&blockKey!==currentKey){blockKey=currentKey;openPanel(s.phase);}
@@ -210,6 +214,7 @@ function openPanel(type,id){
   let backup=null;try{backup=Game.restore(repository.readBackup().state);}catch{}
   showSheet('旅行设置','按自己的节奏，慢慢玩',`<div class="setting-row"><label for="speedSelect">动画速度</label><select id="speedSelect">${[1,2,3].map(n=>`<option value="${n}" ${s.options.speed===n?'selected':''}>${n}× · ${['','完整展示','轻快','快速'][n]}</option>`).join('')}</select></div><div class="setting-row"><span>AI 回合自动 3×</span><button class="secondary" data-act="aiPace" aria-pressed="${s.options.aiFast!==false}">${s.options.aiFast!==false?'已开启':'已关闭'}</button></div><p>跳过仅收尾当前演出；交易结果保留阅读时间，付款和破产确认仍需本人操作。</p><div class="setting-row"><label for="qualitySelect">画面质量</label><select id="qualitySelect"><option value="auto" ${s.options.quality==='auto'?'selected':''}>自适应画质 · 完整光影</option><option value="low" ${s.options.quality==='low'?'selected':''}>省电画质</option></select></div><div class="setting-row"><label for="lightingSelect">日照氛围</label><select id="lightingSelect">${Object.entries(LIGHTING).map(([id,p])=>`<option value="${id}" ${lightingMode(s.options.lighting)===id?'selected':''}>${p.label}</option>`).join('')}</select></div><div class="setting-row"><span>声音</span>${btn(s.options.sound?'已开启 · 点击关闭':'已关闭 · 点击开启','sound')}</div>${audioSettings()}<h3>旅行存档</h3><p>${saveOk?'进度自动保存在当前浏览器。':'自动存档失败，请导出备份。'}导出后，可以在另一台设备导入继续。</p><div class="row-actions">${btn('导出存档','export','',!started&&!saved)}${btn('素材与制作说明','panel','data-panel="sources"')}</div><label style="font-size:11px">导入存档<input class="file-input" id="importSave" type="file" accept="application/json,.json"></label><h3>重新出发</h3><p>重新开始会替换本版存档；旧版游戏的存档不会受影响。</p>${btn('选择奶伴重新开始','confirmRestart','','','secondary danger')}<p>设置打开期间，对局暂停。</p>`);
   $('sheetBody').insertAdjacentHTML('beforeend','<button class="secondary" data-act="panel" data-panel="history">回放与本地战绩</button>');
+  const diagnostic=getRenderDiagnostic();$('sheetBody').insertAdjacentHTML('beforeend',`<section aria-label="画面诊断"><h3>画面诊断</h3><p id="renderDiagnosticStatus">版本：${esc(diagnostic.buildId)} · ${({starting:'启动中',webgl:'正常3D',fallback:'简洁地图'})[diagnostic.renderState]}</p><p id="renderDiagnosticQuality">实际画质：${esc(diagnostic.effectiveQuality)} · ${esc(diagnostic.errorSummary||'无降级原因')}</p><button class="secondary" data-act="copyDiagnostic">复制诊断信息</button><textarea id="renderDiagnostic" aria-label="可复制的画面诊断" readonly hidden></textarea></section>`);
   $('sheetBody').insertAdjacentHTML('beforeend','<h3>新手提示</h3><p>提示偏好只保存在此浏览器，不属于对局存档。</p><div class="row-actions"><button class="secondary" data-act="resetTutorial">重置教程</button><button class="secondary" data-act="disableTutorial">不再显示提示</button></div><p id="tutorialPreferenceStatus" role="status"></p>');
   $('importSave').parentElement.insertAdjacentHTML('beforebegin','<div class="row-actions"><button class="primary" data-act="panel" data-panel="saves">管理 4 个存档槽</button></div>');
   $('importSave').parentElement.insertAdjacentHTML('afterend',`<div class="row-actions">${btn('恢复覆盖前存档','confirmRestoreBackup','',!backup)}</div>${backup?`<p>${esc(archiveSummary(backup))}</p>`:''}`);
@@ -309,6 +314,7 @@ $('sheetBody').addEventListener('change',async e=>{if(e.target.id==='replayImpor
 
 $('sheetBody').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const {act}=b.dataset,id=+b.dataset.id,index=+b.dataset.index,target=+b.dataset.target;let ok=true;
+ if(act==='copyDiagnostic'){const box=$('renderDiagnostic');box.hidden=false;box.value=JSON.stringify(getRenderDiagnostic(),null,2);box.focus();box.select();if(navigator.clipboard?.writeText)navigator.clipboard.writeText(box.value).then(()=>toast('诊断信息已复制')).catch(()=>toast('请复制已选中的诊断信息'));else toast('请复制已选中的诊断信息');return;}
  if(act==='openCloud'){$('cloudEntry').click();return;}
  if(act==='resetTutorial'||act==='disableTutorial'){const persisted=act==='resetTutorial'?tutorial.reset():tutorial.choose('disable');$('tutorialPreferenceStatus').textContent=(act==='resetTutorial'?'教程已重置，关闭设置后会重新显示。':'新手提示已关闭。')+(persisted?'':'本次生效，浏览器未能保存偏好。');return;}
  if(act==='copyResult'){const box=$('resultCopy');box.focus();box.select();navigator.clipboard?.writeText(box.value).then(()=>toast('战绩已复制')).catch(()=>toast('可手动复制已选中的摘要'));return;}
@@ -385,6 +391,6 @@ picker();render();tick();const brandBitmap=portraitBitmap('naiwa');if(brandBitma
 // Same-origin offline cache; portable single-file distribution skips registration.
 if(!window.__NAIWA_PORTABLE__&&'serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register(globalThis.__NAIWA_SERVICE_WORKER_URL__||'./sw.js?v=16').catch(()=>{});
 
-globalThis.__NAIWA_BOOT__?.set(75,'正在载入字体、图标与声音…');await prepareStartupAssets();scene?.renderStill();await nextPaint();globalThis.__NAIWA_BOOT__?.set(100,'准备完成，欢迎来到奶家！');await nextPaint();globalThis.__NAIWA_BOOT__?.ready();syncTutorial();if(scene&&!scene.contextLost&&$('loadingScreen').hidden)scene.paused=gamePaused;if(trial&&saved)resume();
+globalThis.__NAIWA_BOOT__?.set(75,'正在载入字体、图标与声音…');await prepareStartupAssets();scene?.renderStill();await nextPaint();globalThis.__NAIWA_BOOT__?.set(100,'准备完成，欢迎来到奶家！');await nextPaint();globalThis.__NAIWA_BOOT__?.ready();if(scene&&!scene.contextLost)renderDiagnostics.webgl();syncTutorial();if(scene&&!scene.contextLost&&$('loadingScreen').hidden)scene.paused=gamePaused;if(trial&&saved)resume();
 }
 startGame().catch(()=>{globalThis.__NAIWA_BOOT__?.fail();});

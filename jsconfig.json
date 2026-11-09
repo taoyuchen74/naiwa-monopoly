@@ -23,7 +23,8 @@
     "dist/ui-session.js",
     "dist/modes.js",
     "dist/hotseat.js",
-    "tests/types/**/*.js"
+    "tests/types/**/*.js",
+    "dist/render-diagnostics.js"
   ],
   "exclude": ["dist/vendor", "node_modules", "out", "artifacts"]
 }

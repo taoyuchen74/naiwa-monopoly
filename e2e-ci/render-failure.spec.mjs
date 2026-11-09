@@ -97,6 +97,17 @@ for (const stage of ['startup', 'running']) {
     await page.locator('[data-act=useCard][data-target="1"]').click();
     await page.locator('#actionBtn').click();
     await expect(page.locator('[data-act=buy]')).toBeVisible({ timeout: 20000 });
+    await page.locator('[data-act=buy]').click();
+    if (await page.locator('#sheet').isVisible()) await page.locator('#closeSheet').click();
+    const hash = async () =>
+      Game.restore(
+        await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), SAVE_KEY),
+      ).stateHash();
+    const savedHash = await hash();
+    await page.reload();
+    await expect(page.locator('#loadingScreen')).toBeHidden({ timeout: 60000 });
+    await page.locator('#continueBtn').click();
+    expect(await hash()).toBe(savedHash);
     expect(errors).toEqual([]);
   });
 }
