@@ -1,0 +1,2 @@
+# Keep reproducibility evidence byte-stable across Windows and Linux.
+docs/data/*.ndjson text eol=lf

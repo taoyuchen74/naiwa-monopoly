@@ -31,7 +31,9 @@
     "dev": "python -m http.server 4173 --directory dist",
     "build": "node tools/build.mjs",
     "build:site": "node tools/build-web.mjs",
-    "preview": "python -m http.server 4173 --directory out"
+    "preview": "python -m http.server 4173 --directory out",
+    "simulate:paired": "node tools/paired-balance.mjs",
+    "report:paired": "node tools/balance-report.mjs docs/data/paired-balance.ndjson docs/data/paired-balance-summary.json"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

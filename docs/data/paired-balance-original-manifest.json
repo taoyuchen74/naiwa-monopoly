@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "roundLimit": 50,
+  "initial": {
+    "cash": 3200,
+    "tickets": 60,
+    "loan": 0
+  },
+  "randomStart": false,
+  "seatTypes": "all-ai",
+  "characterOrder": ["naiwa", "naichong", "naishu", "naigou", "naidan", "naicha"],
+  "rulesHash": "f5f2fffbd582c923f10055a368eee4cf9f60941c53f5d033a8d090f2e51275bf",
+  "matrixHash": "d4822ebee4dec5feb53758204d30c98df8e987ac10a192f020698072e35fa757",
+  "cases": 3360
+}
