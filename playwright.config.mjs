@@ -34,7 +34,7 @@ export default defineConfig({
     { name: '844x390', use: { viewport: { width: 844, height: 390 }, isMobile: true } },
   ],
   webServer: {
-    command: 'npm run build:site && node tools/serve-mobile.mjs',
+    command: 'npm run build && node tools/serve-mobile.mjs',
     url: 'http://127.0.0.1:4181',
     reuseExistingServer: false,
     timeout: 60000,

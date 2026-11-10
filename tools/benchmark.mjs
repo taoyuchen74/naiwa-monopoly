@@ -1,5 +1,6 @@
 import { chromium } from '@playwright/test';
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { performanceServer } from './perf-server.mjs';
@@ -7,7 +8,9 @@ const root = resolve(import.meta.dirname, '..'),
   output = process.argv[2] || 'artifacts/performance.json',
   samples = Number(process.env.PERF_FRAMES || 30),
   baseline = process.env.PERF_BASELINE,
+  quality = process.env.PERF_QUALITY || 'auto',
   forest = process.env.PERF_MAP === 'forest' || process.argv.includes('--forest');
+if (!['auto', 'low'].includes(quality)) throw new RangeError('PERF_QUALITY must be auto or low');
 const server = await performanceServer(baseline),
   origin = 'http://127.0.0.1:' + server.address().port;
 const result = {
@@ -16,6 +19,20 @@ const result = {
   variant: baseline ? 'reference' : 'working tree',
   map: forest ? 4 : 2,
   samples,
+  requestedQuality: quality,
+  sourceHashes: Object.fromEntries(
+    await Promise.all(
+      ['dist/scene.js', 'dist/portrait-renderer.js', 'dist/style.css'].map(async (file) => {
+        const bytes = baseline
+          ? execFileSync('git', ['show', baseline + ':' + file], { cwd: root })
+          : await readFile(resolve(root, file));
+        return [
+          file,
+          createHash('sha256').update(bytes.toString().replace(/\r\n/g, '\n')).digest('hex'),
+        ];
+      }),
+    ),
+  ),
   profiles: [],
 };
 const browser = await chromium.launch({
@@ -40,16 +57,25 @@ try {
       cdp = await context.newCDPSession(page);
     page.setDefaultTimeout(180000);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: profile.cpu });
-    await page.goto(origin + '/tools/perf.html' + (forest ? '?forest' : ''), {
-      waitUntil: 'commit',
-      timeout: 180000,
-    });
+    await page.goto(
+      origin +
+        '/tools/perf.html?' +
+        new URLSearchParams({
+          ...(forest ? { forest: '' } : {}),
+          ...(quality === 'low' ? { low: '' } : {}),
+        }),
+      {
+        waitUntil: 'commit',
+        timeout: 180000,
+      },
+    );
     await page.waitForFunction(() => window.ready, {}, { timeout: 180000 });
     const data = await page.evaluate(async (samples) => {
       const quantile = (a, p) =>
         [...a].sort((x, y) => x - y)[Math.min(a.length - 1, Math.ceil(a.length * p) - 1)] || 0;
       const summary = (a) => ({ samples: a.length, p50: quantile(a, 0.5), p95: quantile(a, 0.95) });
       const snapshot = () => ({
+        effectiveQuality: view.profile?.name,
         calls: view.renderer.info.render.calls,
         triangles: view.renderer.info.render.triangles,
         geometries: view.renderer.info.memory.geometries,
