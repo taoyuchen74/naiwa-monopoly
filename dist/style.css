@@ -465,7 +465,13 @@ button.player:focus-visible{outline-color:#85391f}
 /* Keep the active seat visible; other assets are an explicit scrollable drawer. */
 #app[data-compact=true][data-layout=landscape] .players-toggle{display:block;min-height:44px;font-size:13px;padding:5px;background:#fff0cb;border:2px solid #9f713b;border-radius:8px;box-shadow:0 2px #694a2e}
 #app[data-compact=true][data-layout=landscape][data-players-expanded=false] .players .player:not(.active){display:none}
-#app[data-compact=true][data-layout=landscape] .sidebar{left:calc(8px + var(--safe-l));top:calc(60px + var(--safe-t));bottom:calc(76px + var(--safe-b))}
-#app[data-compact=true][data-layout=portrait] .sidebar{left:calc(8px + var(--safe-l));right:calc(8px + var(--safe-r));bottom:calc(132px + var(--safe-b))}
 #app[data-compact=true] .map-tools-toggle{right:calc(8px + var(--safe-r))}
 #app[data-compact=true] .map-tools{right:calc(8px + var(--safe-r))}
+
+.challenge-conditions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:14px}.challenge-conditions>div{padding:10px;border:1px solid #a47b42;border-radius:8px;background:#fff3d5}.challenge-conditions dt{font-size:13px}.challenge-conditions dd{margin:6px 0 0;font-weight:bold;overflow-wrap:anywhere}
+
+/* On short notched phones, guides scroll independently above weather and assets. */
+#app[data-compact=true][data-layout=portrait] #tutorialFloat{left:calc(8px + var(--safe-l));right:calc(8px + var(--safe-r))}
+#app[data-compact=true][data-layout=portrait]:has(#forestWeather:not([hidden])) #tutorialFloat{max-height:calc(100% - 508px - var(--safe-b));overflow:auto;overscroll-behavior:contain;pointer-events:auto}
+#app[data-layout=landscape]:has(#forestWeather:not([hidden])) #tutorialFloat{top:calc(184px + var(--safe-t))}
+#app[data-compact=true][data-layout=landscape]:has(#forestWeather:not([hidden])) #tutorialFloat{top:calc(142px + var(--safe-t));left:calc(148px + var(--safe-l));right:calc(132px + var(--safe-r));max-height:calc(100% - 226px - var(--safe-t) - var(--safe-b));overflow:auto;overscroll-behavior:contain;pointer-events:auto}

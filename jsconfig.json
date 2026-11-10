@@ -24,7 +24,9 @@
     "dist/modes.js",
     "dist/hotseat.js",
     "tests/types/**/*.js",
-    "dist/render-diagnostics.js"
+    "dist/render-diagnostics.js",
+    "dist/ui-presets.js",
+    "dist/route-preview.js"
   ],
   "exclude": ["dist/vendor", "node_modules", "out", "artifacts"]
 }
