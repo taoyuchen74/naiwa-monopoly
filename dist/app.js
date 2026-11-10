@@ -19,6 +19,7 @@ import {cardsPanel} from './cards-panel.js';
 import {gameShareUrl} from './share.js';
 import {normalizeSetup,setupError} from './setup.js';
 import {advancedPanel} from './advanced-panel.js';
+import {UI_PRESETS,resolvePreset,challengeIntro} from './ui-presets.js';
 import {BUSINESSES,businessType} from './businesses.js';
 import {businessPanel,businessFacts} from './business-panel.js';
 import {researchChangePanel} from './research-panel.js';
@@ -167,6 +168,7 @@ function openPanel(type,id){
  if(type==='exchange'||type==='negotiation'){showSheet('玩家间交易','报价确认后由电脑独立审核',offerPanel(game,id),s.phase==='negotiation');return;}
  if(type==='handoff'){showSheet(`请交给玩家 ${s.current+1} · ${game.char().name}`,'确认后才显示手牌与账户',`<p>上一位玩家请交出设备。当前仍处于${s.phase==='debt'?'筹款':'原来的'}行动阶段，确认前不会推进。</p><button class="primary" data-act="acceptTurn" data-modal-autofocus>我是玩家 ${s.current+1}，开始回合</button>`,true);return;}
  if(type==='saves'){try{showSheet('旅行存档槽','3 个手动槽 + 1 个自动槽',saveSlotsPanel(repository.list(),!!exportableState(game,started,saved))+btn('可选云存档 · 离开页面管理','openCloud'));}catch{showSheet('旅行存档槽','本机存储暂不可用','<p>无法访问本机存档。当前旅行仍可从设置导出 JSON。</p>');}
+ }else if(type==='challenge'){const preset=Object.hasOwn(UI_PRESETS,id)&&UI_PRESETS[id];if(!preset)return;showSheet(preset.title,'开始前了解条件与目标',challengeIntro(id));
  }else if(type==='advanced'){advancedDraft??=normalizeSetup(advanced);showSheet('高级对局设置','真人、电脑席位与公平起始条件',advancedPanel(advancedDraft,selected,+$('playerCountSelect').value,$('difficultySelect').value));
  }else if(type==='overview'){showSheet('全岛大地图','看清归属、建筑与奶伴位置','<div class="map-overview"></div>');new MapOverview($('sheetBody').firstElementChild,game,{selected:id??game.player.pos,inspect:tile=>{scene?.focusTile(tile);openPanel('tile',tile);}});
  }else if(type==='mapGuide'){showSheet(mapInfo(s).name,'路线与电脑设置',`<p>${mapInfo(s).description}</p><h3>本局电脑：${DIFFICULTIES[s.difficulty].name}</h3><p>${DIFFICULTIES[s.difficulty].description}</p><p>本局电脑：${s.players.filter(q=>!q.human).map(q=>game.char(q).name+' · '+DIFFICULTIES[game.aiDifficulty(q)].name).join('、')}。种子 ${s.setupSeed??'旧存档未记录'}。</p><p>所有难度的初始资金、租金、掷骰和天赋规则相同，差别只在电脑如何做决策。新局可重新选择强度。</p><p>功能建筑均对应道路格；选择捷径前可打开落点预览，比较租金、补给和起点奖励。</p>`);
@@ -282,6 +284,8 @@ $('onlineEntry').addEventListener('click',()=>{if(globalThis.__NAIWA_PORTABLE__|
 $('startBtn').addEventListener('click',startFresh);$('continueBtn').addEventListener('click',resume);$('characterPicker').addEventListener('click',e=>{const b=e.target.closest('[data-character]');if(b){selected=b.dataset.character;picker();sound();}});
 $('actionBtn').addEventListener('click',onAction);$('soundBtn').addEventListener('click',()=>{unlockSound();game.s.options.sound=!game.s.options.sound;commit();toast(game.s.options.sound?'声音已开启':'声音已关闭');});
 $('mapSelect').addEventListener('change',e=>{if(started)return;advanced.mapVersion=[1,4].includes(+e.target.value)?+e.target.value:2;try{localStorage.setItem('naiwa-setup-v1',JSON.stringify(advanced));}catch{}picker();render();sound();});
+$('challengeEntry').textContent=UI_PRESETS['forest-business'].title;
+$('challengeEntry').addEventListener('click',()=>openPanel('challenge','forest-business'));
 $('advancedBtn').addEventListener('click',()=>{advancedDraft=null;openPanel('advanced');});
 $('difficultyBtn').addEventListener('click',()=>{if(!pinned)openPanel('mapGuide');});
 $('difficultySelect').addEventListener('change',()=>{$('difficultyHint').textContent=DIFFICULTIES[$('difficultySelect').value].description;});
@@ -332,6 +336,7 @@ $('sheetBody').addEventListener('click',e=>{
  if(act==='locateDeed'){scene?.focusLot(id,{manual:true});openPanel('tile',id);return;}
  if(act==='bankKind'){bankDraft.kind=b.dataset.kind;refreshPanel();return;}
  if(act==='bankQty'){bankDraft.amount=String(b.dataset.amount==='max'?bankLimit(game,bankDraft.kind):b.dataset.amount);$('bankAmount').value=bankDraft.amount;updateBankPreview(game,bankDraft.kind);return;}
+ if(act==='chooseChallengeSeats'){const preset=resolvePreset(b.dataset.preset);advancedDraft={...normalizeSetup({...advanced,mapVersion:preset.mapVersion,modeId:preset.mode.id,startingCash:preset.mode.initial.cash,startingTickets:preset.mode.initial.tickets}),character:selected};dismiss(true);openPanel('advanced');return;}
  if(act==='applyAdvanced'){readAdvancedFields();if(setupError(advancedDraft,advancedDraft.character||selected,+$('playerCountSelect').value))return;selected=advancedDraft.character||selected;advanced=normalizeSetup(advancedDraft);advancedDraft=null;try{localStorage.setItem('naiwa-setup-v1',JSON.stringify(advanced));}catch{}dismiss(true);picker();durationHint();render();toast('高级设置已保存，新局按所选阵容开始。');return;}
  if(act==='resetAdvanced'){advancedDraft=normalizeSetup();openPanel('advanced');return;}
  if(act==='allRandom'){readAdvancedFields();advancedDraft.opponents=[];openPanel('advanced');return;}

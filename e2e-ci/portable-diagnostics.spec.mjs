@@ -25,6 +25,12 @@ test('portable file exposes its real build fingerprint without external requests
   ).toBe(true);
   const build = await page.locator('html').getAttribute('data-build');
   expect(build).toMatch(/^portable-[a-f0-9]{12}$/);
+  await page.locator('#challengeEntry').click();
+  await expect(page.locator('#sheetBody')).toContainText('5,000');
+  await page.locator('[data-act=chooseChallengeSeats]').click();
+  await expect(page.locator('#setupMap')).toHaveValue('4');
+  await expect(page.locator('#setupMode')).toHaveValue('business');
+  await page.keyboard.press('Escape');
   await page.locator('#settingsBtn').click();
   await page.locator('[data-act=copyDiagnostic]').click();
   const data = JSON.parse(await page.locator('#renderDiagnostic').inputValue());
