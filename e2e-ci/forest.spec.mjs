@@ -237,7 +237,7 @@ test('forest WebGL native touch, manual rotation and modal scroll preserve rule 
     await rotateDevice(page);
     await expect(page.locator('#app')).toHaveAttribute(
       'data-rotated',
-      rotation === 0 ? 'true' : 'false',
+      String(page.viewportSize().width < page.viewportSize().height),
     );
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
