@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "roundLimit": 50,
+  "initial": {
+    "cash": 3200,
+    "tickets": 60,
+    "loan": 0
+  },
+  "randomStart": false,
+  "seatTypes": "all-ai",
+  "characterOrder": ["naiwa", "naichong", "naishu", "naigou", "naidan", "naicha"],
+  "rulesHash": "933c90d13adafe41358613ddf0f7a0b2aeff042551d9e86de68ed9e73c6dcd98",
+  "matrixHash": "d4822ebee4dec5feb53758204d30c98df8e987ac10a192f020698072e35fa757",
+  "cases": 3360,
+  "originalManifest": "paired-balance-original-manifest.json",
+  "provenance": {
+    "reference": "4016676",
+    "normalization": "CRLF to LF only",
+    "files": {
+      "dist/builtin-maps.js": "4fc350c306da93f61b37c35de2f12da831305ceedb654f08cf857a895e919c16",
+      "dist/businesses.js": "a8af9c31c10e941d6c0ed937c2147ca2631c6c283a3ff55f7552c6aeb03c446f",
+      "dist/commands.js": "32b1e2527f8daca3fdb6b20dc78de33d7c33c343cead2e73bfc759864eb7870a",
+      "dist/commerce.js": "601400509ed0d277dd5dff62473b425aad10f153ebfb704f3c7d207c5eae78a9",
+      "dist/content.js": "fd0a226bd24a3d45ac5a7f2cc9876cc840aac843f81e2d74437a3b6de6cd01c9",
+      "dist/difficulty.js": "a4a5c3b0c7ddd29ae55f3208abf400a1f0f474c6b11877d18b762fee976a6704",
+      "dist/economy.js": "9ea8b8b2a58f0bf3e55988e4b9fbbf45f99f7146ed387b3cfb003628e00bc3b9",
+      "dist/engine.js": "acd9819cc1e8c80299b83bb96aea681e7a62f87f07e215a0caf87761cb5a29b2",
+      "dist/forest-map.js": "6f9fa2e04098699a9050c178e638a5e8d6ba5e919910df4c716460309e1a6a9a",
+      "dist/forest-rules.js": "bf9b734aa77eec6a727f3162a34fe6469110acdbc3eb2ef85cc72d2c83172b0e",
+      "dist/hotseat.js": "1a4def06ec4987b119dc874811066856a3eed05d1673beb57827c0d8e644e823",
+      "dist/map-schema.js": "052d5f838214b2de3152ddabb16bc03f90cc5a6ed52228a6b03ec46d47c3036a",
+      "dist/maps.js": "7eba64c0bc68b0574e7072ba16d29b4c84c522f8ea27e3681311212ad7b124ad",
+      "dist/modes.js": "210aca838958e23b05d80bb89aa79182106e26a7f868d2829bc895b72cd68ed9",
+      "dist/portfolio.js": "6f0fa25fabc97ceeeca70b3c75d368049e4d654cd96e639c54c4b24ac7d0fd8c",
+      "dist/replay-log.js": "a65fd230ac8b5bc8b0555293be698c9fd4e596a248652f42200ffb745c69ac09",
+      "dist/rules-config.js": "b4899e965b1f28eb92b6ed6db9dd2af0ccd59ab96493cdc6a5872e75e71ce29d",
+      "dist/save-repository.js": "7415821219d8322c6f2c47e4004fbff24660e432efb10e6c426c905d65d17f1a",
+      "dist/save-schema.js": "d9a6ededa243bb1e833bd3c20ce90a9e2438b4f857cdaa8dc3a6bcee47823d3b",
+      "dist/setup.js": "270b43206b8e06e1b1925f90adaa291cb48a87c6aea43b4bb00079042ac495f7",
+      "dist/state-hash.js": "ed91e13a20ad07eeff698413542507597450421ac4549b31274857a722f2e1c9",
+      "dist/strategy.js": "dd6ce5fe4fb8e439c3a1f64518ce2cac59909c1b60efbca28b82b4c1591fde87",
+      "dist/talents.js": "384c22c7e05645d173a41ca99af34aada94cf142e4385966a557a23ed35544c0",
+      "dist/transfers.js": "cba88b5fce08bcaa61d2659ef195756119d30622b4a10ca7d8e0b5e4bdb48dd5"
+    },
+    "dependencyHash": "933c90d13adafe41358613ddf0f7a0b2aeff042551d9e86de68ed9e73c6dcd98"
+  }
+}
