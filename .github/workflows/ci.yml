@@ -48,7 +48,7 @@ jobs:
         env:
           NAIWA_FOREST_WEBGL: '1'
           NAIWA_SOFTWARE_WEBGL: '1'
-        run: npx playwright test e2e-ci/forest.spec.mjs e2e-ci/desktop-layout.spec.mjs e2e-ci/render-failure.spec.mjs --grep WebGL
+        run: npx playwright test e2e-ci/forest.spec.mjs e2e-ci/desktop-layout.spec.mjs e2e-ci/render-failure.spec.mjs e2e-ci/frame-clock.spec.mjs --grep WebGL
       - name: Engineering browser regressions
         run: npm run test:e2e
       - name: Two-client online browser tests
@@ -75,6 +75,10 @@ jobs:
           retention-days: 7
 
   mobile-layout:
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [360x640, 360x800, 390x844, 844x390, 768x1024, desktop]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -88,12 +92,12 @@ jobs:
       - name: Six viewport touch, scroll and keyboard interactions
         env:
           NAIWA_SOFTWARE_WEBGL: '1'
-        run: npm run test:mobile -- e2e/mobile.spec.mjs
+        run: npm run test:mobile -- e2e/mobile.spec.mjs --project=${{ matrix.viewport }}
       - name: Upload mobile failure evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: mobile-results-${{ github.run_attempt }}
+          name: mobile-results-${{ matrix.viewport }}-${{ github.run_attempt }}
           path: test-results/mobile/
           if-no-files-found: ignore
           retention-days: 7

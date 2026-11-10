@@ -2,6 +2,7 @@ import {build} from 'esbuild';
 import {buildWeb} from './build-web.mjs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {Script} from 'node:vm';
+import {createHash} from 'node:crypto';
 await mkdir('artifacts',{recursive:true});
 const bundled=await build({entryPoints:['dist/app.js'],bundle:true,minify:true,format:'iife',write:false,target:['chrome100','safari15.4'],legalComments:'inline'});
 let html=await readFile('dist/index.html','utf8');
@@ -15,6 +16,8 @@ html=html.replace(/<script type="module" src="\.\/app\.js(?:\?[^"]*)?"><\/script
 const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
 if(scripts.length!==1)throw new Error('Portable page must contain exactly one complete script.');
 new Script(scripts[0][1]);
+const portableId=createHash('sha256').update(html).digest('hex').slice(0,12);
+html=html.replace(/<html\b([^>]*)>/,(_,attributes)=>'<html'+attributes.replace(/\sdata-build="[^"]*"/g,'')+' data-build="portable-'+portableId+'">');
 await writeFile('artifacts/奶蛙大富翁.html',html);
 console.log(`Portable HTML built: ${(Buffer.byteLength(html)/1024/1024).toFixed(2)} MB. No external requests required.`);
 

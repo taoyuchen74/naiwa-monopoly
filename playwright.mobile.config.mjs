@@ -10,6 +10,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4181',
     browserName: 'chromium',
+    reducedMotion: 'reduce',
     channel: process.env.NAIWA_SOFTWARE_WEBGL === '1' ? 'chromium' : undefined,
     hasTouch: true,
     deviceScaleFactor: 1,

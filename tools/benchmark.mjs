@@ -1,5 +1,6 @@
 import { chromium } from '@playwright/test';
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { performanceServer } from './perf-server.mjs';
@@ -19,6 +20,19 @@ const result = {
   map: forest ? 4 : 2,
   samples,
   requestedQuality: quality,
+  sourceHashes: Object.fromEntries(
+    await Promise.all(
+      ['dist/scene.js', 'dist/portrait-renderer.js', 'dist/style.css'].map(async (file) => {
+        const bytes = baseline
+          ? execFileSync('git', ['show', baseline + ':' + file], { cwd: root })
+          : await readFile(resolve(root, file));
+        return [
+          file,
+          createHash('sha256').update(bytes.toString().replace(/\r\n/g, '\n')).digest('hex'),
+        ];
+      }),
+    ),
+  ),
   profiles: [],
 };
 const browser = await chromium.launch({
