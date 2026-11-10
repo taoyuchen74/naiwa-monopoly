@@ -290,7 +290,7 @@ $('advancedBtn').addEventListener('click',()=>{advancedDraft=null;openPanel('adv
 $('difficultyBtn').addEventListener('click',()=>{if(!pinned)openPanel('mapGuide');});
 $('difficultySelect').addEventListener('change',()=>{$('difficultyHint').textContent=DIFFICULTIES[$('difficultySelect').value].description;});
 $('talentBtn').addEventListener('click',()=>{if(!pinned)openPanel('talents');});
-new GameOrientation($('app'),$('orientationBtn'),{notify:toast,resize:()=>scene?.resize()});
+new GameOrientation($('app'),null,{resize:()=>scene?.resize()});
 $('newsHistoryBtn').addEventListener('click',()=>{if(started&&!pinned)openPanel('news');});
 $('pauseBtn').addEventListener('click',()=>{if(!pinned&&started)openPanel('pause');else toast('先完成当前选择，即可暂停。');});
 $('shareBtn').addEventListener('click',()=>{if(!pinned)openPanel('share');else toast('先完成当前选择，再分享链接。');});

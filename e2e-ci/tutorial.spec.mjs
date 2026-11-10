@@ -9,7 +9,7 @@ async function boot(page,{state=null,prefs=null}={}){
 const prefs={version:1,disabled:false,seen:['intro','roll']};
 const make=()=>Game.create({seed:17,mapVersion:1,talents:false});
 const tip=page=>page.locator('.tutorial-tip:visible');
-async function twoLines(page){expect(await tip(page).locator('.tutorial-text').evaluate(el=>el.getBoundingClientRect().height)).toBeLessThanOrEqual(42.1);}
+async function twoLines(page){expect(await tip(page).locator('.tutorial-text').evaluate(el=>el.offsetHeight)).toBeLessThanOrEqual(42.1);}
 const saved=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),SAVE_KEY);
 async function resume(page){await page.locator('#continueBtn').click();await expect(page.locator('#startScreen')).toBeHidden();}
 async function noCover(page,selector){await page.locator(selector).scrollIntoViewIfNeeded();expect(await page.locator(selector).evaluate(el=>{const r=el.getBoundingClientRect(),front=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return front===el||el.contains(front);})).toBe(true);}

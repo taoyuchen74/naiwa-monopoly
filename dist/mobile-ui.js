@@ -69,7 +69,7 @@ function mountMapTools(root) {
   });
   let previous = '';
   window.addEventListener('gamelayoutchange', () => {
-    const layout = root.dataset.compact + ':' + root.dataset.layout;
+    const layout = root.dataset.compact + ':' + root.dataset.layout + ':' + root.dataset.rotated;
     if (layout !== previous) {
       const focused = tools.contains(root.ownerDocument.activeElement);
       update(false);

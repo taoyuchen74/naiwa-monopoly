@@ -1,16 +1,14 @@
 import { test, expect } from '@playwright/test';
-import { boot, start, state } from './helpers.mjs';
+import { boot, start, state, rotateDevice } from './helpers.mjs';
 
-test('portrait ↔ landscape keeps rendered map and dialogs aligned', async ({ page }) => {
+test('physical device rotation keeps landscape map and dialogs aligned', async ({ page }) => {
   const errors = await boot(page);
   await start(page);
   const before = await state(page);
   for (let i = 0; i < 2; i++) {
-    await page.locator('#orientationBtn').click();
+    await rotateDevice(page);
     const logical = await page.locator('#app').evaluate((el) => [el.clientWidth, el.clientHeight]);
-    expect(logical[0] >= logical[1]).toBe(
-      i === 0 ? test.info().project.name === '390x844' : test.info().project.name === '844x390',
-    );
+    expect(logical[0]).toBeGreaterThanOrEqual(logical[1]);
     await expect(page.locator('#fallback')).toBeVisible();
     await expect(page.locator('#fallback .fallback-tile').first()).toBeVisible();
     await page.locator('#settingsBtn').click();
