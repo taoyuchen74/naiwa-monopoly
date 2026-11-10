@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { Game, SAVE_KEY } from '../dist/engine.js';
-import { boot } from '../e2e/helpers.mjs';
+import { boot, rotateDevice } from '../e2e/helpers.mjs';
 import { openMapTools } from '../e2e/ui-controls.mjs';
 
 async function checkPhone(page) {
@@ -85,7 +85,7 @@ async function checkPhone(page) {
   await expect(page.locator('#sheet')).toBeVisible();
   await page.locator('#closeSheet').click();
   await openMapTools(page);
-  await page.locator('#orientationBtn').click();
+  await rotateDevice(page);
   await expect(page.locator('#mapTools')).toBeHidden();
   await expect(page.locator('#actionBtn')).toBeEnabled();
   await page.locator('.dock-tabs [data-panel=cards]').click();

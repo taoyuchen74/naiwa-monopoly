@@ -97,3 +97,11 @@ export async function start(page, character = 'naiwa') {
   expect((await state(page)).setupSeed).toBe(17);
   expect((await state(page)).current).toBe(0);
 }
+
+/** Simulate holding the device in the other direction; the game remains landscape. */
+export async function rotateDevice(page) {
+  const { width, height } = page.viewportSize();
+  await page.setViewportSize({ width: height, height: width });
+  await expect(page.locator('#app')).toHaveAttribute('data-layout', 'landscape');
+  await expect(page.locator('#app')).toHaveAttribute('data-rotated', String(height < width));
+}

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { boot, start } from '../e2e/helpers.mjs';
+import { boot, start, rotateDevice } from '../e2e/helpers.mjs';
 
 test('simplified map tiles scroll clear of the live tutorial and mini map', async ({ page }) => {
   await boot(page);
@@ -24,7 +24,7 @@ test('simplified map tiles scroll clear of the live tutorial and mini map', asyn
     await expect(page.locator('#sheet')).toBeVisible();
     await page.keyboard.press('Escape');
   }
-  await page.locator('#orientationBtn').click();
+  await rotateDevice(page);
   const last = page.locator('.fallback-tile[data-tile="47"]');
   await last.scrollIntoViewIfNeeded();
   await last.click({ timeout: 4000 });

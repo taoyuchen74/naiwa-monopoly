@@ -1,3 +1,4 @@
+import { rotateDevice } from '../e2e/helpers.mjs';
 import { openMapTools } from '../e2e/ui-controls.mjs';
 import { test, expect } from '@playwright/test';
 import { Game, SAVE_KEY } from '../dist/engine.js';
@@ -233,10 +234,10 @@ test('forest WebGL native touch, manual rotation and modal scroll preserve rule 
       await page.evaluate(() => ({ scroll: scrollY, camera: window.forestCameraEvents })),
     ).toEqual({ scroll: 0, camera: events });
     await page.keyboard.press('Escape');
-    await page.locator('#orientationBtn').click();
+    await rotateDevice(page);
     await expect(page.locator('#app')).toHaveAttribute(
       'data-rotated',
-      rotation === 0 ? 'true' : 'false',
+      String(page.viewportSize().width < page.viewportSize().height),
     );
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),

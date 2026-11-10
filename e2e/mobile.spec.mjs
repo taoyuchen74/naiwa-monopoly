@@ -1,3 +1,4 @@
+import { rotateDevice } from './helpers.mjs';
 import { test, expect } from '@playwright/test';
 import { Game, SAVE_KEY } from '../dist/engine.js';
 
@@ -229,10 +230,10 @@ test('native touch drag/pinch survive manual rotation and modal scroll never lea
       })),
     ).toEqual({ scroll: 0, doc: 0, body: 0, camera: events });
     await close(page);
-    await page.locator('#orientationBtn').click();
+    await rotateDevice(page);
     await expect
       .poll(() => page.locator('#app').getAttribute('data-rotated'))
-      .toBe(rotation === 0 ? 'true' : 'false');
+      .toBe(String(page.viewportSize().width < page.viewportSize().height));
   }
   expect(await state(page)).toEqual(before);
   expect(errors).toEqual([]);
@@ -248,6 +249,7 @@ test('four safe edges rotate correctly; focused inputs and confirmation survive 
       document.documentElement.style.setProperty('--inset-' + edge, n + 'px');
   });
   for (let i = 0; i < 2; i++) {
+    const viewport = page.viewportSize();
     const rect = await page.locator('.game-layout').boundingBox();
     expect(rect.x).toBeCloseTo(14, 0);
     expect(rect.y).toBeCloseTo(12, 0);
@@ -268,7 +270,7 @@ test('four safe edges rotate correctly; focused inputs and confirmation survive 
     expect(popup.y + popup.height).toBeLessThanOrEqual(viewport.height - 22);
     await page.keyboard.press('Escape');
     await close(page);
-    await page.locator('#orientationBtn').click();
+    await rotateDevice(page);
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );

@@ -11,10 +11,10 @@ export function mountGameOverlays(root){
  }
 }
 export class GameOrientation{
- constructor(root,button,{notify=()=>{},resize=()=>{}}={}){Object.assign(this,{root,button,notify,resize,mode:'auto',rules:[]});
+ constructor(root,button,{notify=()=>{},resize=()=>{}}={}){Object.assign(this,{root,button,notify,resize,mode:'landscape',rules:[]});
   const collect=list=>{for(const rule of list){if(rule.type===4&&/(width|height|orientation)/.test(rule.conditionText))this.rules.push({rule,condition:rule.conditionText});else if(rule.cssRules)collect(rule.cssRules);}};
   for(const sheet of document.styleSheets)try{collect(sheet.cssRules);}catch{}
-  button.addEventListener('click',()=>this.toggle());window.addEventListener('resize',()=>this.apply());document.addEventListener('fullscreenchange',()=>this.apply());
+  button?.remove();window.addEventListener('resize',()=>this.apply());document.addEventListener('fullscreenchange',()=>this.apply());
   // Some phone browsers report the new dimensions after the direction event.
   const directionChanged=()=>{this.apply();requestAnimationFrame(()=>this.apply());};
   window.addEventListener('orientationchange',directionChanged);
@@ -30,11 +30,6 @@ export class GameOrientation{
   const layout=logicalSize(this.layoutViewport.width,this.layoutViewport.height,this.mode),s={width:layout.rotated?frame.height:frame.width,height:layout.rotated?frame.width:frame.height,rotated:layout.rotated};this.root.dataset.rotated=String(s.rotated);this.root.dataset.layout=layout.width>=layout.height?'landscape':'portrait';this.root.dataset.compact=String(layout.width<=600||layout.height<=500);this.root.dataset.keyboard=String(editing&&this.layoutViewport.height-frame.height>100);this.root.style.setProperty('--game-vh',s.height/100+'px');this.root.style.setProperty('--game-vw',s.width/100+'px');
   Object.assign(this.root.style,{position:'fixed',left:frame.left+(s.rotated?frame.width:0)+'px',top:frame.top+'px',width:s.width+'px',height:s.height+'px',minHeight:'0',transform:s.rotated?'rotate(90deg)':'',transformOrigin:'0 0'});
   for(const {rule,condition} of this.rules){if(!s.rotated){rule.media.mediaText=condition;continue;}const virtual=condition.replace(/\(orientation:\s*(portrait|landscape)\)/g,(_,o)=>((s.width>=s.height)===(o==='landscape'))?'(min-width: 0px)':'(max-width: 0px)').replace(/\((max|min)-(width|height):\s*([\d.]+)px\)/g,(_,bound,axis,n)=>((bound==='max'?s[axis]<=+n:s[axis]>=+n)?'(min-width: 0px)':'(max-width: 0px)'));rule.media.mediaText=window.matchMedia(virtual).matches?'all':'not all';}
-  const landscape=layout.width>=layout.height;this.button.textContent=landscape?'竖屏':'横屏';this.button.setAttribute('aria-label',landscape?'切换竖屏':'切换横屏');this.button.title=this.button.getAttribute('aria-label');this.button.setAttribute('aria-pressed',String(this.mode!=='auto'));requestAnimationFrame(()=>{this.resize();window.dispatchEvent(new Event('gamelayoutchange'));if(editing)this.root.ownerDocument.activeElement?.scrollIntoView?.({block:'nearest',inline:'nearest'});});
- }
- async toggle(){const s=logicalSize(innerWidth,innerHeight,this.mode);this.mode=s.width>=s.height?'portrait':'landscape';this.apply();
-  // Layout fallback works immediately, including local files and denied fullscreen.
-  if(matchMedia('(pointer: coarse)').matches){try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();await screen.orientation?.lock?.(this.mode);}catch{}this.apply();}
-  this.notify(this.mode==='landscape'?'已切换横屏，横握手机游玩；再点可回竖屏。':'已切换竖屏。');
+  requestAnimationFrame(()=>{this.resize();window.dispatchEvent(new Event('gamelayoutchange'));if(editing)this.root.ownerDocument.activeElement?.scrollIntoView?.({block:'nearest',inline:'nearest'});});
  }
 }

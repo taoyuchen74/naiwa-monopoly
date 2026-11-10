@@ -684,7 +684,7 @@ export async function startOnlineSession() {
     inspect: (id) => open('tile', id),
     overview: (id) => open('overview', id),
   });
-  new GameOrientation(app, $('orientationBtn'), { notify, resize: () => scene?.resize() });
+  new GameOrientation(app, null, { resize: () => scene?.resize() });
   $('scene').addEventListener('renderlost', () => {
     $('fallback').hidden = false;
     render();
