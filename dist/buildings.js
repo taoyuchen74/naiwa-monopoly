@@ -1,3 +1,5 @@
+import {ceramicLandmarkPart,ceramicProperty} from './ceramic-map-models.js';
+import {addBlenderLandmark} from './blender-landmarks.js';
 import {forestProperty} from './forest-buildings.js';
 import {hotelMarquee,researchDish} from './facility-details.js';
 import {fineTree,architecturalDetails} from './scenery.js';
@@ -55,6 +57,17 @@ export function propertyBuilding(t,level,ownerColor='#d6bb76',owned=false){if(t.
  }else{
   const h=.8+level*.62;box(g,wall||'#d6d5c1',[0,h/2+.1,0],[1.35,h,1.0]);box(g,glass,[0,h/2+.12,.51],[1.22,h-.12,.02]);box(g,glass,[.69,h/2+.12,0],[.025,h-.12,.88]);for(let f=.3;f<h;f+=.33){box(g,'#cbd7cf',[0,f,.535],[1.4,.035,.04]);box(g,'#cbd7cf',[.71,f,0],[.04,.035,1]);}for(const x of [-.45,0,.45])box(g,'#cbd7cf',[x,h/2+.12,.54],[.035,h,.035]);box(g,owned?ownerColor:'#dae4d5',[0,h+.15,0],[1.53,.15,1.14]);box(g,owned?ownerColor:'#4d6574',[.2,h+.4,-.1],[.7,.35,.7]);tube(g,'#70868a',[[.3,h+.5,-.1],[.3,h+1,-.1]],.018);sign(g,'奶币中心',[0,.48,.57],.9,.25,{background:'#486e7f',color:'#fff0c0'});
  }return batchStatic(architecturalDetails(g,type,level,ownerColor));
+}
+export function displayPropertyBuilding(t,level,ownerColor='#d6bb76',owned=false,mapVersion=1){
+ if(!level||mapVersion===3||mapVersion===4)return propertyBuilding(mapVersion===4?{...t,forest:true}:t,level,ownerColor,owned);
+ return ceramicProperty(t,level,t.buildingType==='park'?'park':architectureFor(t),ownerColor,owned);
+}
+export function displayLandmark(t,mapVersion=1){
+ if(mapVersion===3)return landmark(t);
+ const group=new THREE.Group();group.name=`landmark-${t.kind}`;
+ if(t.kind==='start'||t.kind==='bank')ceramicLandmarkPart(t.kind==='start'?'station':'bank',group,t.name);
+ else if(!addBlenderLandmark(group,t))return landmark(t);
+ return group;
 }
 export function landmark(t){const g=new THREE.Group();g.name=`landmark-${t.kind}`;box(g,'#d7c8a7',[0,.07,0],[2.0,.15,1.72]);const _h=1.25;
  if(t.kind==='bank'){

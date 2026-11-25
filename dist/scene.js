@@ -13,7 +13,7 @@ import * as THREE from './vendor/three.module.js';
 import {CHARACTERS,GROUPS as _GROUPS} from './content.js';
 import {ball as _ball,box,mesh,cylinder,tube as _tube,sign,material as _material,disposeUnique,batchStatic as _batchStatic,signTexture} from './render-kit.js';
 import {displayCharacterModel,animateCharacter,vehicleModel} from './characters.js';
-import {propertyBuilding,landmark as _landmark,townTree as _townTree} from './buildings.js';
+import {displayPropertyBuilding} from './buildings.js';
 import {EffectSystem} from './effects.js';
 import {presentationSpeed} from './pacing.js';
 import {MapGestures} from './map-gestures.js';
@@ -59,7 +59,7 @@ export class IslandScene{
    if(pawn.userData.vehicleId!==p.vehicle){const old=pawn.getObjectByName('vehicle');if(old){pawn.remove(old);disposeUnique(old);}if(p.vehicle){const v=vehicleModel(p.vehicle);v.position.y=-.1;pawn.add(v);}pawn.userData.vehicleId=p.vehicle;pawn.userData.body.position.y=p.vehicle?.3:0;}
   }
   for(const t of this.tiles.filter(t=>t.kind==='property')){const o=s.ownership[t.id],signature=o?`${o.player}:${o.level}:${o.buildingType||'legacy'}`:'empty';const previous=this.plotMeshes.get(t.id);if(previous?.signature===signature)continue;
-   const color=o?CHARACTERS.find(c=>c.id===s.players[o.player].character).estateColor:'#acb18d';const model=propertyBuilding({...t,forest:!!this.tiles.forest,buildingType:o?.buildingType},o?.level||0,color,!!o);model.position.copy(lotPosition(t));model.rotation.y=t.facing;this.tag(model,t.id);this.world.add(model);let labelModel=model;
+   const color=o?CHARACTERS.find(c=>c.id===s.players[o.player].character).estateColor:'#acb18d';const model=displayPropertyBuilding({...t,buildingType:o?.buildingType},o?.level||0,color,!!o,s.mapVersion);model.position.copy(lotPosition(t));model.rotation.y=t.facing;this.tag(model,t.id);this.world.add(model);let labelModel=model;
    if(o){cylinder(model,'#587070',[.85,.5,-.6],.018,.018,.85,8);box(model,color,[.98,.81,-.6],[.28,.17,.025]);}
    if(previous){const old=previous.model;this.fx.finish(old);const removeOld=()=>{this.world.remove(old);disposeUnique(old);};if(!fresh&&structuralChange(previous,o)){const demolish=!o||o.level<previous.level;this.fx.spawn(demolish?'demolish':'build',old.position,color);this.fx.spawn('dust',old.position);
     if(demolish){model.visible=this.reduced||!o?.level;const endHeight=o?.level?new THREE.Box3().setFromObject(model).max.y:undefined;this.fx.transition(old,'remove',()=>{removeOld();model.visible=true;if(this.selectedTile===t.id)this.liftSelectionLabel();},{endHeight});if(old.parent)labelModel=old;}
@@ -98,7 +98,11 @@ export class IslandScene{
   const labels=this.buildingBadges.filter(b=>b.visible),label=this.ray.intersectObjects(labels,false)[0];
   if(label&&Number.isInteger(label.object.userData.tile))return label.object.userData.tile;
   const roots=[...this.tileMeshes,...[...this.plotMeshes.values()].filter(v=>v.model.visible).map(v=>v.model)];
-  const hit=this.ray.intersectObjects(roots,true).find(h=>Number.isInteger(h.object.userData.tile));return hit?.object.userData.tile??null;
+  for(const hit of this.ray.intersectObjects(roots,true)){
+   const data=hit.object.userData,tile=data.tileIds?.[hit.instanceId]??data.tile;
+   if(Number.isInteger(tile))return tile;
+  }
+  return null;
  }
  clearSelection(){this.selectedTile=null;this.selection.visible=false;delete this.el.dataset.selectedTile;this.invalidate();}
  focusTile(id){if(!this.tiles[id]||this.studio)return;this.follow=false;this.focusTarget=this.tiles[id].kind==='property'?lotPosition(this.tiles[id]):new THREE.Vector3(this.tiles[id].x,0,this.tiles[id].z);this.focusTarget.y=0;this.focusZoom=this.aspect<.8?2.6:2.1;this.selectTile(id,'nav');this.cameraChanged();}
@@ -159,7 +163,7 @@ export class IslandScene{
   }
   for(const [id,token]of this.pickupMeshes)token.position.y=this.reduced?.24:.24+Math.sin(time*2+id)*.055;
   animateCharacter(this.hero,{time,mood:this.game?.s.phase==='event'?this.game.s.notice?.mood:null});if(this.showcase){animateCharacter(this.showcase,{time});this.showcase.rotation.y=.3+Math.sin(time*.4)*.18;}
-  if(!this.reduced){for(const [i,b]of this.floats.entries()){b.position.y=-.45+Math.sin(time*1.1+i)*.035;b.rotation.z=Math.sin(time+i)*.015;}for(const [i,r]of this.ripples.entries())r.scale.x=1+Math.sin(time*.8+i)*.08;
+  if(!this.reduced){for(const [i,b]of this.floats.entries()){b.position.y=(b.userData.waterline??-.45)+Math.sin(time*1.1+i)*.035;b.rotation.z=Math.sin(time+i)*.015;}for(const [i,r]of this.ripples.entries())r.scale.x=1+Math.sin(time*.8+i)*.08;
 
    if(Math.floor(time*2)!==this.lastSmoke){this.lastSmoke=Math.floor(time*2);if(this.smokestacks.length&&this.isMoving()&&this.quality!=='low')for(const p of this.smokestacks)this.fx.spawn('dust',new THREE.Vector3(p.x,p.y,p.z),'#d3d3c2');}
   }

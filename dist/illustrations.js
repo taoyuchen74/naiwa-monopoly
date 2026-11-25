@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
-import {propertyBuilding,landmark} from './buildings.js';
+import {displayPropertyBuilding,displayLandmark} from './buildings.js';
+import {forestLandmark} from './forest-scene.js';
 import {disposeUnique} from './render-kit.js';
 import {portrait} from './portraits.js';
 import {vehicleModel} from './vehicles.js';
@@ -34,11 +35,11 @@ function modelImage(key,tile,makeModel,description,fallback,width=200,minSpan=1.
  const scene=new THREE.Scene();model=makeModel();scene.add(model);scene.add(new THREE.HemisphereLight('#fff6df','#8a9e9a',2.4));const light=new THREE.DirectionalLight('#ffebc1',2.5);light.position.set(-3,6,5);scene.add(light);const bounds=new THREE.Box3().setFromObject(model),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),span=Math.max(minSpan,size.y*.72);const camera=new THREE.OrthographicCamera(-span*1.25,span*1.25,span,-span,.1,50);camera.position.set(center.x+4,center.y+3.3,center.z+5);camera.lookAt(center);renderer.render(scene,camera);const result=`<img class="building-thumb" src="${renderer.domElement.toDataURL('image/png')}" alt="${tile.name} · ${description}">`;cache.set(key,result);return result;
  }catch{return art(fallback);}finally{if(model)disposeUnique(model);}
 }
-export function buildingImage(tile,level,color='#70a58b',owned=true){
- return modelImage(`property:${tile.name}:${tile.group}:${tile.buildingType||'legacy'}:${tile.id}:${level}:${color}:${owned}`,tile,()=>propertyBuilding(tile,level,color,owned),level?level+'级建筑':'空地','house');
+export function buildingImage(tile,level,color='#70a58b',owned=true,mapVersion=1){
+ return modelImage( `property:${mapVersion}:${tile.name}:${tile.group}:${tile.buildingType||'legacy'}:${tile.id}:${level}:${color}:${owned}`,tile,()=>displayPropertyBuilding(tile,level,color,owned,mapVersion),level?level+'级建筑':'空地','house');
 }
-export function landmarkImage(tile){
+export function landmarkImage(tile,mapVersion=1){
  const fallback={bank:'bank',hospital:'recover',stock:'stocks',shop:'vehicle',spirit:'shield',event:'theater',rest:'house',tax:'recover',start:'dice'};
- return modelImage(`landmark:${tile.id}:${tile.kind}:${tile.name}`,tile,()=>landmark(tile),'公共建筑模型',fallback[tile.kind]||'house',320);
+ return modelImage(`landmark:${mapVersion}:${tile.id}:${tile.kind}:${tile.name}`,tile,()=>mapVersion===4?forestLandmark(tile):displayLandmark(tile,mapVersion),'公共建筑模型',fallback[tile.kind]||'house',320);
 }
 export function vehicleImage(id){return modelImage(`vehicle:${id}`,{name:id===1?'奶蛙自行车':'奶罐小车'},()=>vehicleModel(id),'交通工具模型',id===1?'vehicle':'car',320,.9);}

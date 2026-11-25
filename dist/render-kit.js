@@ -8,6 +8,10 @@ const sharedGeometry=new Set([ballGeometry,boxGeometry]),cylinders=new Map(),tub
 export function shareGeometry(geometry){sharedGeometry.add(geometry);return geometry;}
 export function shareMaterial(surface){sharedMaterials.add(surface);return surface;}
 const roundedBoxes=new Map();
+export const detailBoxGeometry=shareGeometry(new RoundedBoxGeometry(1,1,1,1,.035));
+const detailBallGeometry=shareGeometry(new THREE.SphereGeometry(1,12,8));
+export const detailBox=(parent,color,position,scale)=>mesh(parent,detailBoxGeometry,color,position,scale);
+export const detailBall=(parent,color,position,scale)=>mesh(parent,detailBallGeometry,color,position,scale);
 export function roundedBox(parent,mat,pos,size,radius=.1){const key=JSON.stringify([size,radius]);if(!roundedBoxes.has(key)){const geometry=new RoundedBoxGeometry(...size,5,radius);roundedBoxes.set(key,geometry);sharedGeometry.add(geometry);}return mesh(parent,roundedBoxes.get(key),mat,pos);}
 export function mesh(parent,geometry,mat,pos=[0,0,0],scale=[1,1,1]){const o=new THREE.Mesh(geometry,typeof mat==='string'?material(mat):mat);o.position.set(...pos);o.scale.set(...scale);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
 export const ball=(p,c,pos,scale)=>mesh(p,ballGeometry,c,pos,scale);
