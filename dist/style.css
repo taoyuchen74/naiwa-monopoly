@@ -533,3 +533,10 @@ button.player:focus-visible{outline-color:#85391f}
   height: 18px;
   accent-color: #346b5a;
 }
+
+.studio-options.studio-poses {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.studio-poses button { grid-column: span 2; }
+.studio-poses button:nth-last-child(-n+2) { grid-column: span 3; }

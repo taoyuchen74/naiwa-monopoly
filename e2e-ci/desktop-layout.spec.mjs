@@ -131,7 +131,7 @@ test('desktop sidebar contains player labels and every tool fits its button at z
   }
 });
 
-test('compact WebGL uses SVG portraits while the character studio keeps the main renderer', async ({
+test('compact WebGL uses baked character portraits without a second renderer', async ({
   browser,
 }, testInfo) => {
   test.skip(testInfo.project.name !== '390x844', 'One dedicated compact real-GPU fixture');
@@ -178,7 +178,11 @@ test('compact WebGL uses SVG portraits while the character studio keeps the main
     await expect(page.locator('#scene canvas')).toHaveCount(1);
     expect(await page.evaluate(() => window.mainDraws)).toBeGreaterThan(0);
     expect(await page.evaluate(() => window.decorativeContexts)).toBe(0);
-    await expect(page.locator('.mini-face svg image')).toHaveCount(0);
+    await expect(page.locator('.mini-face svg image')).toHaveCount(6);
+    await expect(page.locator('.mini-face svg image').first()).toHaveAttribute(
+      'href',
+      /^data:image\/webp;base64,/,
+    );
     await page.locator('#playersToggle').click();
     await expect(page.locator('#playersToggle')).toHaveAttribute('aria-expanded', 'true');
     await page.locator('#playersToggle').click();
@@ -189,7 +193,7 @@ test('compact WebGL uses SVG portraits while the character studio keeps the main
     await page.locator('#closeStudio').click();
     await expect(page.locator('#actionBtn')).toBeEnabled();
     expect(await page.evaluate(() => window.decorativeContexts)).toBe(0);
-    await page.screenshot({ path: 'artifacts/mobile-svg-after.png' });
+    await page.screenshot({ path: 'artifacts/mobile-ceramic-portraits.png' });
   } finally {
     await context.close();
   }

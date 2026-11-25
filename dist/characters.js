@@ -1,3 +1,5 @@
+import {ceramicCharacter,poseCeramicCharacter} from './ceramic-cast.js';
+import {CHARACTERS} from './content.js';
 import {toyCharacter} from './toy-style.js';
 import {eggModel,teaModel} from './new-characters.js';
 import {laughingFace,animateLaugh} from './faces.js';
@@ -43,8 +45,22 @@ function rawCharacterModel(id){if(id==='naidan')return eggModel();if(id==='naich
  root.userData={body,arms,legs,mouth,laughMouth,lids,eyeParts:eyeParts.length?eyeParts:null,id,vehicleId:0};return root;
 }
 export function characterModel(id){const model=rawCharacterModel(id);return toyCharacter(model);}
+export function displayCharacterModel(id,{pawn=false}={}){
+ const model=ceramicCharacter(id);
+ if(!model)return characterModel(id);
+ if(pawn){
+  const color=CHARACTERS.find(character=>character.id===id).estateColor;
+  const base=_cylinder(model,color,[0,.015,0],.61,.66,.075,20);
+  base.name='ceramic-player-base';model.userData.toyBase=base;
+ }
+ return model;
+}
 function bendForearm(arm,happy){const d=arm.userData;if(!d?.rest||d.bent===happy)return;d.bent=happy;const angle=happy?-.55:0,_c=Math.cos(angle),_s=Math.sin(angle),attr=d.mesh.geometry.attributes.position;const transform=(x,y,z)=>{if(happy&&y<-.62){const w=Math.max(0,Math.min(1,(-y-.62)/.24)),a=-d.side*.75*w*w*(3-2*w),cx=d.side*.16,cy=-.68,dx=x-cx,dy=y-cy;x=cx+dx*Math.cos(a)-dy*Math.sin(a);y=cy+dx*Math.sin(a)+dy*Math.cos(a);}if(y>-.22)return [x,y,z];const u=Math.max(0,Math.min(1,(-y-.22)/.4)),a=angle*u*u*(3-2*u),ca=Math.cos(a),sa=Math.sin(a),dy=y+.22;return [x,-.22+dy*ca-z*sa,dy*sa+z*ca];};for(let i=0;i<attr.count;i++)attr.setXYZ(i,...transform(d.rest[i*3],d.rest[i*3+1],d.rest[i*3+2]));attr.needsUpdate=true;if(happy){const normals=d.mesh.geometry.attributes.normal,j=new THREE.Matrix3(),n=new THREE.Vector3(),e=.0001;for(let i=0;i<attr.count;i++){const x=d.rest[i*3],y=d.rest[i*3+1],z=d.rest[i*3+2],p=transform(x,y,z),a=transform(x+e,y,z),b=transform(x,y+e,z),c=transform(x,y,z+e);j.set((a[0]-p[0])/e,(b[0]-p[0])/e,(c[0]-p[0])/e,(a[1]-p[1])/e,(b[1]-p[1])/e,(c[1]-p[1])/e,(a[2]-p[2])/e,(b[2]-p[2])/e,(c[2]-p[2])/e).invert().transpose();n.fromArray(d.restNormals,i*3).applyMatrix3(j).normalize();normals.setXYZ(i,n.x,n.y,n.z);}normals.needsUpdate=true;}else{d.mesh.geometry.attributes.normal.array.set(d.restNormals);d.mesh.geometry.attributes.normal.needsUpdate=true;}for(const finger of d.fingers)finger.node.position.set(...transform(finger.rest.x,finger.rest.y,finger.rest.z));}
-export function animateCharacter(root,{time,moving=false,mood=null,alive:_alive=true}){const d=root.userData;if(!d?.body)return;const reduced=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+export function animateCharacter(root,{time,moving=false,mood=null,alive:_alive=true}){const d=root.userData;if(!d?.body)return;const reduced=!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ if(d.sampleRig||d.collectionRig){
+  if(d.toyBase)d.toyBase.visible=!d.vehicleId;
+  poseCeramicCharacter(root,{time,moving,mood,reduced});return;
+ }
  const motion=reduced?0:1,happy=mood==='happy',beat=Math.sin(time*12),breath=Math.sin(time*2.2),bend=happy?(d.torsoPivot?.10+.44*((1+Math.sin(time*1.65))*.5)**2:.11+Math.sin(time*3.8)*.12)*motion:0;
  if(d.torsoMesh){d.torsoMesh.visible=!happy;d.laughTorsoMesh.visible=happy;}
  d.body.rotation.z=motion*Math.sin(time*(moving?11:happy?6:1.8))*(moving?.025:happy?.035:.006);d.body.rotation.x=happy?bend*(d.torsoPivot?.08:1):mood==='sad'?.12:0;if(d.torsoPivot)d.torsoPivot.rotation.x=happy?bend*.92:0;const toy=d.toy?1.14:1;d.body.scale.set(toy,(d.toy?.88:1)*(1+(happy?beat*.025:breath*.006)*motion),toy*(1+(happy?beat*.012:0)*motion));
