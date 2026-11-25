@@ -1,15 +1,15 @@
 {
-  "buildId": "0836265bcaae",
-  "sourceJsFiles": 123,
-  "originalJsBytes": 2838003,
-  "scriptBytes": 1135949,
-  "scriptGzipBytes": 334201,
+  "buildId": "92ac81b42a23",
+  "sourceJsFiles": 126,
+  "originalJsBytes": 4680909,
+  "scriptBytes": 2975022,
+  "scriptGzipBytes": 1321373,
   "fontBytes": 111316,
   "assets": [
     {
-      "file": "assets/game.17f8e33414e6.js",
-      "bytes": 1135949,
-      "gzipBytes": 334201
+      "file": "assets/game.2d5fad4a0500.js",
+      "bytes": 2975022,
+      "gzipBytes": 1321373
     },
     {
       "file": "assets/font.7fad7e04af71.woff2",
@@ -27,9 +27,9 @@
       "gzipBytes": 486
     },
     {
-      "file": "assets/style.11fca6cc43cb.css",
-      "bytes": 140804,
-      "gzipBytes": 27697
+      "file": "assets/style.26346b91838c.css",
+      "bytes": 140993,
+      "gzipBytes": 27741
     },
     {
       "file": "assets/online.16e487a28d14.js",
@@ -42,9 +42,9 @@
       "gzipBytes": 952
     },
     {
-      "file": "assets/cloud.3688eb2bb243.js",
-      "bytes": 354375,
-      "gzipBytes": 90010
+      "file": "assets/cloud.074d2b036a9d.js",
+      "bytes": 86825,
+      "gzipBytes": 28243
     },
     {
       "file": "assets/cloud-style.b86904518a52.css",
@@ -64,14 +64,14 @@
   ],
   "offlineFiles": [
     "./index.html",
-    "./assets/game.17f8e33414e6.js",
+    "./assets/game.2d5fad4a0500.js",
     "./assets/font.7fad7e04af71.woff2",
     "./assets/laugh.92a25df4321c.mp3",
     "./assets/icon.9fa8699356e6.svg",
-    "./assets/style.11fca6cc43cb.css",
+    "./assets/style.26346b91838c.css",
     "./assets/online.16e487a28d14.js",
     "./assets/online-style.db4ae95a8a11.css",
-    "./assets/cloud.3688eb2bb243.js",
+    "./assets/cloud.074d2b036a9d.js",
     "./assets/cloud-style.b86904518a52.css",
     "./assets/map-editor.3a9928ad6cdb.js",
     "./assets/map-editor-style.49530b4a9663.css",
