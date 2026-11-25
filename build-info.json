@@ -1,20 +1,20 @@
 {
-  "buildId": "4f228b31ac0e",
-  "sourceJsFiles": 131,
-  "originalJsBytes": 7041515,
-  "scriptBytes": 5316352,
-  "scriptGzipBytes": 2109525,
-  "fontBytes": 111516,
+  "buildId": "3a4191d2aa91",
+  "sourceJsFiles": 133,
+  "originalJsBytes": 7052973,
+  "scriptBytes": 5323854,
+  "scriptGzipBytes": 2111921,
+  "fontBytes": 112504,
   "assets": [
     {
-      "file": "assets/game.08fdb75d8152.js",
-      "bytes": 5316352,
-      "gzipBytes": 2109525
+      "file": "assets/game.bcf16b76ceb8.js",
+      "bytes": 5323854,
+      "gzipBytes": 2111921
     },
     {
-      "file": "assets/font.f5b0a5c97880.woff2",
-      "bytes": 111516,
-      "gzipBytes": 111569
+      "file": "assets/font.493983aec577.woff2",
+      "bytes": 112504,
+      "gzipBytes": 112557
     },
     {
       "file": "assets/laugh.92a25df4321c.mp3",
@@ -27,9 +27,9 @@
       "gzipBytes": 486
     },
     {
-      "file": "assets/style.c4bdfcfb2519.css",
-      "bytes": 140993,
-      "gzipBytes": 27742
+      "file": "assets/style.31c24696b65a.css",
+      "bytes": 143181,
+      "gzipBytes": 28261
     },
     {
       "file": "assets/online.16e487a28d14.js",
@@ -64,11 +64,11 @@
   ],
   "offlineFiles": [
     "./index.html",
-    "./assets/game.08fdb75d8152.js",
-    "./assets/font.f5b0a5c97880.woff2",
+    "./assets/game.bcf16b76ceb8.js",
+    "./assets/font.493983aec577.woff2",
     "./assets/laugh.92a25df4321c.mp3",
     "./assets/icon.9fa8699356e6.svg",
-    "./assets/style.c4bdfcfb2519.css",
+    "./assets/style.31c24696b65a.css",
     "./assets/online.16e487a28d14.js",
     "./assets/online-style.db4ae95a8a11.css",
     "./assets/cloud.074d2b036a9d.js",
