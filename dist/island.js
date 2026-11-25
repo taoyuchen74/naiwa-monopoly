@@ -379,6 +379,8 @@ export function buildIsland(scene) {
     : (x) => Math.sin(x * 0.21) * 0.8;
   const sea = mesh(world, new THREE.PlaneGeometry(240, 240), waterMaterial(), [0, -0.69, 0]);
   sea.rotation.x = -Math.PI / 2;
+  // Draw expensive water after opaque terrain so depth rejects covered fragments.
+  sea.renderOrder = 10;
   sea.castShadow = false;
   sea.receiveShadow = false;
   const ground = ceramicProp(coastal ? 'islandGround' : 'townGround', world);

@@ -33,7 +33,7 @@ export class IslandScene{
  constructor(container,onTile,tiles=CITY_TILES,video=null){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.tiles=tiles;this.el=container;this.onTile=onTile;this.follow=false;this.zoom=1;this.offset=new THREE.Vector3();this.quality='';this.frameBudget=new FrameBudget();this.frameClock=new RenderClock();this.frameResolution=new FrameResolution();this.video=null;this.touchVideo=matchMedia('(pointer:coarse)').matches;this._paused=false;this.events=new AbortController();this.last=0;this.time=0;this.game=null;this.showcase=null;this.motionQuery=matchMedia('(prefers-reduced-motion:reduce)');this.reduced=this.motionQuery.matches;
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#b7d3dc');this.scene.fog=new THREE.Fog('#b7d3dc',70,130);
   this.camera=new THREE.OrthographicCamera(-19,19,13,-13,.1,180);this.camera.position.set(28,30,36);this.camera.lookAt(0,0,0);
-  this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio,1.5),2.5));this.renderer.shadowMap.enabled=true;this.renderer.localClippingEnabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.94;container.append(this.renderer.domElement);
+  this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio,1.5),2.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.autoUpdate=false;this.renderer.shadowMap.needsUpdate=true;this.shadowDeadline=0;this.shadowWasAnimated=false;this.renderer.localClippingEnabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.94;container.append(this.renderer.domElement);
   this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.contextLost)return;this.cancelGestures();this.contextLost=true;this.pausedBeforeContextLoss=this.paused;this.paused=true;this.fx?.clear();container.dispatchEvent(new CustomEvent('renderlost'));},{signal:this.events.signal});
   this.renderer.domElement.addEventListener('webglcontextrestored',()=>this.restoreRendering(),{signal:this.events.signal});
   this.hemi=new THREE.HemisphereLight('#fff3dc','#6f8e9e',.95);this.scene.add(this.hemi);const sun=new THREE.DirectionalLight('#fff2dc',3.2);sun.position.set(-10,30,18);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-26,right:26,top:26,bottom:-26,near:.5,far:70});sun.shadow.normalBias=.025;sun.shadow.bias=-.0001;this.scene.add(sun);this.sun=sun;
@@ -44,12 +44,12 @@ export class IslandScene{
   this.selection=new THREE.Group();const plate=mesh(this.selection,new THREE.PlaneGeometry(2.05,1.72),new THREE.MeshBasicMaterial({color:'#ffe189',transparent:true,opacity:.17,depthWrite:false,depthTest:false}),[0,.02,0]);plate.rotation.x=-Math.PI/2;plate.castShadow=false;this.selectionPlate=plate;const corners=[];for(const x of [-1.03,1.03])for(const z of [-.87,.87]){corners.push(x,.035,z,x-Math.sign(x)*.35,.035,z,x,.035,z,x,.035,z-Math.sign(z)*.35);}this.selection.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(corners,3)),new THREE.LineBasicMaterial({color:'#ffca4f',depthTest:false})));this.selectionLabel=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false,depthWrite:false}));this.selectionLabel.renderOrder=6;this.selectionLabel.scale.set(3.1,.65,1);this.selectionLabel.position.y=.65;this.selection.add(this.selectionLabel);this.selection.visible=false;this.selection.renderOrder=4;this.world.add(this.selection);this.animate=this.animate.bind(this);this.controls();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);if(video)this.setVideo(video);else this.setQuality('auto');this.resize();this.invalidate();
  }
  restoreRendering(){if(!this.contextLost)return;const game=this.game,quality=game?.s.options.quality||this.quality||'auto';
-  try{this.highQuality?.dispose();this.highQuality=new HighQuality(this.renderer,this.scene,this.camera);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;this.sun.shadow.mapPass?.dispose();this.sun.shadow.mapPass=null;this.sun.shadow.needsUpdate=true;
+  try{this.highQuality?.dispose();this.highQuality=new HighQuality(this.renderer,this.scene,this.camera);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;this.sun.shadow.mapPass?.dispose();this.sun.shadow.mapPass=null;this.sun.shadow.needsUpdate=true;this.renderer.shadowMap.needsUpdate=true;
    this.contextLost=false;this.paused=!!this.pausedBeforeContextLoss;this.quality='';this.profileKey='';this.lightingKey='';this.setQuality(quality);this.applyLighting(game?.s.options.lighting||this.worldLighting);this.game=null;if(game)this.sync(game);this.resize();this.el.dispatchEvent(new CustomEvent('renderrestored'));
   }catch(error){this.contextLost=true;this.paused=true;this.el.dispatchEvent(new CustomEvent('renderrecoveryfailed',{detail:{message:error.message}}));}
  }
  setMap(tiles){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.leaveStudio();this.fx.clear();this.world.remove(this.selection,this.turnMarker);disposeUnique(this.world);this.world.clear();this.tiles=tiles;this.game=null;this.rollState=null;this.lastMoney=null;this.tileMeshes=[];this.plotMeshes.clear();this.blockMeshes.clear();this.pawns=[];this.pickupMeshes.clear();this.smokestacks=[];this.buildingBadges=[];this.floats=[];this.lights=[];this.pointLights=[];this.lightingKey='';this.build();this.world.add(this.selection,this.turnMarker);this.clearSelection();this.home();}
- build(){buildIsland(this);}
+ build(){buildIsland(this);this.renderer.shadowMap.needsUpdate=true;}
  tag(root,id){root.userData.tile=id;root.traverse(o=>{if(o.isMesh)o.userData.tile=id;});}
  lamp(x,z){const g=new THREE.Group();cylinder(g,'#4e6366',[0,.95,0],.028,.05,1.5);box(g,'#597375',[0,1.72,0],[.23,.09,.23]);const lantern=box(g,'#ffe8a8',[0,1.59,0],[.15,.23,.15]);g.position.set(x,.2,z);this.world.add(g);this.lights.push(lantern);const light=new THREE.PointLight('#ffc779',0,4.5,2);light.position.set(0,1.5,0);g.add(light);this.pointLights.push(light);}
  sync(game){if(this.contextLost){this.game=game;return;}if(this.tiles!==game.tiles)this.setMap(game.tiles);const fresh=this.game!==game;this.game=game;const s=game.s;if(this.selectionMode==='nav'&&this.navTurn!==`${s.round}:${s.current}`)this.clearSelection();
@@ -72,11 +72,11 @@ export class IslandScene{
   for(const [id]of Object.entries(s.blocks))if(!this.blockMeshes.has(id)){const t=this.tiles[id],g=new THREE.Group();for(const x of [-.4,.4])box(g,'#f4dcac',[x,.45,0],[.07,.55,.07]);box(g,'#c76f51',[0,.6,0],[1.15,.19,.13]);for(const x of [-.4,0,.4]){const bar=box(g,'#f1dfb1',[x,.61,.07],[.15,.2,.02]);bar.rotation.z=-.35;}g.position.set(t.x,.2,t.z);this.world.add(g);this.blockMeshes.set(id,g);this.fx.spawn('build',g.position,'#d7b871');}
   for(const [id,g]of this.blockMeshes)if(s.blocks[id]===undefined){this.world.remove(g);this.blockMeshes.delete(id);this.fx.spawn('demolish',g.position,'#c77956');disposeUnique(g);}
   for(const id of mapPoints(s)){let token=this.pickupMeshes.get(id);if(!token){token=new THREE.Group();cylinder(token,'#f7cc54',[0,.58,0],.24,.24,.08,32).rotation.x=Math.PI/2;const _badge=sign(token,'10',[0,.58,.05],.38,.23,{background:'#f7cc54',color:'#80551f',width:96,height:64});token.position.set(this.tiles[id].x,.24,this.tiles[id].z);this.world.add(token);this.pickupMeshes.set(id,token);}token.visible=s.pickups?.[id]===undefined;}
-  syncForestWeather(this,s);this.setQuality(s.options.quality);this.applyLighting(s.options.lighting);
+  syncForestWeather(this,s);this.renderer.shadowMap.needsUpdate=true;this.setQuality(s.options.quality);this.applyLighting(s.options.lighting);
   if(!fresh&&diceRollStarted(this.rollState,s))this.fx.rollDice(s.dice,this.pawns[s.current].position,game.char().estateColor);this.rollState={phase:s.phase,current:s.current,round:s.round};
   this.lastMoney=s.players.map(p=>p.money);this.invalidate();
  }
- applyLighting(requested){this.worldLighting=lightingMode(requested);const key=this.studio?'studio':this.worldLighting;if(this.lightingKey===key)return;this.lightingKey=key;const p=LIGHTING[this.studio?'day':key];this.hemi.color.set(p.hemi);this.hemi.groundColor.set(p.ground);this.hemi.intensity=p.ambient;this.sun.color.set(p.sun);this.sun.intensity=p.power;this.sun.position.set(...p.position);this.fill.color.set(p.fill);this.fill.intensity=p.fillPower;this.scene.environmentIntensity=p.environment;this.renderer.toneMappingExposure=p.exposure;this.highQuality.bloom.strength=p.bloom;this.highQuality.bloom.threshold=p.threshold;this.scene.background.set(this.studio?'#dedccc':p.sky);this.scene.fog.color.copy(this.scene.background);for(const light of this.pointLights)light.intensity=this.studio?0:p.lamps;for(const lantern of this.lights)lantern.material.emissiveIntensity=.55+p.lamps*.25;setSurfaceLighting(this.studio?'day':key);}
+ applyLighting(requested){this.worldLighting=lightingMode(requested);const key=this.studio?'studio':this.worldLighting;if(this.lightingKey===key)return;this.lightingKey=key;this.renderer.shadowMap.needsUpdate=true;const p=LIGHTING[this.studio?'day':key];this.hemi.color.set(p.hemi);this.hemi.groundColor.set(p.ground);this.hemi.intensity=p.ambient;this.sun.color.set(p.sun);this.sun.intensity=p.power;this.sun.position.set(...p.position);this.fill.color.set(p.fill);this.fill.intensity=p.fillPower;this.scene.environmentIntensity=p.environment;this.renderer.toneMappingExposure=p.exposure;this.highQuality.bloom.strength=p.bloom;this.highQuality.bloom.threshold=p.threshold;this.scene.background.set(this.studio?'#dedccc':p.sky);this.scene.fog.color.copy(this.scene.background);for(const light of this.pointLights)light.intensity=this.studio?0:p.lamps;for(const lantern of this.lights)lantern.material.emissiveIntensity=.55+p.lamps*.25;setSurfaceLighting(this.studio?'day':key);}
  showTransfer(receipt,done){if(this.contextLost)return false;const from=this.pawns[receipt.from],to=this.pawns[receipt.to];return from&&to?this.fx.transfer(from.position,to.position,receipt.amount,done):false;}
  setVideo(video){
   if(this.video===video)return;
@@ -115,7 +115,7 @@ export class IslandScene{
    this.sun.shadow.map?.dispose();this.sun.shadow.map=null;
    this.sun.shadow.mapPass?.dispose();this.sun.shadow.mapPass=null;
    this.sun.shadow.mapSize.set(profile.shadow||512,profile.shadow||512);
-   this.sun.shadow.needsUpdate=true;
+   this.sun.shadow.needsUpdate=true;this.renderer.shadowMap.needsUpdate=true;
   }
   this.highQuality.configure(profile);
   this.highQuality.resize(this.el.clientWidth,this.el.clientHeight,profile.ratio);
@@ -164,13 +164,28 @@ export class IslandScene{
  }
  clearSelection(){this.selectedTile=null;this.selection.visible=false;delete this.el.dataset.selectedTile;this.invalidate();}
  focusTile(id){if(!this.tiles[id]||this.studio)return;this.follow=false;this.focusTarget=this.tiles[id].kind==='property'?lotPosition(this.tiles[id]):new THREE.Vector3(this.tiles[id].x,0,this.tiles[id].z);this.focusTarget.y=0;this.focusZoom=this.aspect<.8?2.6:2.1;this.selectTile(id,'nav');this.cameraChanged();}
- skipPresentation(){this.fx.clear();if(this.game&&!this.studio){const s=this.game.s;for(const p of s.players){const pawn=this.pawns[p.id],t=this.tiles[p.pos];if(!pawn)continue;pawn.position.set(t.x+(p.id-(s.players.length-1)/2)*.4,.24,t.z-.15+(p.id%2)*.22);pawn.scale.setScalar(p.alive?.56:.001);pawn.visible=p.alive;}if(this.focusTarget){this.offset.copy(this.focusTarget);this.zoom=this.focusZoom;this.focusTarget=null;}if(this.follow){const p=this.pawns[s.current];this.offset.set(p.position.x,0,p.position.z);this.zoom=this.followZoom;}this.updateCamera();}this.invalidate();}
+ skipPresentation(){this.fx.clear();if(this.renderer)this.renderer.shadowMap.needsUpdate=true;if(this.game&&!this.studio){const s=this.game.s;for(const p of s.players){const pawn=this.pawns[p.id],t=this.tiles[p.pos];if(!pawn)continue;pawn.position.set(t.x+(p.id-(s.players.length-1)/2)*.4,.24,t.z-.15+(p.id%2)*.22);pawn.scale.setScalar(p.alive?.56:.001);pawn.visible=p.alive;}if(this.focusTarget){this.offset.copy(this.focusTarget);this.zoom=this.focusZoom;this.focusTarget=null;}if(this.follow){const p=this.pawns[s.current];this.offset.set(p.position.x,0,p.position.z);this.zoom=this.followZoom;}this.updateCamera();}this.invalidate();}
  isMoving(){if(this.contextLost||!this.game||this.studio)return false;return this.game.s.players.some(p=>{const t=this.tiles[p.pos],pawn=this.pawns[p.id];return pawn&&Math.hypot(pawn.position.x-(t.x+(p.id-(this.game.s.players.length-1)/2)*.4),pawn.position.z-(t.z-.15+(p.id%2)*.22))>.075;});}
+ refreshShadows(now) {
+  const shadowMap = this.renderer.shadowMap;
+  if (!shadowMap?.enabled) return;
+  // The sun projects in world space, so moving the camera does not invalidate its map.
+  const changingPawns = this.game?.s.players.some((player) => {
+   const pawn = this.pawns[player.id];
+   return pawn && Math.abs(pawn.scale.x - (player.alive ? .56 : .001)) > .015;
+  });
+  const animated = !!(this.studio || this.fx.items.length || this.isMoving()
+    || this.actionMood?.until > now || changingPawns);
+  if (this.studio || (this.shadowWasAnimated && !animated)
+    || (animated && now >= this.shadowDeadline)) shadowMap.needsUpdate = true;
+  this.shadowWasAnimated = animated;
+  if (shadowMap.needsUpdate) this.shadowDeadline = now + (this.profile.shadows === 'fine' ? 0 : 1000 / 30 - 1);
+ }
  drawFrame(){
   if(this.disposed||this.contextLost)return;
   try{
    const started=performance.now();
-   this.updateLabelVisibility();this.fx.anchorDice(this.camera,this.aspect<.8);
+   this.refreshShadows(started);this.updateLabelVisibility();this.fx.anchorDice(this.camera,this.aspect<.8);
    this.renderer.info.autoReset=false;this.renderer.info.reset();
    if(this.profile.post==='off'||this.profile.name==='low')this.renderer.render(this.scene,this.camera);
    else this.highQuality.render();

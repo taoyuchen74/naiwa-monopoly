@@ -560,7 +560,7 @@ button.player:focus-visible{outline-color:#85391f}
 #app .video-row select, #app .video-row .choice-trigger { min-width: 118px; min-height: 36px; color: #244b3c; background: #fffdf4; border: 1px solid #92ac9b; padding: 3px 6px; border-radius: 6px; }
 #app .video-row input { width: 20px; height: 20px; accent-color: #346b5a; }
 #app .settings-section :focus-visible { outline: 3px solid #397c67; outline-offset: 2px; }
-#app .video-fps { position: absolute; z-index: 7; right: 12px; top: 12px; padding: 4px 8px; color: #fff9e8; background: #263e3a; border-radius: 6px; font: 12px system-ui; font-variant-numeric: tabular-nums; pointer-events: none; }
+#app .video-fps { position: absolute; z-index: 7; right: calc(12px + var(--safe-r, 0px)); top: calc(76px + var(--safe-t, 0px)); padding: 4px 8px; color: #fff9e8; background: #263e3a; border-radius: 6px; font: 12px system-ui; font-variant-numeric: tabular-nums; pointer-events: none; }
 #app #castBtn { font-size: 12px; white-space: nowrap; }
 #app .toolbar-glyph { display: block; width: min(21px, 70%); height: auto; justify-self: center; pointer-events: none; fill: currentColor; }
 #app .speaker-wave, #app .speaker-mute { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }

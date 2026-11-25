@@ -1,9 +1,9 @@
 // All distances are world units; the coastline matches island.js's irregular shore.
-export const waterVertex=`
+export const waterVertex = `
 varying vec3 world;
 void main(){vec4 w=modelMatrix*vec4(position,1.);world=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}
 `;
-export const waterFragment=`
+export const waterFragment = `
 precision highp float;
 varying vec3 world;
 uniform float time,river,lightPower;
@@ -15,8 +15,9 @@ vec2 slope(vec2 p){
  float pixelWidth=length(fwidth(p));
  vec2 direction=normalize(vec2(.8,.6));
  for(int i=0;i<7;i++){
-  float k=float(i),phase=dot(p,direction)*frequency+time*(.45+k*.18)*(mod(k,2.)*2.-1.);
   float footprint=pixelWidth*frequency;
+  if(footprint>=1.8)break;
+  float k=float(i),phase=dot(p,direction)*frequency+time*(.45+k*.18)*(mod(k,2.)*2.-1.);
   gradient+=direction*cos(phase+sin(phase*.37+k)*.6)*amplitude*(1.-smoothstep(.45,1.8,footprint));
   direction=mat2(.4536,-.8912,.8912,.4536)*direction;frequency*=1.91;amplitude*=.76;
  }
@@ -40,19 +41,21 @@ void main(){
  // Narrow broken highlights use the same light direction and colour as the town.
  float highlight=pow(max(dot(n,h),0.),180.);
  color+=sunColor*highlight*lightPower*.2;
- float fine=noise(p*4.2+gradient*5.+vec2(t*.07,-t*.09));
- float caustic=pow(clamp(1.-abs(fine*2.-1.),0.,1.),14.);
- color+=shallowColor*caustic*depth*.11;
- // Two staggered wave fronts dissolve into scattered foam instead of a solid ring.
- float breakup=noise(p*2.7+vec2(t*.13,-t*.1));
- float surge=.2+.12*sin(t*.65+angle*3.);
- float frontA=(distanceToShore-surge)/.12;
- float frontB=(distanceToShore-.65-.13*sin(t*.52+angle*4.))/.085;
- float foamA=exp(-frontA*frontA);
- float foamB=exp(-frontB*frontB);
- float foam=(foamA*.6+foamB*.27)*smoothstep(.3,.7,breakup)*(1.-river);
- vec3 foamColor=mix(skyColor,vec3(.85,.91,.86),.5);
- color=mix(color,foamColor,foam);
+ if(depth>.025){
+  float fine=noise(p*4.2+gradient*5.+vec2(t*.07,-t*.09));
+  float caustic=pow(clamp(1.-abs(fine*2.-1.),0.,1.),14.);
+  color+=shallowColor*caustic*depth*.11*smoothstep(.025,.06,depth);
+ }
+ // Foam is local to the coast; open sea and rivers skip both wave-front calculations.
+ if(river<.5&&distanceToShore>-.35&&distanceToShore<1.17){
+  float breakup=noise(p*2.7+vec2(t*.13,-t*.1));
+  float surge=.2+.12*sin(t*.65+angle*3.);
+  float frontA=(distanceToShore-surge)/.12;
+  float frontB=(distanceToShore-.65-.13*sin(t*.52+angle*4.))/.085;
+  float foam=(exp(-frontA*frontA)*.6+exp(-frontB*frontB)*.27)*smoothstep(.3,.7,breakup);
+  vec3 foamColor=mix(skyColor,vec3(.85,.91,.86),.5);
+  color=mix(color,foamColor,foam);
+ }
  gl_FragColor=vec4(clamp(color,vec3(0.),vec3(5.)),1.);
  #include <tonemapping_fragment>
  #include <colorspace_fragment>

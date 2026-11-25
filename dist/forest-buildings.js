@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import { roundedBox, box, cylinder, ball, sign } from './render-kit.js';
+import { roundedBox, box, cylinder, ball, sign, batchStatic } from './render-kit.js';
 const colors = {
   bank: '#719c83',
   stock: '#67989a',
@@ -55,7 +55,7 @@ export function forestProperty(t, level, color) {
       ball(g, '#82aa7e', [x, 1, 0], [0.45, 0.55, 0.45]);
     }
     roundedBox(g, '#7fb3ac', [0, 0.19, 0.4], [1.25, 0.15, 0.65], 0.07);
-    return g;
+    return batchStatic(g);
   }
   const floors = ['chain', 'gas'].includes(type) ? 1 : level,
     h = 0.55 + floors * 0.43;
@@ -81,5 +81,5 @@ export function forestProperty(t, level, color) {
   if (type === 'chain')
     for (const x of [-0.6, -0.2, 0.2, 0.6])
       box(g, x < 0 ? color : '#fff0ce', [x, 1, 0.85], [0.4, 0.2, 0.5]);
-  return g;
+  return batchStatic(g);
 }
