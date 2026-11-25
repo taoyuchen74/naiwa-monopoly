@@ -12,10 +12,10 @@ export class NewsFeed{
  get busy(){return !this.root.hidden||this.queue.length>0;}
  cancel(){clearTimeout(this.timer);this.timer=null;this.epoch++;}
  setSpeed(value){const speed=animationSpeed(value);if(speed===this.speed)return;const now=this.clock(),remaining=this.paused?this.remaining:Math.max(0,(this.deadline??now)-now);this.remaining=Math.max(remaining*this.speed/speed,this.paused?this.minimumRemaining||0:(this.minimumUntil||0)-now);this.speed=speed;if(!this.paused&&!this.root.hidden)this.schedule();}
- sync(game,started){
-  if(!started){this.reset();return;}const event=game.s.phase==='event'&&!game.player?.human&&game.s.notice;
-  if(this.game!==game){this.reset();this.game=game;this.turn=`${game.s.round}:${game.s.current}`;this.head=game.s.logs[0];this.push(`第 ${game.s.round} 轮 · ${game.char().name}的回合`);if(event)this.pushEvent(game);return;}
-  const turn=`${game.s.round}:${game.s.current}`;if(turn!==this.turn){this.turn=turn;this.push(`第 ${game.s.round} 轮 · ${game.char().name}的回合`);}
+ sync(game,started,{quietHumanTurn=false}={}){
+  if(!started){this.reset();return;}const showTurn=!quietHumanTurn||!game.player?.human;const event=game.s.phase==='event'&&!game.player?.human&&game.s.notice;
+  if(this.game!==game){this.reset();this.game=game;this.turn=`${game.s.round}:${game.s.current}`;this.head=game.s.logs[0];if(showTurn)this.push(`第 ${game.s.round} 轮 · ${game.char().name}的回合`);if(event)this.pushEvent(game);return;}
+  const turn=`${game.s.round}:${game.s.current}`;if(turn!==this.turn){this.turn=turn;if(showTurn)this.push(`第 ${game.s.round} 轮 · ${game.char().name}的回合`);}
   if(event&&game.s.notice!==this.lastNotice){this.pushEvent(game);this.head=game.s.logs[0];return;}
   const index=game.s.logs.indexOf(this.head);if(index!==0){const fresh=(index<0?game.s.logs.slice(0,1):game.s.logs.slice(0,index)).reverse();this.head=game.s.logs[0];for(const log of fresh){const raw=publicLog(game.s,log.text),critical=criticalNews(log.text),text=critical?raw.replace(/[「」]/g,'').replace(/[。！]$/,''):shortNews(raw);if(text)this.push(critical?{text,critical:true}:text);}}
  }
