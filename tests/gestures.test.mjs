@@ -18,7 +18,7 @@ test('three fingers never create a one-finger camera jump or a land selection',(
 test('layout changes, hiding and blur release captured fingers and invalidate their old coordinates',()=>{
  const oldWindow=globalThis.window,oldDocument=globalThis.document,oldCancel=globalThis.cancelAnimationFrame,events={},documentEvents={},captured=new Set(),released=[];
  const c={style:{},addEventListener(){},hasPointerCapture:id=>captured.has(id),releasePointerCapture(id){captured.delete(id);released.push(id);}};
- const scene={events:new AbortController(),renderer:{domElement:c},cancelGestures(){IslandScene.prototype.cancelGestures.call(this);}};
+ const scene={events:new AbortController(),renderer:{domElement:c},paintFrameRate:IslandScene.prototype.paintFrameRate,cancelGestures(){IslandScene.prototype.cancelGestures.call(this);}};
  try{
   globalThis.cancelAnimationFrame=()=>{};globalThis.window={addEventListener:(type,fn)=>events[type]=fn};globalThis.document={hidden:false,addEventListener:(type,fn)=>documentEvents[type]=fn};IslandScene.prototype.controls.call(scene);
   const calls=[];scene.gestures.pan=()=>calls.push('pan');scene.gestures.tap=()=>calls.push('tap');scene.gestures.zoom=()=>calls.push('zoom');

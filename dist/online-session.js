@@ -1,6 +1,8 @@
 import { OnlineClient } from './online-client.js';
 import { OnlineView } from './online-view.js';
 import { IslandScene } from './scene.js';
+import { readVideo, writeVideo, VIDEO_LABELS } from './video-settings.js';
+import { syncVideoPanel, videoChange, videoPanel, videoPreset } from './video-panel.js';
 import { MiniMap, MapOverview } from './minimap.js';
 import { ModalFocus } from './modal-focus.js';
 import { GameOrientation } from './orientation.js';
@@ -81,6 +83,8 @@ export async function startOnlineSession() {
     quality: 'auto',
     lighting: 'day',
   });
+  const touchVideo = matchMedia('(pointer:coarse)').matches;
+  let video = readVideo(localStorage, options.quality);
   const view = new OnlineView(options),
     audio = new GameAudio(options);
   let scene = null,
@@ -104,7 +108,27 @@ export async function startOnlineSession() {
   const saveOptions = () => {
     writePreferences(localStorage, options);
     audio.setOptions(options);
+    syncSoundButton();
   };
+  function syncSoundButton() {
+    const label = options.sound ? '关闭声音' : '开启声音';
+    $('soundBtn').dataset.muted = String(!options.sound);
+    $('soundBtn').setAttribute('aria-label', label);
+    $('soundBtn').title = label;
+  }
+  function syncVideoShortcut() {
+    $('qualityBtn').textContent = video.preset === 'smooth' ? '省电' : VIDEO_LABELS[video.preset];
+    $('qualityBtn').title = video.preset === 'smooth' ? '切换到自动画质' : '切换到流畅画质';
+  }
+  function updateVideo(next) {
+    video = next;
+    if (!writeVideo(localStorage, video)) notify('本次已应用，浏览器未能保存视频设置。');
+    scene?.setVideo(video);
+    syncVideoShortcut();
+    syncVideoPanel($('sheetBody'), video, touchVideo);
+  }
+  syncSoundButton();
+  syncVideoShortcut();
   app.dataset.session = 'online';
   app.classList.add('is-menu');
   $('startScreen').hidden = true;
@@ -124,6 +148,7 @@ export async function startOnlineSession() {
     'sheetHelpBtn',
   ])
     $(id).hidden = true;
+  $('shareBtn').hidden = false;
   $('shareBtn').textContent = '房';
   $('shareBtn').setAttribute('aria-label', '在线房间');
   $('shareBtn').title = '房间与重连';
@@ -368,8 +393,7 @@ export async function startOnlineSession() {
         '<p>在线房间按服务器设置结算。打开帮助不会暂停计时；模式配置与本机存档独立。</p>' +
         helpPanel('onlineRules');
     } else if (panel === 'settings') {
-      html =
-        '<label for="onlineQuality">画面质量</label><select id="onlineQuality"><option value="auto">自适应完整画质</option><option value="low">省电画质</option></select><p>画质与速度只影响本机演出，联机计时继续。</p><button id="onlineRoomButton">房间与重连</button>';
+      html = `<details class="settings-section"><summary>视频设置</summary>${videoPanel(video, touchVideo)}</details><p>画质与速度只影响本机演出，联机计时继续。</p><button id="onlineRoomButton">房间与重连</button>`;
     } else if (panel === 'tile') {
       const t = view.tiles[selectedTile],
         o = g.ownership[t.id];
@@ -489,6 +513,7 @@ export async function startOnlineSession() {
       const el = $(id);
       if (
         el &&
+        !el.dataset.video &&
         !['onlineCharacter', 'onlineMapSelect', 'onlineRounds', 'onlineDifficulty'].includes(id)
       ) {
         el.value = f.value;
@@ -497,7 +522,6 @@ export async function startOnlineSession() {
       }
     }
     if (panel === 'help') updateHelp($('sheetBody'));
-    if (panel === 'settings') $('onlineQuality').value = options.quality;
     if (panel === 'overview') {
       new MapOverview($('sheetBody').firstElementChild, view, {
         selected: selectedTile,
@@ -671,9 +695,14 @@ export async function startOnlineSession() {
       : '';
   }
   try {
-    scene = new IslandScene($('scene'), (id) => {
-      if (view.s && !mandatory()) open('tile', id);
-    });
+    scene = new IslandScene(
+      $('scene'),
+      (id) => {
+        if (view.s && !mandatory()) open('tile', id);
+      },
+      undefined,
+      video,
+    );
     scene.setQuality(options.quality);
     scene.paused = true;
   } catch {
@@ -732,9 +761,7 @@ export async function startOnlineSession() {
   $('homeBtn').addEventListener('click', () => scene?.home());
   $('followBtn').addEventListener('click', () => scene?.followPlayer());
   $('qualityBtn').addEventListener('click', () => {
-    options.quality = options.quality === 'low' ? 'auto' : 'low';
-    saveOptions();
-    if (view.s) render();
+    updateVideo(videoPreset(video, video.preset === 'smooth' ? 'auto' : 'smooth'));
   });
   $('speedBtn').addEventListener('click', () => {
     options.speed = (options.speed % 3) + 1;
@@ -750,15 +777,15 @@ export async function startOnlineSession() {
   document.addEventListener('pointerdown', () => audio.unlock(), { once: true, capture: true });
   document.addEventListener('keydown', () => audio.unlock(), { once: true, capture: true });
   $('sheetBody').addEventListener('change', (e) => {
-    if (e.target.id === 'onlineQuality') {
-      options.quality = e.target.value;
-      saveOptions();
-      if (view.s) render();
-    }
+    if (e.target.dataset.video) updateVideo(videoChange(video, e.target.dataset.video, e.target));
   });
   $('sheetBody').addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
+    if (b.dataset.act === 'videoPreset') {
+      updateVideo(videoPreset(video, b.dataset.preset));
+      return;
+    }
     if (b.dataset.open) {
       open(b.dataset.open);
       return;

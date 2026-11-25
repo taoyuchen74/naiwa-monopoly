@@ -540,3 +540,28 @@ button.player:focus-visible{outline-color:#85391f}
 }
 .studio-poses button { grid-column: span 2; }
 .studio-poses button:nth-last-child(-n+2) { grid-column: span 3; }
+
+#app[data-layout] .welcome-actions { background: #fff9e8; border-color: #99b2a3; }
+#app .welcome-actions > .advanced-btn { color: #346b5a; background: #fffdf4; border-color: #99b2a3; box-shadow: 0 2px 0 #37605255; }
+#app .settings-section { margin: 10px 0; padding: 0 10px; border: 1px solid #99b2a3; border-radius: 8px; }
+#app .settings-section > summary { min-height: 44px; padding: 12px 0; color: #346b5a; font-weight: 700; cursor: pointer; }
+#app .settings-section[open] { padding-bottom: 10px; }
+#app .video-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 15px; }
+#app .video-heading span { font-size: 12px; color: #396356; font-variant-numeric: tabular-nums; }
+#app .video-presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+#app .video-presets button {
+  min-height: 44px; padding: 4px; border: 1px solid #9bb7a6; border-radius: 8px;
+  background: #edf3e6; color: #244b3c; font-size: 13px; font-weight: 650;
+}
+#app .video-presets button[aria-pressed=true] { background: #346b5a; color: #fff9e8; border-color: #346b5a; }
+#app .video-panel p { color: #436557; font-size: 12px; }
+#app .video-panel summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-weight: 700; }
+#app .video-row { display: flex; justify-content: space-between; align-items: center; min-height: 44px; gap: 10px; border-top: 1px solid #b8cbbc; }
+#app .video-row select, #app .video-row .choice-trigger { min-width: 118px; min-height: 36px; color: #244b3c; background: #fffdf4; border: 1px solid #92ac9b; padding: 3px 6px; border-radius: 6px; }
+#app .video-row input { width: 20px; height: 20px; accent-color: #346b5a; }
+#app .settings-section :focus-visible { outline: 3px solid #397c67; outline-offset: 2px; }
+#app .video-fps { position: absolute; z-index: 7; right: 12px; top: 12px; padding: 4px 8px; color: #fff9e8; background: #263e3a; border-radius: 6px; font: 12px system-ui; font-variant-numeric: tabular-nums; pointer-events: none; }
+#app #castBtn { font-size: 12px; white-space: nowrap; }
+#app .toolbar-glyph { display: block; width: min(21px, 70%); height: auto; justify-self: center; pointer-events: none; fill: currentColor; }
+#app .speaker-wave, #app .speaker-mute { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#app #soundBtn[data-muted=false] .speaker-mute, #app #soundBtn[data-muted=true] .speaker-wave { display: none; }

@@ -257,7 +257,9 @@ test('four safe edges rotate correctly; focused inputs and confirmation survive 
     expect(rect.y + rect.height).toBeCloseTo(viewport.height - 22, 0);
     await reachable(page.locator('#actionBtn'));
     await page.locator('#settingsBtn').click();
-    await page.locator('[data-select-id=qualitySelect] button').click();
+    await page.getByText('视频设置', { exact: true }).click();
+    await page.locator('#videoAdvanced summary').click();
+    await page.locator('[data-select-id=video-scale] button').click();
     await page.evaluate(() => {
       document.querySelector('#sheetBody').dispatchEvent(new Event('scroll'));
       window.dispatchEvent(new Event('gamelayoutchange'));

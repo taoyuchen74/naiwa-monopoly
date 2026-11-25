@@ -47,6 +47,8 @@ import {diceWeights} from './strategy.js';
 import {createSaveRepository,Game,storeGame,restoreStoredBackup} from './engine.js?v=16';
 import {CHARACTERS,GROUPS,CARDS,SPIRITS,VEHICLES} from './content.js';
 import {IslandScene} from './scene.js';
+import {readVideo,writeVideo,VIDEO_LABELS} from './video-settings.js';
+import {syncVideoPanel,videoChange,videoPanel,videoPreset} from './video-panel.js';
 import {portrait,portraitBitmap} from './portraits.js';
 import {GameAudio,audioOptions,MUSIC_TRACKS} from './audio.js';
 import {readPreferences,writePreferences} from './preferences.js';
@@ -59,6 +61,7 @@ import {GameAnnouncements} from './announcements.js';
 import {mountPlayerDrawer} from './mobile-ui.js';
 async function startGame(){
 globalThis.__NAIWA_BOOT__?.set(25,'正在准备精细场景…');await nextPaint();await waitForStyles();
+document.getElementById('littleNaiwaAvatar').src=littleNaiwaAvatar;
 if(new URL(location.href).searchParams.get('online')==='1'){await startOnlineSession();return;}
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Math.round(n).toLocaleString('zh-CN');
@@ -76,7 +79,7 @@ mountPlayerDrawer($('app'));
 const announcements=new GameAnnouncements(()=>!$('sheet').hidden?$('dialogAnnouncements'):$('gameAnnouncements'));
 let littleNaiwaEnabled=true,assistantGame,assistantStep='',assistantTimer;
 try{littleNaiwaEnabled=localStorage.getItem(LITTLE_NAIWA_KEY)!=='off';}catch{}
-$('littleNaiwaAvatar').src=littleNaiwaAvatar;
+
 function hideAssistant(){
  clearTimeout(assistantTimer);
  $('littleNaiwaTurn').hidden=true;
@@ -101,7 +104,22 @@ function syncAssistant(){
 }
 const modal=new ModalFocus($('sheet'),{onEscape:()=>{if(!$('sheetRuleHelp').hidden){toggleSheetHelp(false);return;}if(pinned){toast('请先完成当前选择。');return;}dismiss();render();},fallback:()=>!$('actionBtn').disabled?$('actionBtn'):$('settingsBtn')});
 try{saved=Game.restore(repository.read('auto').state);Object.assign(game.s.options,readPreferences(localStorage,saved?.s.options||game.s.options));}catch{}
-try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles);}catch{renderDiagnostics.fallback('context-unavailable');$('fallback').hidden=false;}
+const touchVideo=matchMedia('(pointer:coarse)').matches;
+let video=readVideo(localStorage,game.s.options.quality);
+function updateVideo(next){
+ video=next;const savedVideo=writeVideo(localStorage,video);
+ scene?.setVideo(video);
+ syncVideoPanel($('sheetBody'),video,touchVideo);
+ selectMenus.sync();
+ syncVideoShortcut();
+ if(!savedVideo)toast('本次已应用，浏览器未能保存视频设置。');
+}
+function syncVideoShortcut(){
+ const button=$('qualityBtn'),smooth=video.preset==='smooth';
+ button.textContent=smooth?'省电':VIDEO_LABELS[video.preset];
+ button.title=smooth?'切换到自动画质':'切换到流畅画质';
+}
+try{scene=new IslandScene($('scene'),id=>{if(started&&!pinned)openPanel('tile',id);},game.tiles,video);}catch{renderDiagnostics.fallback('context-unavailable');$('fallback').hidden=false;}
 if(scene)scene.paused=true;globalThis.__NAIWA_BOOT__?.set(55,'正在准备奶伴与操作界面…');await nextPaint();
 $('scene').addEventListener('camerachange',e=>$('followBtn').setAttribute('aria-pressed',String(e.detail.follow)));
 $('scene').addEventListener('dicerollchange',e=>{$('dice').classList.toggle('rolling',e.detail.rolling);$('app').classList.toggle('is-dice-active',e.detail.active);if(e.detail.impact)soundtrack.sfx('diceLand');});
@@ -112,7 +130,7 @@ const miniMap=new MiniMap($('miniMap'),{jump:id=>{if(started&&!pinned&&!scene?.s
 const transferFeed=new TransferFeed();
 const newsFeed=new NewsFeed($('newsFlash'),{onEvent:({mood})=>{if(mood!=='idle')sound(mood);}});const actionPacer=new ActionPacer(),playback=new PlaybackSession();
 const soundtrack=new GameAudio(game.s.options);let soundSnapshot=null;
-function getRenderDiagnostic(){return renderDiagnostics.snapshot({buildId:document.documentElement.dataset.build||'source',width:Math.round(innerWidth),height:Math.round(innerHeight),mapVersion:game.s.mapVersion,phase:started?game.s.phase:'setup',requestedQuality:game.s.options.quality,effectiveQuality:scene&&!scene.contextLost?scene.profile?.name||'starting':'none'});}
+function getRenderDiagnostic(){return renderDiagnostics.snapshot({buildId:document.documentElement.dataset.build||'source',width:Math.round(innerWidth),height:Math.round(innerHeight),mapVersion:game.s.mapVersion,phase:started?game.s.phase:'setup',requestedQuality:video.preset,effectiveQuality:scene&&!scene.contextLost?scene.profile?.name||'starting':'none'});}
 function audioState(){soundtrack.setOptions(game.s.options);$('soundBtn').dataset.state=soundtrack.status();const status=$('audioStatus');if(status)status.textContent=soundtrack.status();}
 function sound(type='tap'){audioState();soundtrack.sfx(type);}
 async function unlockSound(){await soundtrack.unlock();audioState();}
@@ -167,7 +185,7 @@ if(started)replayRecord(game);selectMenus.sync();announcements.sync(game,started
  $('actionBtn').disabled=!!s.handoff||(!p.alive&&s.phase!=='finished')||!started||(!p.human&&s.phase!=='finished')||['moving','departure'].includes(s.phase);
  document.querySelectorAll('.dock-tabs [data-panel]').forEach(b=>b.disabled=!started||!p.human||!['roll','end','debt'].includes(s.phase));for(const type of ['deeds','cards','bank','stocks'])document.querySelector('.dock-tabs [data-panel='+type+']').disabled=!started||pinned||!!scene?.studio||!accountPlayer(game);$('cardCount').textContent=accountPlayer(game)?.cards.length??'—';$('planBtn').disabled=!started||!!s.handoff||!p.human||s.phase!=='roll';
  $('diceCount').hidden=!started||!!s.handoff||!p.human||p.vehicle===0||s.phase!=='roll';$('diceCount').innerHTML=Array.from({length:VEHICLES[p.vehicle].dice},(_,i)=>`<option value="${i+1}" ${p.diceCount===i+1?'selected':''}>${i+1} 颗骰子</option>`).join('');
- $('soundBtn').textContent=s.options.sound?'♫':'♪';$('soundBtn').setAttribute('aria-label',s.options.sound?'关闭声音':'开启声音');$('qualityBtn').textContent=s.options.quality==='low'?'省电':'自动';$('qualityBtn').title=s.options.quality==='low'?'省电画质 · 点击切换自适应画质':'自适应画质 · 点击切换省电画质';
+ const soundLabel=s.options.sound?'关闭声音':'开启声音';$('soundBtn').dataset.muted=String(!s.options.sound);$('soundBtn').setAttribute('aria-label',soundLabel);$('soundBtn').title=soundLabel;syncVideoShortcut();
  $('castBtn').disabled=!scene||!!scene.contextLost;$('followBtn').setAttribute('aria-pressed',String(!!scene?.follow));$('moveIndicator').hidden=!started;$('moveIndicator').textContent=`${game.char().name} · ${TILES[p.pos].name}${s.phase==='moving'?' · 剩 '+s.remaining+' 格':''}`;
  $('app').classList.toggle('has-fallback',!$('fallback').hidden);if(!$('fallback').hidden)$('fallbackTiles').innerHTML=`<div class="fallback-grid">${TILES.map(t=>`<button class="fallback-tile ${p.pos===t.id?'current':''}" data-tile="${t.id}" style="background:${GROUPS[t.group].color}50">${t.id+1}. ${esc(t.name)}<br>${s.players.filter(q=>q.alive&&q.pos===t.id).map(q=>game.char(q).name).join(' ')}${s.ownership[t.id]?'<br>⌂ '+game.char(s.players[s.ownership[t.id].player]).name:''}</button>`).join('')}</div>`;
  if($('renderDiagnosticStatus')){const d=getRenderDiagnostic();$('renderDiagnosticStatus').textContent='版本：'+d.buildId+' · '+({starting:'启动中',webgl:'正常3D',fallback:'简洁地图'})[d.renderState];$('renderDiagnosticQuality').textContent='实际画质：'+d.effectiveQuality+' · '+(d.errorSummary||'无降级原因');}
@@ -188,6 +206,7 @@ const btn=(label,act,data='',disabled=false,cls='secondary')=>`<button class="${
 function buildingArt(t,level,color){return buildingImage({...t,buildingType:t.buildingType||game.s.ownership[t.id]?.buildingType},level,color,true,game.s.mapVersion);}
 function humanManage(){return started&&game.player.human&&!game.s.handoff&&game.manageable();}
 function landingText(r){const t=TILES[r.id];return esc(t.name)+' · '+(r.rent?quotedLandingFee(game,r):r.price?'空地 '+r.price+' 奶币':r.owner===game.player.id?'自己的地产':({shop:'点券 +30 与随机卡',hospital:`费用 ${game.payment(100)}，休养一次`,tax:`费用 ${game.payment(180)}`,rest:`补贴 +${Math.round(120*(game.player.spirit==='fortune'?1.25:1))}`,event:'随机事件',spirit:'随机神灵',bank:'银行',stock:'证券所',start:'起点'}[t.kind]||'已备免租'))+(r.passesStart?` · 经过起点 +${Math.round((RULES.startIncome+(game.s.talents&&game.player.character==='naiwa'?RULES.startTalentBonus:0))*(game.player.spirit==='fortune'?1.25:1))} / ${RULES.startCoupons}点券`:'')+(r.points?' · 途中点券 +'+r.points:'')+(r.blocked?' · 路障截停':'');}
+function shareSettings(){return `<p>把这个试玩链接发给朋友，无需安装或登录游戏账号。建议横屏体验。</p><label for="shareUrl">试玩链接</label><input id="shareUrl" class="share-url" type="text" readonly value="${esc(gameShareUrl())}"><div class="row-actions">${btn('复制链接','copyLink','',false,'primary')}</div><p>当前是单机试玩：每位朋友在自己的手机上，与电脑奶伴独立对局；进度保存在各自浏览器。</p>`;}
 function openPanel(type,id){
  if(started&&game.s.handoff&&type!=='handoff')return;
  if(started&&['cards','bank','stocks','shop','deeds','cardTarget','plan'].includes(type)&&!accountPlayer(game))return;
@@ -242,7 +261,7 @@ function openPanel(type,id){
   showSheet('奶家发财纪念册','本次旅行结算',resultsPanel(game)+`<button class="secondary" data-act="copyResult">复制中文战绩</button><textarea id="resultCopy" aria-label="可复制战绩摘要" readonly>${esc(resultSummary(game))}</textarea><button class="secondary" data-act="panel" data-panel="history">回放与本地战绩</button>`,true);
  }else if(type==='settings'){
   let backup=null;try{backup=Game.restore(repository.readBackup().state);}catch{}
-  showSheet('旅行设置','按自己的节奏，慢慢玩',`<div class="setting-row"><label for="speedSelect">动画速度</label><select id="speedSelect">${[1,2,3].map(n=>`<option value="${n}" ${s.options.speed===n?'selected':''}>${n}× · ${['','完整展示','轻快','快速'][n]}</option>`).join('')}</select></div><div class="setting-row"><label for="littleNaiwaEnabled">小奶蛙 · AI 游戏助手</label><input id="littleNaiwaEnabled" type="checkbox" ${littleNaiwaEnabled?'checked':''}></div><div class="setting-row"><span>AI 回合自动 3×</span><button class="secondary" data-act="aiPace" aria-pressed="${s.options.aiFast!==false}">${s.options.aiFast!==false?'已开启':'已关闭'}</button></div><p>跳过仅收尾当前演出；交易结果保留阅读时间，付款和破产确认仍需本人操作。</p><div class="setting-row"><label for="qualitySelect">画面质量</label><select id="qualitySelect"><option value="auto" ${s.options.quality==='auto'?'selected':''}>自适应画质 · 完整光影</option><option value="low" ${s.options.quality==='low'?'selected':''}>省电画质</option></select></div><div class="setting-row"><label for="lightingSelect">日照氛围</label><select id="lightingSelect">${Object.entries(LIGHTING).map(([id,p])=>`<option value="${id}" ${lightingMode(s.options.lighting)===id?'selected':''}>${p.label}</option>`).join('')}</select></div><div class="setting-row"><span>声音</span>${btn(s.options.sound?'已开启 · 点击关闭':'已关闭 · 点击开启','sound')}</div>${audioSettings()}<h3>旅行存档</h3><p>${saveOk?'进度自动保存在当前浏览器。':'自动存档失败，请导出备份。'}导出后，可以在另一台设备导入继续。</p><div class="row-actions">${btn('导出存档','export','',!started&&!saved)}${btn('素材与制作说明','panel','data-panel="sources"')}</div><label style="font-size:11px">导入存档<input class="file-input" id="importSave" type="file" accept="application/json,.json"></label><h3>重新出发</h3><p>重新开始会替换本版存档；旧版游戏的存档不会受影响。</p>${btn('选择奶伴重新开始','confirmRestart','','','secondary danger')}<p>设置打开期间，对局暂停。</p>`);
+  showSheet('旅行设置','按自己的节奏，慢慢玩',`<div class="setting-row"><label for="speedSelect">动画速度</label><select id="speedSelect">${[1,2,3].map(n=>`<option value="${n}" ${s.options.speed===n?'selected':''}>${n}× · ${['','完整展示','轻快','快速'][n]}</option>`).join('')}</select></div><div class="setting-row"><label for="littleNaiwaEnabled">小奶蛙 · AI 游戏助手</label><input id="littleNaiwaEnabled" type="checkbox" ${littleNaiwaEnabled?'checked':''}></div><div class="setting-row"><span>AI 回合自动 3×</span><button class="secondary" data-act="aiPace" aria-pressed="${s.options.aiFast!==false}">${s.options.aiFast!==false?'已开启':'已关闭'}</button></div><p>跳过仅收尾当前演出；交易结果保留阅读时间，付款和破产确认仍需本人操作。</p><details class="settings-section"><summary>视频设置</summary>${videoPanel(video,touchVideo)}</details><details class="settings-section"><summary>分享试玩链接</summary>${shareSettings()}</details><div class="setting-row"><label for="lightingSelect">日照氛围</label><select id="lightingSelect">${Object.entries(LIGHTING).map(([id,p])=>`<option value="${id}" ${lightingMode(s.options.lighting)===id?'selected':''}>${p.label}</option>`).join('')}</select></div><div class="setting-row"><span>声音</span>${btn(s.options.sound?'已开启 · 点击关闭':'已关闭 · 点击开启','sound')}</div>${audioSettings()}<h3>旅行存档</h3><p>${saveOk?'进度自动保存在当前浏览器。':'自动存档失败，请导出备份。'}导出后，可以在另一台设备导入继续。</p><div class="row-actions">${btn('导出存档','export','',!started&&!saved)}${btn('素材与制作说明','panel','data-panel="sources"')}</div><label style="font-size:11px">导入存档<input class="file-input" id="importSave" type="file" accept="application/json,.json"></label><h3>重新出发</h3><p>重新开始会替换本版存档；旧版游戏的存档不会受影响。</p>${btn('选择奶伴重新开始','confirmRestart','','','secondary danger')}<p>设置打开期间，对局暂停。</p>`);
   $('sheetBody').insertAdjacentHTML('beforeend','<button class="secondary" data-act="panel" data-panel="history">回放与本地战绩</button>');
   const diagnostic=getRenderDiagnostic();$('sheetBody').insertAdjacentHTML('beforeend',`<section aria-label="画面诊断"><h3>画面诊断</h3><p id="renderDiagnosticStatus">版本：${esc(diagnostic.buildId)} · ${({starting:'启动中',webgl:'正常3D',fallback:'简洁地图'})[diagnostic.renderState]}</p><p id="renderDiagnosticQuality">实际画质：${esc(diagnostic.effectiveQuality)} · ${esc(diagnostic.errorSummary||'无降级原因')}</p><button class="secondary" data-act="copyDiagnostic">复制诊断信息</button><textarea id="renderDiagnostic" aria-label="可复制的画面诊断" readonly hidden></textarea></section>`);
   $('sheetBody').insertAdjacentHTML('beforeend','<h3>新手提示</h3><p>提示偏好只保存在此浏览器，不属于对局存档。</p><div class="row-actions"><button class="secondary" data-act="resetTutorial">重置教程</button><button class="secondary" data-act="disableTutorial">不再显示提示</button></div><p id="tutorialPreferenceStatus" role="status"></p>');
@@ -257,8 +276,6 @@ function openPanel(type,id){
  showSheet('岛上消息记录','重要消息会在地图中央逐条出现',s.logs.slice(0,40).map(l=>`<div class="row"><small>第 ${l.round} 轮</small><p>${esc(publicLog(s,l.text))}</p></div>`).join(''));
  }else if(type==='pause'){
   setPaused(true);save();showSheet('休息一下，奶伴等你','对局、镜头与声音已暂停',`<p>当前进度已保存在本机。准备好了，再继续这一趟发财之旅。</p><div class="button-grid">${btn('继续游戏','resumeGame','',false,'primary')}${btn('导出存档','export','',!started&&!saved)}</div><p class="pause-tip">关闭面板或按 Esc 也可以继续。</p>`);
- }else if(type==='share'){
-  showSheet('叫上朋友，来岛上玩','手机点开链接即可开始',`<p>把这个试玩链接发给朋友，无需安装或登录游戏账号。建议横屏体验。</p><label for="shareUrl">试玩链接</label><input id="shareUrl" class="share-url" type="text" readonly value="${esc(gameShareUrl())}"><div class="row-actions">${btn('复制链接','copyLink','',false,'primary')}</div><p>当前是单机试玩：每位朋友在自己的手机上，与电脑奶伴独立对局；进度保存在各自浏览器。</p>`);
  }else if(type==='sources'){
   showSheet('奶家创作手账','素材来源与后续计划',`<div class="panel-note">非官方粉丝游戏。角色模型、地图、建筑和界面由本项目制作。配乐为重新编排的器乐与原创曲；笑声使用社区小游戏的短片段，具体来源见声音设置。</div><div class="credit-list"><p>文化与表现参考：</p><ul class="rules"><li><a href="https://milkyfrog.com/games" target="_blank" rel="noopener">奶蛙小游戏合集</a></li><li><a href="https://naiwaxiaowu.pages.dev/" target="_blank" rel="noopener">奶蛙的小窝</a>：互动与陪伴表现</li><li><a href="https://milkfrog-bath.pages.dev/" target="_blank" rel="noopener">奶蛙爱洗澡</a>：情绪表情</li><li><a href="https://nailong-dance.pages.dev/" target="_blank" rel="noopener">奶娃街舞</a>：动态表现</li><li><a href="https://naiwanaichadian.pages.dev/" target="_blank" rel="noopener">奶蛙奶茶铺</a>：经营场景</li><li><a href="https://www.douyin.com/video/7673579319512764654" target="_blank" rel="noopener">抖音奶币与野生狗奶二创</a></li></ul></div><p>本版为原创风格化轻量模型。奶蛙、奶鼠、奶狗参考用户三视图及公开视频，奶蛋和奶茶参考农庄视频，奶虫参考此前视频图像。模型采用连续曲面、绘制腹色与关节动画，为原创重建，未提取视频源模型。</p><p>本版已支持六名角色、2—6 人、指定电脑与随机阵容。后续方向：账号与云存档。本版含本机单机与最小房间联机；联机需独立房间服务。</p><p>3D 引擎 Three.js，MIT 许可随部署包附带。</p>`);
  }else if(type==='confirmRestart'){
@@ -321,9 +338,8 @@ $('talentBtn').addEventListener('click',()=>{if(!pinned)openPanel('talents');});
 new GameOrientation($('app'),null,{resize:()=>scene?.resize()});
 $('newsHistoryBtn').addEventListener('click',()=>{if(started&&!pinned)openPanel('news');});
 $('pauseBtn').addEventListener('click',()=>{if(!pinned&&started)openPanel('pause');else toast('先完成当前选择，即可暂停。');});
-$('shareBtn').addEventListener('click',()=>{if(!pinned)openPanel('share');else toast('先完成当前选择，再分享链接。');});
 $('helpBtn').addEventListener('click',()=>{if(activePanel)toggleSheetHelp(true);else openPanel('help');});$('settingsBtn').addEventListener('click',()=>{if(!pinned)openPanel('settings');});$('saveBtn').addEventListener('click',()=>{if(!pinned)openPanel('saves');});
-$('homeBtn').addEventListener('click',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');scene?.home();$('studioPanel').hidden=true;$('startScreen').hidden=started;render();});$('followBtn').addEventListener('click',()=>{if(scene){if(scene.follow)scene.follow=false;else scene.followPlayer({manual:true});render();toast(scene.follow?'跟随当前奶伴':'自由探索小岛');}});$('qualityBtn').addEventListener('click',()=>{game.s.options.quality=game.s.options.quality==='low'?'auto':'low';commit();});
+$('homeBtn').addEventListener('click',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');scene?.home();$('studioPanel').hidden=true;$('startScreen').hidden=started;render();});$('followBtn').addEventListener('click',()=>{if(scene){if(scene.follow)scene.follow=false;else scene.followPlayer({manual:true});render();toast(scene.follow?'跟随当前奶伴':'自由探索小岛');}});$('qualityBtn').addEventListener('click',()=>updateVideo(videoPreset(video,video.preset==='smooth'?'auto':'smooth')));
 $('castBtn').addEventListener('click',()=>{if(pinned||!scene||scene.contextLost)return;scene.enterStudio(started?game.player.character:selected);hideAssistant();$('app').classList.add('is-studio');$('studioPanel').hidden=false;$('miniMap').hidden=true;$('startScreen').hidden=true;$('actionBtn').disabled=true;tutorial.clear();document.querySelectorAll('.dock-tabs button').forEach(b=>b.disabled=true);});
 $('closeStudio').addEventListener('click',()=>{scene?.leaveStudio();$('app').classList.remove('is-studio');$('studioPanel').hidden=true;$('startScreen').hidden=started;render();});
 $('studioPanel').addEventListener('click',e=>{const char=e.target.closest('[data-studio-char]'),mode=e.target.closest('[data-studio-mode]'),view=e.target.closest('[data-studio-view]');if(char)scene?.enterStudio(char.dataset.studioChar);if(mode&&scene?.studio)scene.studio.mode=mode.dataset.studioMode;if(view&&scene?.studio){scene.studio.yaw=.45+({front:0,side:Math.PI/2,back:Math.PI}[view.dataset.studioView]);scene.studio.manual=true;}scene?.invalidate();});
@@ -337,7 +353,7 @@ $('sheetBody').addEventListener('change',async e=>{if(e.target.id==='replayImpor
  if(e.target.id==='musicTrack'){game.s.options.track=e.target.value;audioState();save();}
  if(e.target.id==='speedSelect'){game.s.options.speed=+e.target.value;save();render();}
  if(e.target.id==='lightingSelect'){game.s.options.lighting=lightingMode(e.target.value);commit();}
- if(e.target.id==='qualitySelect'){game.s.options.quality=e.target.value;commit();}
+ if(e.target.dataset.video){updateVideo(videoChange(video,e.target.dataset.video,e.target));return;}
  if(e.target.id==='littleNaiwaEnabled'){
   littleNaiwaEnabled=e.target.checked;assistantStep='';hideAssistant();
   try{localStorage.setItem(LITTLE_NAIWA_KEY,littleNaiwaEnabled?'on':'off');}catch{}
@@ -350,6 +366,7 @@ $('sheetBody').addEventListener('change',async e=>{if(e.target.id==='replayImpor
 
 $('sheetBody').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const {act}=b.dataset,id=+b.dataset.id,index=+b.dataset.index,target=+b.dataset.target;let ok=true;
+ if(act==='videoPreset'){updateVideo(videoPreset(video,b.dataset.preset));return;}
  if(act==='copyDiagnostic'){const box=$('renderDiagnostic');box.hidden=false;box.value=JSON.stringify(getRenderDiagnostic(),null,2);box.focus();box.select();if(navigator.clipboard?.writeText)navigator.clipboard.writeText(box.value).then(()=>toast('诊断信息已复制')).catch(()=>toast('请复制已选中的诊断信息'));else toast('请复制已选中的诊断信息');return;}
  if(act==='openCloud'){$('cloudEntry').click();return;}
  if(act==='resetTutorial'||act==='disableTutorial'){const persisted=act==='resetTutorial'?tutorial.reset():tutorial.choose('disable');$('tutorialPreferenceStatus').textContent=(act==='resetTutorial'?'教程已重置，关闭设置后会重新显示。':'新手提示已关闭。')+(persisted?'':'本次生效，浏览器未能保存偏好。');return;}

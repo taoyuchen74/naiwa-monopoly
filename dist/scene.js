@@ -5,6 +5,7 @@ import {structuralChange} from './building-reveal.js';
 import {LIGHTING,lightingMode} from './lighting.js';
 import {HighQuality} from './high-quality.js';
 import {FrameBudget} from './frame-budget.js';
+import {FrameResolution,RenderClock,resolveVideo,videoProfile} from './video-settings.js';
 import {renderProfile} from './render-profile.js';
 import {animateSurfaces,setSurfaceLighting} from './surfaces.js';
 import {CITY_TILES,mapPoints} from './maps.js';
@@ -24,12 +25,12 @@ const lotPosition=plotPosition;
 function _label(text,color='#35525c',size=256){const c=document.createElement('canvas');c.width=size;c.height=80;const x=c.getContext('2d');x.font='bold 28px "Microsoft YaHei",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle=color;x.fillText(text,size/2,40);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
 export class IslandScene{
  get paused(){return this._paused;}
- set paused(value){this._paused=!!value;if(value){cancelAnimationFrame(this.raf);this.raf=null;}else this.invalidate();}
+ set paused(value){this._paused=!!value;if(value){cancelAnimationFrame(this.raf);this.raf=null;this.frameClock?.reset();this.frameResolution?.idle();this.paintFrameRate();}else this.invalidate();}
  invalidate(){if(!this.renderer||this.disposed||this.contextLost||document.hidden)return;this.dirty=true;if(this.paused){this.renderStill();return;}if(!this.raf)this.raf=requestAnimationFrame(this.animate);}
  setMenu(value){if(this.menu===value)return;this.menu=value;if(value)this.fx.clear();this.invalidate();}
  needsAnimation(){if(this.menu&&!this.studio)return false;if(this.studio)return !this.reduced;if(this.actionMood?.until>performance.now())return true;if(this.fx.items.length||this.focusTarget||this.isMoving())return true;if(this.game&&!this.studio){const p=this.pawns[this.game.s.current];if(this.game.s.players.some(q=>Math.abs(this.pawns[q.id].scale.x-(q.alive?.56:.001))>.001))return true;if(this.follow&&p&&(Math.hypot(this.offset.x-p.position.x,this.offset.z-p.position.z)>.02||Math.abs(this.zoom-this.followZoom)>.002))return true;}return false;}
  dispose(){if(this.disposed)return;this.disposed=true;cancelAnimationFrame(this.raf);this.raf=null;this.events.abort();this.observer.disconnect();this.cancelGestures();this.fx.clear();this.highQuality.dispose();this.scene.environment=null;this.sun.shadow.dispose();disposeUnique(this.scene);this.scene.clear();this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();}
- constructor(container,onTile,tiles=CITY_TILES){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.tiles=tiles;this.el=container;this.onTile=onTile;this.follow=false;this.zoom=1;this.offset=new THREE.Vector3();this.quality='';this.frameBudget=new FrameBudget();this._paused=false;this.events=new AbortController();this.last=0;this.time=0;this.game=null;this.showcase=null;this.motionQuery=matchMedia('(prefers-reduced-motion:reduce)');this.reduced=this.motionQuery.matches;
+ constructor(container,onTile,tiles=CITY_TILES,video=null){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.tiles=tiles;this.el=container;this.onTile=onTile;this.follow=false;this.zoom=1;this.offset=new THREE.Vector3();this.quality='';this.frameBudget=new FrameBudget();this.frameClock=new RenderClock();this.frameResolution=new FrameResolution();this.video=null;this.touchVideo=matchMedia('(pointer:coarse)').matches;this._paused=false;this.events=new AbortController();this.last=0;this.time=0;this.game=null;this.showcase=null;this.motionQuery=matchMedia('(prefers-reduced-motion:reduce)');this.reduced=this.motionQuery.matches;
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#b7d3dc');this.scene.fog=new THREE.Fog('#b7d3dc',70,130);
   this.camera=new THREE.OrthographicCamera(-19,19,13,-13,.1,180);this.camera.position.set(28,30,36);this.camera.lookAt(0,0,0);
   this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio,1.5),2.5));this.renderer.shadowMap.enabled=true;this.renderer.localClippingEnabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=.94;container.append(this.renderer.domElement);
@@ -40,11 +41,11 @@ export class IslandScene{
   this.highQuality=new HighQuality(this.renderer,this.scene,this.camera);this.ray=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.tileMeshes=[];this.plotMeshes=new Map();this.blockMeshes=new Map();this.pawns=[];this.pickupMeshes=new Map();this.smokestacks=[];this.buildingBadges=[];this.floats=[];this.lights=[];this.pointLights=[];this.lightingKey='';this.world=new THREE.Group();this.scene.add(this.world);this.fx=new EffectSystem(this.world,{reduced:this.reduced,onDiceState:(rolling,impact,active)=>container.dispatchEvent(new CustomEvent('dicerollchange',{detail:{rolling,impact,active}}))});
   this.motionQuery.addEventListener?.('change',e=>{this.reduced=e.matches;this.fx.reduced=e.matches;if(e.matches){this.follow=false;this.skipPresentation();}this.cameraChanged();},{signal:this.events.signal});
   this.build();this.turnMarker=mesh(this.world,new THREE.RingGeometry(.58,.7,48),new THREE.MeshBasicMaterial({color:'#ffe289',side:THREE.DoubleSide,transparent:true,opacity:.9,depthWrite:false}),[0,.23,0]);this.turnMarker.rotation.x=-Math.PI/2;this.turnMarker.castShadow=false;this.turnMarker.visible=false;
-  this.selection=new THREE.Group();const plate=mesh(this.selection,new THREE.PlaneGeometry(2.05,1.72),new THREE.MeshBasicMaterial({color:'#ffe189',transparent:true,opacity:.17,depthWrite:false,depthTest:false}),[0,.02,0]);plate.rotation.x=-Math.PI/2;plate.castShadow=false;this.selectionPlate=plate;const corners=[];for(const x of [-1.03,1.03])for(const z of [-.87,.87]){corners.push(x,.035,z,x-Math.sign(x)*.35,.035,z,x,.035,z,x,.035,z-Math.sign(z)*.35);}this.selection.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(corners,3)),new THREE.LineBasicMaterial({color:'#ffca4f',depthTest:false})));this.selectionLabel=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false,depthWrite:false}));this.selectionLabel.renderOrder=6;this.selectionLabel.scale.set(3.1,.65,1);this.selectionLabel.position.y=.65;this.selection.add(this.selectionLabel);this.selection.visible=false;this.selection.renderOrder=4;this.world.add(this.selection);this.animate=this.animate.bind(this);this.controls();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);this.setQuality('auto');this.resize();this.invalidate();
+  this.selection=new THREE.Group();const plate=mesh(this.selection,new THREE.PlaneGeometry(2.05,1.72),new THREE.MeshBasicMaterial({color:'#ffe189',transparent:true,opacity:.17,depthWrite:false,depthTest:false}),[0,.02,0]);plate.rotation.x=-Math.PI/2;plate.castShadow=false;this.selectionPlate=plate;const corners=[];for(const x of [-1.03,1.03])for(const z of [-.87,.87]){corners.push(x,.035,z,x-Math.sign(x)*.35,.035,z,x,.035,z,x,.035,z-Math.sign(z)*.35);}this.selection.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(corners,3)),new THREE.LineBasicMaterial({color:'#ffca4f',depthTest:false})));this.selectionLabel=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false,depthWrite:false}));this.selectionLabel.renderOrder=6;this.selectionLabel.scale.set(3.1,.65,1);this.selectionLabel.position.y=.65;this.selection.add(this.selectionLabel);this.selection.visible=false;this.selection.renderOrder=4;this.world.add(this.selection);this.animate=this.animate.bind(this);this.controls();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(container);if(video)this.setVideo(video);else this.setQuality('auto');this.resize();this.invalidate();
  }
  restoreRendering(){if(!this.contextLost)return;const game=this.game,quality=game?.s.options.quality||this.quality||'auto';
   try{this.highQuality?.dispose();this.highQuality=new HighQuality(this.renderer,this.scene,this.camera);this.sun.shadow.map?.dispose();this.sun.shadow.map=null;this.sun.shadow.mapPass?.dispose();this.sun.shadow.mapPass=null;this.sun.shadow.needsUpdate=true;
-   this.contextLost=false;this.paused=!!this.pausedBeforeContextLoss;this.quality='';this.lightingKey='';this.setQuality(quality);this.applyLighting(game?.s.options.lighting||this.worldLighting);this.game=null;if(game)this.sync(game);this.resize();this.el.dispatchEvent(new CustomEvent('renderrestored'));
+   this.contextLost=false;this.paused=!!this.pausedBeforeContextLoss;this.quality='';this.profileKey='';this.lightingKey='';this.setQuality(quality);this.applyLighting(game?.s.options.lighting||this.worldLighting);this.game=null;if(game)this.sync(game);this.resize();this.el.dispatchEvent(new CustomEvent('renderrestored'));
   }catch(error){this.contextLost=true;this.paused=true;this.el.dispatchEvent(new CustomEvent('renderrecoveryfailed',{detail:{message:error.message}}));}
  }
  setMap(tiles){if(tiles.custom)throw Error('自定义地图暂仅支持2D预览与游戏');this.leaveStudio();this.fx.clear();this.world.remove(this.selection,this.turnMarker);disposeUnique(this.world);this.world.clear();this.tiles=tiles;this.game=null;this.rollState=null;this.lastMoney=null;this.tileMeshes=[];this.plotMeshes.clear();this.blockMeshes.clear();this.pawns=[];this.pickupMeshes.clear();this.smokestacks=[];this.buildingBadges=[];this.floats=[];this.lights=[];this.pointLights=[];this.lightingKey='';this.build();this.world.add(this.selection,this.turnMarker);this.clearSelection();this.home();}
@@ -77,7 +78,64 @@ export class IslandScene{
  }
  applyLighting(requested){this.worldLighting=lightingMode(requested);const key=this.studio?'studio':this.worldLighting;if(this.lightingKey===key)return;this.lightingKey=key;const p=LIGHTING[this.studio?'day':key];this.hemi.color.set(p.hemi);this.hemi.groundColor.set(p.ground);this.hemi.intensity=p.ambient;this.sun.color.set(p.sun);this.sun.intensity=p.power;this.sun.position.set(...p.position);this.fill.color.set(p.fill);this.fill.intensity=p.fillPower;this.scene.environmentIntensity=p.environment;this.renderer.toneMappingExposure=p.exposure;this.highQuality.bloom.strength=p.bloom;this.highQuality.bloom.threshold=p.threshold;this.scene.background.set(this.studio?'#dedccc':p.sky);this.scene.fog.color.copy(this.scene.background);for(const light of this.pointLights)light.intensity=this.studio?0:p.lamps;for(const lantern of this.lights)lantern.material.emissiveIntensity=.55+p.lamps*.25;setSurfaceLighting(this.studio?'day':key);}
  showTransfer(receipt,done){if(this.contextLost)return false;const from=this.pawns[receipt.from],to=this.pawns[receipt.to];return from&&to?this.fx.transfer(from.position,to.position,receipt.amount,done):false;}
- setQuality(q){if(q!==this.quality)this.frameBudget.reset();const profile=renderProfile(q==='auto'&&this.frameBudget.degraded?'low':q),key=JSON.stringify(profile);if(this.quality===q&&this.profileKey===key)return;this.quality=q;this.profileKey=key;this.profile=profile;this.renderer.setPixelRatio(profile.ratio);this.renderer.shadowMap.enabled=!!profile.shadow;this.sun.shadow.map?.dispose();this.sun.shadow.map=null;this.sun.shadow.mapPass?.dispose();this.sun.shadow.mapPass=null;this.sun.shadow.mapSize.set(profile.shadow||512,profile.shadow||512);this.sun.shadow.needsUpdate=true;this.highQuality.configure(profile);this.highQuality.resize(this.el.clientWidth,this.el.clientHeight,profile.ratio);this.invalidate();}
+ setVideo(video){
+  if(this.video===video)return;
+  this.video=video;this.videoConfig={preset:video.preset,...resolveVideo(video,this.touchVideo)};
+  this.frameResolution.reset(this.videoConfig.scale);
+  this.reducedEffects={shadows:false,post:false};
+  this.frameClock.reset();
+  this.el.dataset.frameLimit=String(this.videoConfig.fps);
+  this.setQuality(this.quality||'auto');
+  this.paintFrameRate();
+ }
+ paintFrameRate(){
+  const badge=this.el?.ownerDocument?.getElementById('videoFps');
+  if(!badge)return;
+  badge.hidden=!this.videoConfig?.showFps||this.contextLost||this.disposed;
+  const fps=this.frameResolution.fps,label=fps?fps+' FPS':'等待刷新';
+  if(!badge.hidden&&badge.textContent!==label)badge.textContent=label;
+ }
+ setQuality(q){
+  if(!this.videoConfig&&q!==this.quality)this.frameBudget.reset();
+  const profile=this.videoConfig
+   ?videoProfile(this.videoConfig,this.frameResolution.scale,this.reducedEffects)
+   :renderProfile(q==='auto'&&this.frameBudget.degraded?'low':q);
+  if(this.videoConfig){
+   this.el.dataset.videoScale=String(this.frameResolution.scale);
+   this.el.dataset.shadowMode=profile.shadows;
+   this.el.dataset.postMode=profile.post;
+  }
+  const key=JSON.stringify(profile);
+  if(this.quality===q&&this.profileKey===key)return;
+  const previous=this.profile;
+  this.quality=q;this.profileKey=key;this.profile=profile;
+  if(profile.ratio!==previous?.ratio)this.renderer.setPixelRatio(profile.ratio);
+  this.renderer.shadowMap.enabled=!!profile.shadow;
+  if(profile.shadow!==previous?.shadow){
+   this.sun.shadow.map?.dispose();this.sun.shadow.map=null;
+   this.sun.shadow.mapPass?.dispose();this.sun.shadow.mapPass=null;
+   this.sun.shadow.mapSize.set(profile.shadow||512,profile.shadow||512);
+   this.sun.shadow.needsUpdate=true;
+  }
+  this.highQuality.configure(profile);
+  this.highQuality.resize(this.el.clientWidth,this.el.clientHeight,profile.ratio);
+  this.invalidate();
+ }
+ observeFrame(elapsed,live){
+  if(!this.videoConfig)return;
+  if(!live){this.frameResolution.idle();this.paintFrameRate();return;}
+  const previous=this.frameResolution.scale;
+  const scale=this.frameResolution.observe(elapsed,this.videoConfig);
+  const {underPressure}=this.frameResolution;
+  const before=this.reducedEffects;
+  if(this.videoConfig.adaptive&&scale===60&&underPressure){
+   this.reducedEffects={shadows:!Object.hasOwn(this.video.overrides,'shadows'),post:!Object.hasOwn(this.video.overrides,'post')};
+  }else if(scale>=this.videoConfig.scale&&!underPressure){
+   this.reducedEffects={shadows:false,post:false};
+  }
+  if(previous!==scale||before.shadows!==this.reducedEffects.shadows||before.post!==this.reducedEffects.post)this.setQuality(this.quality);
+  this.paintFrameRate();
+ }
  resize(){const w=this.el.clientWidth,h=this.el.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.highQuality?.resize(w,h,this.renderer.getPixelRatio());this.aspect=w/h;if(this.follow)this.followZoom=this.aspect<.8?2.6:this.aspect>1.9?1.7:1.45;this.updateCamera();this.invalidate();}
  updateCamera(){const span=this.studio?Math.max(2.3,1.95/this.aspect)/this.studio.zoom:Math.max(13.8,23/this.aspect)/this.zoom;this.camera.left=-span*this.aspect;this.camera.right=span*this.aspect;this.camera.top=span;this.camera.bottom=-span;this.camera.updateProjectionMatrix();if(this.studio){this.camera.position.set(3.4,2.3,7);this.camera.lookAt(0,1.55,0);}else{this.camera.position.set(28+this.offset.x,30,36+this.offset.z);this.camera.lookAt(this.offset.x,0,this.offset.z);}}
  selectTile(id,mode='inspect'){const t=this.tiles[id];if(!t)return;this.selectedTile=id;this.selectionMode=mode;this.navTurn=this.game?`${this.game.s.round}:${this.game.s.current}`:'';this.selection.visible=true;this.selection.position.copy(t.kind==='property'?lotPosition(t):new THREE.Vector3(t.x,.23,t.z));this.selection.rotation.y=t.facing;this.selection.scale.set(t.kind==='property'?1:.8,1,t.kind==='property'?1:.72);this.selectionPlate.material.color.set(mode==='buy'?'#ffd65a':'#fff0a8');this.selectionLabel.material.map?.dispose();this.selectionLabel.material.map=signTexture(mode==='buy'?`待售 · ${t.price} 奶币`:t.name,{background:mode==='buy'?'#ffdfa0':'#fff0cb',color:'#674324',width:320,height:72});this.selectionLabel.material.needsUpdate=true;this.selectionLabel.userData.tile=id;this.liftSelectionLabel();this.el.dataset.selectedTile=String(id);this.invalidate();}
@@ -114,16 +172,16 @@ export class IslandScene{
    const started=performance.now();
    this.updateLabelVisibility();this.fx.anchorDice(this.camera,this.aspect<.8);
    this.renderer.info.autoReset=false;this.renderer.info.reset();
-   if(this.profile.name==='low')this.renderer.render(this.scene,this.camera);
+   if(this.profile.post==='off'||this.profile.name==='low')this.renderer.render(this.scene,this.camera);
    else this.highQuality.render();
    this.el.dataset.renderTier=this.profile.name;
-   if(this.quality==='auto'&&this.frameBudget.record(performance.now()-started))this.setQuality('auto');
+   if(!this.videoConfig&&this.quality==='auto'&&this.frameBudget.record(performance.now()-started))this.setQuality('auto');
   }catch(error){this.failRendering(error);}
  }
  failRendering(error){
   if(this.disposed||this.renderFailed)return;
   this.renderFailed=true;this.contextLost=true;this.paused=true;
-  this.cancelGestures();this.fx?.clear();
+  this.cancelGestures();this.fx?.clear();this.paintFrameRate();
   this.el.dispatchEvent(new CustomEvent('renderlost',{detail:{reason:'draw',message:String(error?.message||error)}}));
  }
  renderStill(){
@@ -141,7 +199,7 @@ export class IslandScene{
   pan:(dx,dy)=>{this.follow=false;this.focusTarget=null;const units=(this.camera.top-this.camera.bottom)/Math.max(1,c.clientHeight);this.offset.x=Math.max(-25,Math.min(25,this.offset.x-(dx*.789+dy*1.118)*units));this.offset.z=Math.max(-22,Math.min(22,this.offset.z+(dx*.614-dy*1.437)*units));this.updateCamera();this.cameraChanged();},
   tap:(x,y)=>{const id=this.pickTile(x,y);if(Number.isInteger(id))this.onTile(id);}
  });
- const signal=this.events.signal,cancel=()=>this.cancelGestures();window.addEventListener('gamelayoutchange',cancel,{signal});window.addEventListener('blur',cancel,{signal});document.addEventListener('visibilitychange',()=>{cancel();cancelAnimationFrame(this.raf);this.raf=null;this.last=0;if(!document.hidden)this.invalidate();},{signal});
+ const signal=this.events.signal,cancel=()=>this.cancelGestures();window.addEventListener('gamelayoutchange',cancel,{signal});window.addEventListener('blur',cancel,{signal});document.addEventListener('visibilitychange',()=>{cancel();cancelAnimationFrame(this.raf);this.raf=null;this.last=0;this.frameClock?.reset();this.frameResolution?.idle();this.paintFrameRate();if(!document.hidden)this.invalidate();},{signal});
  c.addEventListener('pointerdown',e=>{const p=canvasPoint(e.clientX,e.clientY,c);this.gestures.down(e.pointerId,p.x,p.y);c.setPointerCapture(e.pointerId);},{signal});c.addEventListener('pointermove',e=>{const p=canvasPoint(e.clientX,e.clientY,c);this.gestures.move(e.pointerId,p.x,p.y);this.invalidate();},{signal});c.addEventListener('pointerup',e=>{const p=canvasPoint(e.clientX,e.clientY,c);this.gestures.up(e.pointerId,p.x,p.y);},{signal});for(const type of ['pointercancel','lostpointercapture'])c.addEventListener(type,e=>this.gestures.cancel(e.pointerId),{signal});c.addEventListener('wheel',e=>{e.preventDefault();this.zoomBy(e.deltaY<0?1.1:.91);},{passive:false,signal});
  }
  followPlayer({manual=false}={}){if(this.reduced&&!manual){this.endPreview();this.invalidate();return;}this.clearSelection();this.follow=true;this.focusTarget=null;this.endPreview();this.followZoom=this.aspect<.8?2.6:this.aspect>1.9?1.7:1.45;this.cameraChanged();}
@@ -151,7 +209,7 @@ export class IslandScene{
  endPreview(){if(this.showcase){this.world.remove(this.showcase);disposeUnique(this.showcase);this.showcase=null;}this.hero.visible=true;}
  enterStudio(id){this.cancelGestures();if(this.studio)this.leaveStudio();const root=new THREE.Group(),model=displayCharacterModel(id);root.add(model);model.position.y=.15;cylinder(root,'#c7bfa5',[0,.04,0],1.2,1.3,.14,64);const floor=mesh(root,new THREE.PlaneGeometry(240,240),'#dfd9c7',[0,-.05,0]);floor.rotation.x=-Math.PI/2;this.scene.add(root);this.studio={root,model,yaw:.3,zoom:1,mode:'idle',manual:false};this.highQuality.studio(true);this.sun.shadow.camera.left=this.sun.shadow.camera.bottom=-5;this.sun.shadow.camera.right=this.sun.shadow.camera.top=5;this.sun.shadow.camera.updateProjectionMatrix();this.world.visible=false;this.scene.fog=new THREE.Fog('#dedccc',18,50);this.scene.background.set('#dedccc');this.applyLighting(this.worldLighting);this.updateCamera();this.invalidate();}
  leaveStudio(){this.cancelGestures();if(!this.studio)return;this.scene.remove(this.studio.root);disposeUnique(this.studio.root);this.studio=null;this.highQuality.studio(false);this.sun.shadow.camera.left=this.sun.shadow.camera.bottom=-26;this.sun.shadow.camera.right=this.sun.shadow.camera.top=26;this.sun.shadow.camera.updateProjectionMatrix();this.world.visible=true;this.scene.fog=new THREE.Fog('#b7d3dc',70,130);this.scene.background.set('#b7d3dc');this.applyLighting(this.worldLighting);this.updateCamera();this.invalidate();}
- animate(now){this.raf=null;if(document.hidden||this.paused||this.disposed||this.contextLost)return;const live=this.needsAnimation?.()??true;if(live)this.raf=requestAnimationFrame(this.animate);if(now-this.last<16){if(!this.raf)this.raf=requestAnimationFrame(this.animate);return;}// Catch up visual time after slow frames; rules still advance only through commands.
+ animate(now){this.raf=null;if(document.hidden||this.paused||this.disposed||this.contextLost)return;const live=this.needsAnimation?.()??true;if(live)this.raf=requestAnimationFrame(this.animate);const elapsed=this.frameClock.take(now,this.videoConfig?.fps??60);if(elapsed===null){if(!this.raf)this.raf=requestAnimationFrame(this.animate);return;}this.observeFrame(elapsed,live);// Catch up visual time after slow frames; rules still advance only through commands.
   const dt=Math.min(.5,(now-this.last)/1000||.033);this.last=now;this.time+=live?dt:0;const time=this.time;animateSurfaces(this.reduced?0:time,this.camera);const actionDt=dt*(this.studio?1:presentationSpeed(this.game?.s.options,this.game?.s.players[this.game.s.current]?.human===false));this.actionTime=(this.actionTime??0)+actionDt;this.fx.update(actionDt);if(this.selection.visible)this.selectionPlate.material.opacity=this.reduced?.23:.22+Math.sin(time*3)*.06;
   if(this.studio){const st=this.studio;st.model.rotation.y=st.yaw+(st.manual?0:Math.sin(time*.25)*.25);animateCharacter(st.model,{time,moving:st.mode==='walk',mood:st.mode==='laugh'?'happy':st.mode==='win'||st.mode==='loss'?st.mode:null});this.drawFrame();return;}
   if(this.focusTarget){const ease=this.reduced?1:1-Math.exp(-3.2*actionDt);this.offset.lerp(this.focusTarget,ease);this.zoom+=(this.focusZoom-this.zoom)*ease;this.updateCamera();if(this.offset.distanceTo(this.focusTarget)<.02)this.focusTarget=null;}
@@ -165,9 +223,9 @@ export class IslandScene{
   animateCharacter(this.hero,{time,mood:this.game?.s.phase==='event'?this.game.s.notice?.mood:null});if(this.showcase){animateCharacter(this.showcase,{time});this.showcase.rotation.y=.3+Math.sin(time*.4)*.18;}
   if(!this.reduced){for(const [i,b]of this.floats.entries()){b.position.y=(b.userData.waterline??-.45)+Math.sin(time*1.1+i)*.035;b.rotation.z=Math.sin(time+i)*.015;}for(const [i,r]of this.ripples.entries())r.scale.x=1+Math.sin(time*.8+i)*.08;
 
-   if(Math.floor(time*2)!==this.lastSmoke){this.lastSmoke=Math.floor(time*2);if(this.smokestacks.length&&this.isMoving()&&this.quality!=='low')for(const p of this.smokestacks)this.fx.spawn('dust',new THREE.Vector3(p.x,p.y,p.z),'#d3d3c2');}
+   if(Math.floor(time*2)!==this.lastSmoke){this.lastSmoke=Math.floor(time*2);if(this.smokestacks.length&&this.isMoving()&&!(this.video?this.video.preset==='smooth':this.quality==='low'))for(const p of this.smokestacks)this.fx.spawn('dust',new THREE.Vector3(p.x,p.y,p.z),'#d3d3c2');}
   }
-  this.fountainSpray?.update(time,{reduced:this.reduced,low:this.quality==='low'});
+  this.fountainSpray?.update(time,{reduced:this.reduced,low:this.video?this.video.preset==='smooth':this.quality==='low'});
   this.drawFrame();this.el.dataset.drawCalls=String(this.renderer.info.render.calls);this.el.dataset.triangles=String(this.renderer.info.render.triangles);this.el.dataset.effects=String(this.fx.items.length);
  }
 }

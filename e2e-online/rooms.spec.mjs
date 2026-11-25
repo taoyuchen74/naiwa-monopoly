@@ -108,6 +108,17 @@ test('common home, room settings, character choice, focus isolation and local-sa
     await start(pair);
     await expect(a.locator('#mapHeading')).toHaveText('经典发财岛');
     expect((await state(a)).game.maxRounds).toBe(30);
+    await a.locator('#settingsBtn').click();
+    await a.getByText('视频设置', { exact: true }).click();
+    await a.getByRole('button', { name: '流畅', exact: true }).click();
+    await expect(a.getByRole('button', { name: '流畅', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(await a.evaluate(() => JSON.parse(localStorage.getItem('naiwa-video-v1')).preset)).toBe(
+      'smooth',
+    );
+    await a.locator('#closeSheet').click();
     const raw = await a.evaluate((k) => localStorage.getItem(k), SAVE_KEY);
     await a.locator('.dock-tabs [data-panel=cards]').click();
     await expect(a.locator('#sheet')).toHaveAttribute('aria-labelledby', 'sheetTitle');

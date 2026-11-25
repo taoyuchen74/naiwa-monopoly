@@ -65,12 +65,15 @@ export class HighQuality {
   configure(profile) {
     this.profile = profile;
     this.ao.enabled = profile.aoSamples > 0;
+    this.bloom.enabled = profile.post !== 'off' && profile.post !== 'soft';
+    this.fxaa.enabled = profile.post !== 'off';
     if (profile.aoSamples) this.ao.updateGtaoMaterial({ samples: profile.aoSamples });
   }
   resize(w, h, ratio) {
     const p = this.profile || renderProfile();
     this.composer.setPixelRatio(ratio);
-    this.composer.setSize(p.name !== 'low' ? w : 1, p.name !== 'low' ? h : 1);
+    const post = p.post ? p.post !== 'off' : p.name !== 'low';
+    this.composer.setSize(post ? w : 1, post ? h : 1);
     this.ao.setSize(
       Math.max(1, Math.round(w * ratio * p.aoScale)),
       Math.max(1, Math.round(h * ratio * p.aoScale)),
